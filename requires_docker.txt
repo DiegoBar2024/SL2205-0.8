@@ -1,0 +1,26 @@
+numpy
+scipy
+h5py
+pandas
+seaborn
+matplotlib
+pywavelets
+scikit-learn
+numpyencoder
+uvicorn
+fastapi[all]
+natsort
+pyserial
+mlflow
+pymssql
+pyminizip
+plotly
+fpdf2 == 2.5.7
+kaleido
+pyrebase4
+cryptography  
+pyzip       
+pyfolder      
+wandb
+ssqueezepy
+protobuf == 3.19.0

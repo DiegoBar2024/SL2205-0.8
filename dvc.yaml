@@ -1,0 +1,39 @@
+stages:
+  preprocesamiento_reduccion_correcion_ejes:
+    cmd: python3 Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/preprocesamiento_reduccion_correccion_ejes.py
+    deps:
+    - Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/preprocesamiento_reduccion_correccion_ejes.py
+    - datos/rawData/raw_2_process
+    outs:
+    - datos/preprocessData/dataset
+  split_and_save_samples_overlap:
+    cmd: python3 Sere_etapa2_Documentado/sereTestLib/Pre
+    deps:
+    - Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/split_and_save_samples_overlap.py
+    - datos/preprocessData/dataset
+    outs:
+    - datos/preprocessData/overlaps
+  create_segments_scalograms:
+    cmd: python3 Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/create_segments_scalograms.py
+    deps:
+    - Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/create_segments_scalograms.py
+    - datos/preprocessData/overlaps
+    outs:
+    - datos/ndClassifier/wavelet_cmor
+    - datos/ndClassifier/wavelet_cmor_giro
+  create_or_augment_scalograms:
+    cmd: python3 Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/create_or_augment_scalograms.py
+    deps:
+    - Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/create_or_augment_scalograms.py
+    - datos/ndClassifierData/wavelet_cmor
+    - datos/ndClassifier/wavelet_cmor_giro
+    outs:
+    - datos/ndClassifierData/wavelet_AumGiro
+    - datos/ndClassifierData/wavelet_aumentados3
+  split_and_save_samples_overlap_giro:
+    cmd: python3 Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento//split_and_save_samples_overlap.py
+    deps:
+    - Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/split_and_save_samples_overlap.py
+    - datos/preprocessData/dataset
+    outs:
+    - datos/preprocessData/overlaps_giro

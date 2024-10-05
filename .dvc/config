@@ -1,0 +1,6 @@
+[core]
+    remote = remoto
+['remote "origin"']
+    url = https://dagshub.com/victoria.tournier/Sere_etapa2.dvc
+['remote "remoto"']
+    url = /sere/home/Documentos/MVT/Sere_etapa2/espacioExterno

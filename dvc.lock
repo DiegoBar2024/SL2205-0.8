@@ -1,0 +1,47 @@
+schema: '2.0'
+stages:
+  preprocesamiento_reduccion_correcion_ejes:
+    cmd: python3 Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/preprocesamiento_reduccion_correccion_ejes.py
+    deps:
+    - path: Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/preprocesamiento_reduccion_correccion_ejes.py
+      md5: b1852e075e133c1294d50091beab9b8c
+      size: 9142
+    - path: datos/rawData/raw_2_process
+      md5: 660be494ba2014c7417aac770dcb02b7.dir
+      size: 42315428
+      nfiles: 8
+  split_and_save_samples_overlap:
+    cmd: python3 Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/split_and_save_samples_overlap.py
+    deps:
+    - path: Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/split_and_save_samples_overlap.py
+      md5: 0b9c74a4b2c7076cce820a5cfa621012
+      size: 6505
+    - path: datos/preprocessData/dataset
+      md5: a50ed1147c1a78d698aaf9acf7930884.dir
+      size: 14397541
+      nfiles: 8
+  create_or_augment_scalograms:
+    cmd: python3 Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/create_or_augment_scalograms.py
+    deps:
+    - path: Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/create_or_augment_scalograms.py
+      md5: bab6d9e4bdc1b2ccd81b38fde9ec7be0
+      size: 10832
+    - path: datos/ndClassifierData/wavelet_cmor
+      md5: e5b5587e3def08a9e2066a839020c0ef.dir
+      size: 152793240
+      nfiles: 170
+    outs:
+    - path: datos/ndClassifierData/wavelet_aumentados3
+      md5: 4d96e9ae6bd20050c994af3d44cd5624.dir
+      size: 55959779
+      nfiles: 369
+  create_segments_scalograms:
+    cmd: python3 Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/create_segments_scalograms.py
+    deps:
+    - path: Sere_etapa2_Documentado/sereTestLib/Preprocesamiento/funcionesPreprocesamiento/create_segments_scalograms.py
+      md5: cecda7640753105c27f0225ad2617ff0
+      size: 8136
+    - path: datos/preprocessData/overlaps
+      md5: 5cece249f4ddef83afca490b66ef05b9.dir
+      size: 30890775
+      nfiles: 170
