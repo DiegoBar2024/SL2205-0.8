@@ -108,8 +108,12 @@ def split_and_save_samples_overlap(ruta_muestra_paciente, ruta_segmentos_csv, ti
             fileobject = open(ruta_segmentos_csv+ fragmento,'w')
 
         else:
-            segmentos,_ = split_samples_overlap(data, time_frame, time_overlap, dt, step)
-            for i,segmento in enumerate(segmentos):
+
+            ## <<segmentos>> va a contener los VALORES INICIALES de AC_x, AC_y, AC_z, GY_x, GY_y, GY_z para cada uno de los segmentos cortados
+            ## <<_>> va a tener la cantidad de muestras de solapamiento
+            segmentos, _ = split_samples_overlap(data, time_frame, time_overlap, dt, step)
+
+            for i, segmento in enumerate(segmentos):
                 validez, explicacion = chequear_aceleracion(segmento)
                 fragmento = fragmento.replace('.csv','')
                 if validez:
@@ -191,6 +195,7 @@ def split_samples_overlap(data, time_frame, time_overlap, dt, step):
 
     ## <<total_sample>> me daba la cantidad TOTAL de muestras que tengo
     ## <<maxSplit>> se interpreta como la cantidad de ventanas de tamaño <<samplesStep>> COMPLETAS que se pueden llenar cuando a las muestras totales se descuenta el doble de la cantidad de las muestras de overlap
+    ## Se interpreta también como la cantidad de segmentos que se forman a partir del vector de entrada
     maxSplit = int((total_sample - 2 * samplesOverlap ) // samplesStep)
 
     ## Itero para i en un rango i = 0, 1, ..., maxSplit - 1
@@ -198,7 +203,11 @@ def split_samples_overlap(data, time_frame, time_overlap, dt, step):
 
         ## Dentro del append lo que se hace es recortar el DataFrame <<data>> comenzando desde el índice '(i * samplesStep)' hasta '(i  * samplesStep + 2 * samplesOverlap + samplesPerSplit)' sin incluír
         ## Se genera una lista con las muestras cortadas y solapadas
+        ## <<x_sub>> va a contener los VALORES INICIALES de AC_x, AC_y, AC_z, GY_x, GY_y, GY_z para cada uno de los segmentos cortados
         x_sub.append(data[(i * samplesStep): i  * samplesStep + 2 * samplesOverlap + samplesPerSplit])
+
+        ## (1 * samplesStep) - (2 * samplesOverlap + samplesPerSplit) = 600 - 800 - 600 = - 800 muestras. Entre dos consecutivos se solapan 800 muestras
+        ## Para pasarlo a tiempo se calcula t_solapamiento = 800/200 = 4 segundos
 
     return x_sub, samplesOverlap
 
