@@ -10,12 +10,13 @@ from natsort.natsort import natsorted
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from ValoresMagnetometro import ValoresMagnetometro
 
 def GraficarDatosPreprocesados(ruta_muestra_preprocesada, ID_paciente, columna, actividades):
     '''
     Se grafican los datos preprocesados (aceleracion o giros) de un paciente (con una ID) para un conjunto dado de actividades
     
-    Parametros
+    Parameters
     ----------
     ruta_muestra_preprocesada : str
         Es la ruta a la carpeta donde se encuentran todas las muestras preprocesadas
@@ -89,7 +90,7 @@ def GraficarDatosSegmentados(ruta_muestra_segmentada, ID_paciente, columna, acti
     '''
     Se grafican todos los datos segmentados (aceleracion o giros) de un paciente (con una ID) para un conjunto dado de actividades
     
-    Parametros
+    Parameters
     ----------
     ruta_muestra_segmentada : str
         Es la ruta a la carpeta donde se encuentran todas las muestras segmentadas
@@ -163,7 +164,7 @@ def GraficarAceleraciones(ruta_muestra_preprocesada, ID_paciente, actividades):
     '''
     Se grafican las tres aceleraciones de un paciente (con una ID) para un conjunto dado de actividades
     
-    Parametros
+    Parameters
     ----------
     ruta_muestra_preprocesada : str
         Es la ruta a la carpeta donde se encuentran todas las muestras preprocesadas
@@ -248,12 +249,11 @@ def GraficarAceleraciones(ruta_muestra_preprocesada, ID_paciente, actividades):
         ## Despliego la gráfica
         plt.show()
 
-
 def GraficarVelocidadesAngulares(ruta_muestra_preprocesada, ID_paciente, actividades):
     '''
     Se grafican las tres velocidades angulares de un paciente (con una ID) para un conjunto dado de actividades
     
-    Parametros
+    Parameters
     ----------
     ruta_muestra_preprocesada : str
         Es la ruta a la carpeta donde se encuentran todas las muestras preprocesadas
@@ -338,7 +338,57 @@ def GraficarVelocidadesAngulares(ruta_muestra_preprocesada, ID_paciente, activid
         ## Despliego la gráfica
         plt.show()
 
-# GraficarDatosPreprocesados('C:/Yo/Tesis/sereData/sereData/Dataset/dataset', 106, 'AC_x', ['Caminando'])
+def GraficarValoresMagnetometro(ruta_muestra_cruda, ID_paciente, actividades):
+    '''
+    Se grafican las tres señales tomadas del magnetómetro para un paciente dado y una conjunto de actividades específico
+    
+    Parameters
+    ----------
+    ruta_muestra_cruda : str
+        Es la ruta a la carpeta donde se encuentran todas las muestras crudas
+    ID_paciente : int
+        Es el ID del paciente cuyos datos van a ser graficados
+    actividad : list
+        Es el conjunto de actividades que se van a procesar
+    '''
+
+    ## Se delega la responsabilidad de obtener los valores del magnetómetro a la función <<ValoresMagnetometro>>
+    valores_magnetometro = ValoresMagnetometro(ruta_muestra_cruda, ID_paciente, actividades)
+
+    ## Separo el vector de tiempos del dataframe
+    tiempo = np.array(valores_magnetometro['Time'], dtype = float)
+
+    ## Extraigo el vector de la medición del magnetómetro en el eje x 
+    Mag_x = np.array(valores_magnetometro['Mag_x'])
+
+    ## Extraigo el vector de la medición del magnetómetro en el eje y
+    Mag_y = np.array(valores_magnetometro['Mag_y'])
+
+    ## Extraigo el vector de la medición del magnetómetro en el eje z
+    Mag_z = np.array(valores_magnetometro['Mag_z'])
+
+    ## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
+    tiempo = (tiempo - tiempo[0]) / 1000
+
+    ## Grafico los datos. En mi caso las tres medidas de magnetometros
+    plt.plot(tiempo, Mag_x, color = 'r', label = '$mag_x$')
+    plt.plot(tiempo, Mag_y, color = 'b', label = '$mag_y$')
+    plt.plot(tiempo, Mag_z, color = 'g', label = '$mag_z$')
+
+    ## Nomenclatura de ejes. En el eje x tenemos el tiempo (s) y en el eje y la medida del magnetometro (flujo)
+    plt.xlabel("Tiempo (s)")
+    plt.ylabel("Medida magnetómetro (flujo local)")
+
+    ## Agrego la leyenda para poder identificar que curva corresponde a cada aceleración
+    plt.legend()
+
+    ## Despliego la gráfica
+    plt.show()
+
+GraficarValoresMagnetometro('C:/Yo/Tesis/sereData/sereData/Dataset/raw_2_process', 119, ['Caminando'])
+
+# TEST
+## GraficarDatosPreprocesados('C:/Yo/Tesis/sereData/sereData/Dataset/dataset', 106, 'AC_x', ['Caminando'])
 ## GraficarAceleraciones('C:/Yo/Tesis/sereData/sereData/Dataset/dataset', 108, ['Caminando'])
 
 ## GraficarVelocidadesAngulares('C:/Yo/Tesis/sereData/sereData/Dataset/dataset', 108, ['Caminando'])
