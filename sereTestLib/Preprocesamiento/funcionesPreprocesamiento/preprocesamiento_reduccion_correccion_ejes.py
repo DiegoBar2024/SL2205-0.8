@@ -155,28 +155,28 @@ def extraer_columnas(ruta_archivo_origen,ruta_archivo_destino):
 
     ## GIROS EN EL EJE X
     ## Creo un dataframe que tenga una columna de nombre "Gy_x" pero que no tenga datos
-    Gy_x = pd.DataFrame(columns=["Gy_x"])
+    Gy_x = pd.DataFrame(columns = ["Gy_x"])
 
     ## Me quedo únicamente con aquella columna que tenga la lista de datos del giroscopio en el eje x
     Gy_x = encontrar_columna(dataframe, "Gyro_X", "Gyro_X.1")
 
     ## GIROS EN EL EJE Y
     ## Creo un dataframe que tenga una columna de nombre "Gy_y" pero que no tenga datos
-    Gy_y = pd.DataFrame(columns=["Gy_y"])
+    Gy_y = pd.DataFrame(columns = ["Gy_y"])
 
     ## Me quedo únicamente con aquella columna que tenga la lista de datos del giroscopio en el eje y
     Gy_y = encontrar_columna(dataframe, "Gyro_Y", "Gyro_Y.1")
 
     ## GIROS EN EL EJE Z
     ## Creo un dataframe que tenga una columna de nombre "Gy_z" pero que no tenga datos
-    Gy_z = pd.DataFrame(columns=["Gy_z"])
+    Gy_z = pd.DataFrame(columns = ["Gy_z"])
 
     ## Me quedo únicamente con aquella columna que tenga la lista de datos del giroscopio en el eje x
     Gy_z = encontrar_columna(dataframe, "Gyro_Z", "Gyro_Z.1")
 
     ## INTERVALO TEMPORAL
     ## Creo un dataframe que tenga una columna de nombre "Timestamp" pero que no tenga datos
-    Time = pd.DataFrame(columns=["Timestamp"])
+    Time = pd.DataFrame(columns = ["Timestamp"])
 
     ## Me quedo únicamente con aquella columna que tenga el nombre "Timestamp" o sea que contenga las muestras de tiempo
     Time = encontrar_columna(dataframe, "System_Timestamp_Plot_Zeroed", "Timestamp")
@@ -184,10 +184,10 @@ def extraer_columnas(ruta_archivo_origen,ruta_archivo_destino):
     ## DATOS FINALES
     ## Creo un nuevo dataframe y concateno todas los otros data frames (aceleraciones y giros) para formar la tabla final
     data_final = pd.DataFrame()
-    data_final = pd.concat((Time,Ac_x, Ac_y, Ac_z, Gy_x, Gy_y, Gy_z), axis=1, keys=("Time","AC_x", "AC_y", "AC_z", "GY_x", "GY_y", "GY_z"))
+    data_final = pd.concat((Time,Ac_x, Ac_y, Ac_z, Gy_x, Gy_y, Gy_z), axis = 1, keys=("Time","AC_x", "AC_y", "AC_z", "GY_x", "GY_y", "GY_z"))
 
     ## Elimino los indices 0 y 1 (filas 0 y 1) de toda la tabla que me queda
-    data_final.drop([0,1], axis=0, inplace = True)
+    data_final.drop([0,1], axis = 0, inplace = True)
 
     ## Escribo los datos seleccionados en un nuevo archivo csv
     data_final.to_csv(ruta_archivo_destino, index = False)

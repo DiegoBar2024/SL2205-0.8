@@ -98,7 +98,7 @@ def ValoresMagnetometro(ruta_muestra_cruda, ID_paciente, actividades):
         ## DATOS FINALES
         ## Creo un nuevo dataframe y concateno todas los otros data frames (aceleraciones y giros) para formar la tabla final
         data_final = pd.DataFrame()
-        data_final = pd.concat((Time, Mag_x, Mag_y, Mag_z), axis = 1, keys=("Time","Mag_x", "Mag_y", "Mag_z"))
+        data_final = pd.concat((Time, Mag_x, Mag_y, Mag_z), axis = 1, keys=("Time", "Mag_x", "Mag_y", "Mag_z"))
 
         ## Elimino los indices 0 y 1 (filas 0 y 1) de toda la tabla que me queda
         data_final.drop([0,1], axis = 0, inplace = True)
@@ -143,7 +143,7 @@ def encontrar_columna(dataframe, nombre1:str, nombre2:str):
     ## Retorno un objeto DataFrame de Pandas ÚNICAMENTE con la columna que me interesa
     return datos_utiles[nombre1]
 
-# TEST
-datos_magnetometro = ValoresMagnetometro('C:/Yo/Tesis/sereData/sereData/Dataset/raw_2_process', 106, ['Caminando'])
+# # TEST
+# datos_magnetometro = ValoresMagnetometro('C:/Yo/Tesis/sereData/sereData/Dataset/raw_2_process', 106, ['Caminando'])
 
-print(datos_magnetometro)
+# print(datos_magnetometro['Mag_x'])
