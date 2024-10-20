@@ -385,11 +385,11 @@ def GraficarValoresMagnetometro(ruta_muestra_cruda, ID_paciente, actividades):
     ## Despliego la gráfica
     plt.show()
 
-## GraficarValoresMagnetometro('C:/Yo/Tesis/sereData/sereData/Dataset/raw_2_process', 119, ['Caminando'])
+#GraficarValoresMagnetometro('C:/Yo/Tesis/sereData/sereData/Dataset/raw_2_process', 10, ['Caminando'])
 
 # TEST
 ## GraficarDatosPreprocesados('C:/Yo/Tesis/sereData/sereData/Dataset/dataset', 106, 'AC_x', ['Caminando'])
-GraficarAceleraciones('C:/Yo/Tesis/sereData/sereData/Dataset/dataset', 169, ['Caminando'])
+GraficarAceleraciones('C:/Yo/Tesis/sereData/sereData/Dataset/dataset', 274, ['Caminando'])
 
-## GraficarVelocidadesAngulares('C:/Yo/Tesis/sereData/sereData/Dataset/dataset', 108, ['Caminando'])
+#GraficarVelocidadesAngulares('C:/Yo/Tesis/sereData/sereData/Dataset/dataset', 161, ['Caminando'])
 

@@ -113,4 +113,4 @@ def preprocesamiento_train2(sample_id):
     ## El parámetro <<act_ae>> es una lista que contiene las actividades que yo quiero procesar. Se importa del fichero <<parameters.py>> y tiene como valor <<act_ae>> = ['Caminando']
     create_or_augment_scalograms(directorio_scalogramas_train + directorio_muestra, dir_preprocessed_data_train + directorio_muestra, actividades = act_ae, static_window_secs = static_window_secs, movil_window_secs = window_secs, overlap_secs = overlap_secs, fs = fs, escalado = escalado)
 
-preprocesamiento_train2(106)
+preprocesamiento_train2(151)
