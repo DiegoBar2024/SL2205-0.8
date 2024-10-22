@@ -15,12 +15,13 @@ import numpy as np
 from scipy import integrate
 from Filtros import FiltroMediana
 import math
+import pykalman
 
 integrate.cumulative_trapezoid
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S269/2S269.csv"
+ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S269/3S269.csv"
 
 ## Lectura de datos
 data = pd.read_csv(ruta)
@@ -106,6 +107,9 @@ gSens_analytic = imu_analytic.gCorr
 ## Accedo a la aceleración con compensación de deriva
 accComp_analytic = imu_analytic.accReSpaceComp
 
+## ------------------------------------------------VALOR MEDIO --------------------------------------------------------
+
+
 ## ------------------------------------------------TESTING --------------------------------------------------------
 
 # ## Grafico los datos. En mi caso las tres aceleraciones en el mismo eje
@@ -114,13 +118,13 @@ accComp_analytic = imu_analytic.accReSpaceComp
 # plt.plot(gSens_kalman[:,1], color = 'b', label = '$a_y$')
 # plt.plot(gSens_kalman[:,2], color = 'g', label = '$a_z$')
 
-plt.plot(vel_analytic[:,0], color = 'r', label = '$a_x$')
-plt.plot(vel_analytic[:,1], color = 'b', label = '$a_y$')
-plt.plot(vel_analytic[:,2], color = 'g', label = '$a_z$')
+# plt.plot(vel_analytic[:,0], color = 'r', label = '$a_x$')
+# plt.plot(vel_analytic[:,1], color = 'b', label = '$a_y$')
+# plt.plot(vel_analytic[:,2], color = 'g', label = '$a_z$')
 
-# plt.plot(acc_analytic[:,0], color = 'r', label = '$a_x$')
-# plt.plot(acc_analytic[:,1], color = 'b', label = '$a_y$')
-# plt.plot(acc_analytic[:,2], color = 'g', label = '$a_z$')
+plt.plot(acc_analytic[:,0], color = 'r', label = '$a_x$')
+plt.plot(acc_analytic[:,1], color = 'b', label = '$a_y$')
+plt.plot(acc_analytic[:,2], color = 'g', label = '$a_z$')
 
 # plt.plot(acc_analytic[:,2], color = 'b', label = '$a_y$')
 # plt.plot(acel[:,2], color = 'g', label = '$a_z$')
