@@ -1,6 +1,7 @@
 from Magnitud import Magnitud
 from Normalizacion import Normalizacion
 from DeteccionPicos import *
+from Filtros import FiltroMediana
 import numpy as np
 from Muestreo import PeriodoMuestreo
 import pandas as pd
@@ -36,11 +37,17 @@ magnitud = Magnitud(acel)
 ## Se hace la normalización en amplitud y offset de la señal de magnitud
 mag_normalizada = Normalizacion(magnitud)
 
-## Se hace el llamado a la función de detección de picos configurando un umbral de entrada
-picos = DeteccionPicos(mag_normalizada, umbral = 0.3)
+## Se realiza un filtrado de medianas para eliminar algunos picos no relevantes de la señal
+normal_filtrada = signal.medfilt(mag_normalizada, kernel_size = 7)
+
+## Cálculo de umbral óptimo
+(T, stdT) = CalculoUmbral(señal = normal_filtrada, step = 0.001)
+
+## Se hace el llamado a la función de detección de picos configurando un umbral de entrada T
+picos = DeteccionPicos(normal_filtrada, umbral = T)
 
 ## Se hace la graficación de la señal marcando los picos
-GraficacionPicos(mag_normalizada, picos)
+GraficacionPicos(normal_filtrada, picos)
 
 ## Obtengo el vector con las separaciones de los picos
 separaciones = SeparacionesPicos(picos)
@@ -53,5 +60,3 @@ tiempo_medio = np.mean(sep_tiempos)
 
 ## Desviación estándar de la separación de tiempos
 desv_tiempos = np.std(sep_tiempos)
-
-print(sep_tiempos, tiempo_medio, desv_tiempos)
