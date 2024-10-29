@@ -16,6 +16,7 @@ from control import *
 from skinematics.imus import analytical, IMU_Base
 from skinematics.sensors import xsens
 from skinematics.quat import *
+from filterpy.kalman import *
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
@@ -214,15 +215,20 @@ amplitud_fund = np.sqrt(2 * fund_mag)
 ## Calculo la amplitud de los armónicos no fundamentales (como sinusoidales)
 amplitud_no_fund = np.sqrt(2 * no_fund_mag)
 
+## Impresión de amplitudes normales
 print(amplitud_fund)
 print(amplitud_no_fund)
 
 ## PRUEBA CON ADICIÓN DE RUIDO
+
+## Desviación estándar del ruido
+desv_estandar = 5
+
 ## Genero un vector de ruido normal que tenga las mismas dimensiones que el vector de la función
 ## El parámetro <<loc>> me indica el valor medio del ruido gaussiano
 ## El parámetro <<scale>> me indica la desviación estándar del ruido gaussiano
 ## El parámetro <<size>> me indica la longitud del vector de ruido (quiero que tenga la misma longitud que mi señal)
-ruido = np.random.normal(loc = 0, scale = 0.3, size = len(y))
+ruido = np.random.normal(loc = 0, scale = desv_estandar, size = len(y))
 
 ## Construyo la señal ruidosa
 y_ruido = y + ruido
@@ -254,9 +260,94 @@ amplitud_fund_ruido = np.sqrt(2 * fund_mag_ruido)
 ## Calculo la amplitud de los armónicos no fundamentales (como sinusoidales)
 amplitud_no_fund_ruido = np.sqrt(2 * no_fund_mag_ruido)
 
+## Impresión de amplitudes de señal con ruido
 print(amplitud_fund_ruido)
 print(amplitud_no_fund_ruido)
 
 ## CONCLUSIÓN: A medida que aumenta el nivel de ruido los valores de amplitud de armónicos obtenidos son cada vez menos precisos
 ## Para poder tener una buena precisión en los valores de amplitudes de armónicos es necesario reducir el ruido lo más posible
 ## La presencia de ruido hace mucho la diferencia porque introduce armónicos en frecuencia que inicialmente no están y deforma los picos ya existentes
+
+## PRUEBA CON REDUCCIÓN DE RUIDO
+filtro = KalmanFilter(dim_x = len(y), dim_z = len(y))
+
+## Matriz de transición de estados
+filtro.F = 1
+
+## Matriz de medida
+filtro.H = 1
+
+## Ruido de medición
+filtro.R = 0
+
+## Ruido de proceso
+filtro.Q = 0.1
+
+## Matriz de varianza de estado
+filtro.P = 1
+
+## Inicializo el índice que voy a utilizar para iterar
+i = 1
+
+## Inicializo el estado inicial en el valor inicial de la señal
+xt = y[0]
+
+## Creo una lista en donde me voy a guardar la señal filtrada
+y_denoised = [xt]
+
+## Mientras no se termine de iterar en toda la señal
+while i < len(y):
+    
+    ## Predicción
+    x_predict, filtro.P = predict(xt, filtro.P , filtro.F, filtro.Q)
+
+    ## Corrección
+    x_t, filtro.P  = update(x_predict, filtro.P , y[i], filtro.R, filtro.H)
+
+    ## Aumento el valor del indice en una unidad
+    i += 1
+
+    ## Agrego el valor corregido a un vector
+    y_denoised.append(x_t)
+
+## Hago el pasaje de tipo <<list>> a tipo <<ndarray>>
+y_denoised = np.array(y_denoised)
+
+TransformadaFourier(y_denoised, T)
+
+## Analisis armónico de la señal ruidosa
+armonicos_denoised = harm_analysis(y_denoised, FS = 1 / T, n_harm = 10)
+
+## Obtengo frecuencia fundamental de la señal
+frec_fund_denoised = armonicos_denoised['fund_freq']
+
+## Potencia de la componente fundamental de la señal
+fund_db_denoised = armonicos_denoised['fund_db']
+
+## Hago el pasaje del valor obtenido en decibeles a magnitud
+fund_mag_denoised = db2mag(fund_db_denoised)
+
+## Potencias de los armónicos no fundamentales (como sinusoidales)
+no_fund_db_denoised = np.array(armonicos_denoised['pot_armonicos'])
+
+## Hago el pasaje de los valores obtenidos en decibeles a magnitud
+no_fund_mag_denoised = db2mag(no_fund_db_denoised)
+
+## Calculo la amplitud del armónico fundamental
+amplitud_fund_denoised = np.sqrt(2 * fund_mag_denoised)
+
+## Calculo la amplitud de los armónicos no fundamentales (como sinusoidales)
+amplitud_no_fund_denoised = np.sqrt(2 * no_fund_mag_denoised)
+
+## Impresión de amplitudes denoised
+print(amplitud_fund_denoised)
+print(amplitud_no_fund_denoised)
+
+## Comparo amplitudes relativas
+print(amplitud_no_fund_denoised[1]/amplitud_no_fund_denoised[2])
+print(amplitud_no_fund[1]/amplitud_no_fund[2])
+print(amplitud_no_fund_ruido[1]/amplitud_no_fund_ruido[2])
+
+## Graficación de la señal de error
+plt.plot(x,y - y_denoised)
+plt.show()
