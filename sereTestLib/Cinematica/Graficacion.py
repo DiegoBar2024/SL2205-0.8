@@ -389,6 +389,6 @@ def GraficarValoresMagnetometro(ruta_muestra_cruda, ID_paciente, actividades):
 
 # TEST
 ## GraficarDatosPreprocesados('C:/Yo/Tesis/sereData/sereData/Dataset/dataset', 106, 'AC_x', ['Caminando'])
-GraficarAceleraciones('C:/Yo/Tesis/sereData/sereData/Dataset/dataset', 278, ['Caminando'])
+GraficarAceleraciones('C:/Yo/Tesis/sereData/sereData/Dataset/dataset', 293, ['Caminando'])
 
 #GraficarVelocidadesAngulares('C:/Yo/Tesis/sereData/sereData/Dataset/dataset', 161, ['Caminando'])

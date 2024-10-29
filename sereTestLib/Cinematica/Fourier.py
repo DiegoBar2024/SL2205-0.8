@@ -23,7 +23,7 @@ def TransformadaFourier(señal, dt):
 
     ## Hago la gráfica de los coeficientes de la transformada en función de la frecuencia
     ## La gráfica se hace únicamente para frecuencias positivas
-    plt.plot(frecuencias[:señal.shape[0]//2], (2 / señal.shape[0]) * np.abs(transformada)[:señal.shape[0]//2])
+    plt.plot(frecuencias[:señal.shape[0]//2], (2 / señal.shape[0]) * np.abs(transformada[0:señal.shape[0]//2]))
 
     ## Nomenclatura de ejes
     plt.xlabel("Frecuencia (Hz)")

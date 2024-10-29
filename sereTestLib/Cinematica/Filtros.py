@@ -3,6 +3,7 @@ from scipy import signal
 import numpy as np
 from matplotlib import pyplot as plt
 from Fourier import TransformadaFourier
+from numpy import polyfit, arange
 
 ## Tengo como entrada un objeto DataFrame y un tamaño de ventana
 ## Como salida retorno un DataFrame el cual sea la versión filtrada de la entrada usando el filtro de mediana con el tamaño de ventana que pasé como parámetro

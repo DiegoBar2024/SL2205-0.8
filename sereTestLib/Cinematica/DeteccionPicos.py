@@ -114,3 +114,32 @@ def CalculoUmbral(señal, Tmin = 0.2, Tmax = 0.7, step = 0.001):
     
     ## Retorno la tupla con el valor de umbral óptimo y su desviación estándar
     return T_desv
+
+def CicloPotencialInicial(picos):
+    """
+    En base a la señal de separación de picos a la entrada se calcula el índice del IPC (Initial Potential Cycle)
+    Se tomarán como aquel primer par de picos para que la distancia entre ellos cumpla una tolerancia del 10% respecto a la media
+    
+    Parameters
+    ----------
+    picos: ndarray(M,)
+        Vector que me da las posiciones de la señal en las cuales fueron detectados los picos
+    """
+
+    ## Calculo el vector que me mide la separación de picos
+    sep_picos = SeparacionesPicos(picos)
+
+    ## Calculo el valor medio de las separaciones de picos
+    media_sep_picos = np.mean(sep_picos)
+
+    ## Inicializo el índice en 0
+    i = 0
+
+    ## Mientras que no se cumpla que 0.9 * media(d) < d[i] < 1.1 * media(d) que el bucle siga iterando
+    while not (0.9 * media_sep_picos < sep_picos[i] < 1.1 * media_sep_picos):
+
+        ## Aumento el valor de i en una unidad
+        i += 1
+    
+    ## Retorno el índice donde se encuentra el primer par de picos que cumpla ésta condición, y éste será el IPC
+    return i
