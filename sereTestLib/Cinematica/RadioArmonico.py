@@ -173,7 +173,7 @@ HR = num_HR / den_HR
 # ## Despliego la gráfica
 # plt.show()
 
-## ----------------------------------- EJEMPLO DE PRUEBA ------------------------------------------
+## ----------------------------------- EJEMPLO DE PRUEBA CON SINUSOIDALES ------------------------------------------
 
 ## PRUEBA SIN ADICIÓN DE RUIDO
 # Cantidad de muestras
@@ -188,8 +188,8 @@ x = np.linspace(0.0, N * T, N, endpoint = False)
 ## Función
 y = np.cos(50.0 * 2.0 * np.pi * x) + 0.5 * np.cos(100.0 * 2.0 * np.pi * x) + 0.75 * np.cos(150 * 2.0 * np.pi * x) + 0.125 * np.cos(200 * 2.0 * np.pi * x) +  0.1 * np.cos(300 * 2.0 * np.pi * x) + 0.05 * np.sin(500*2*np.pi*x)
 
-## Transformada de Fourier
-TransformadaFourier(y, T)
+# ## Transformada de Fourier
+# TransformadaFourier(y, T)
 
 ## Analisis armónico de la señal
 armonicos = harm_analysis(y, FS = 1 / T, n_harm = 10)
@@ -215,14 +215,14 @@ amplitud_fund = np.sqrt(2 * fund_mag)
 ## Calculo la amplitud de los armónicos no fundamentales (como sinusoidales)
 amplitud_no_fund = np.sqrt(2 * no_fund_mag)
 
-## Impresión de amplitudes normales
-print(amplitud_fund)
-print(amplitud_no_fund)
+# ## Impresión de amplitudes normales
+# print(amplitud_fund)
+# print(amplitud_no_fund)
 
 ## PRUEBA CON ADICIÓN DE RUIDO
 
 ## Desviación estándar del ruido
-desv_estandar = 5
+desv_estandar = 0.5
 
 ## Genero un vector de ruido normal que tenga las mismas dimensiones que el vector de la función
 ## El parámetro <<loc>> me indica el valor medio del ruido gaussiano
@@ -233,8 +233,8 @@ ruido = np.random.normal(loc = 0, scale = desv_estandar, size = len(y))
 ## Construyo la señal ruidosa
 y_ruido = y + ruido
 
-## Transformada de Fourier de señal ruidosa
-TransformadaFourier(y_ruido, T)
+# ## Transformada de Fourier de señal ruidosa
+# TransformadaFourier(y_ruido, T)
 
 ## Analisis armónico de la señal ruidosa
 armonicos_ruido = harm_analysis(y_ruido, FS = 1 / T, n_harm = 10)
@@ -260,60 +260,49 @@ amplitud_fund_ruido = np.sqrt(2 * fund_mag_ruido)
 ## Calculo la amplitud de los armónicos no fundamentales (como sinusoidales)
 amplitud_no_fund_ruido = np.sqrt(2 * no_fund_mag_ruido)
 
-## Impresión de amplitudes de señal con ruido
-print(amplitud_fund_ruido)
-print(amplitud_no_fund_ruido)
+# ## Impresión de amplitudes de señal con ruido
+# print(amplitud_fund_ruido)
+# print(amplitud_no_fund_ruido)
 
 ## CONCLUSIÓN: A medida que aumenta el nivel de ruido los valores de amplitud de armónicos obtenidos son cada vez menos precisos
 ## Para poder tener una buena precisión en los valores de amplitudes de armónicos es necesario reducir el ruido lo más posible
 ## La presencia de ruido hace mucho la diferencia porque introduce armónicos en frecuencia que inicialmente no están y deforma los picos ya existentes
 
-## PRUEBA CON REDUCCIÓN DE RUIDO
-filtro = KalmanFilter(dim_x = len(y), dim_z = len(y))
-
-## Matriz de transición de estados
-filtro.F = 1
-
-## Matriz de medida
-filtro.H = 1
-
-## Ruido de medición
-filtro.R = 0
-
-## Ruido de proceso
-filtro.Q = 0.1
-
-## Matriz de varianza de estado
-filtro.P = 1
-
+## PRUEBA CON REDUCCIÓN DE RUIDO CON FILTRO DE KALMAN
 ## Inicializo el índice que voy a utilizar para iterar
-i = 1
+i = 0
 
 ## Inicializo el estado inicial en el valor inicial de la señal
-xt = y[0]
+xk = 0
+Pk = 0
+
+Q = 1
+R = 10
 
 ## Creo una lista en donde me voy a guardar la señal filtrada
-y_denoised = [xt]
+y_denoised = []
 
 ## Mientras no se termine de iterar en toda la señal
 while i < len(y):
     
-    ## Predicción
-    x_predict, filtro.P = predict(xt, filtro.P , filtro.F, filtro.Q)
+    Pk = Pk + Q
 
-    ## Corrección
-    x_t, filtro.P  = update(x_predict, filtro.P , y[i], filtro.R, filtro.H)
+    Kk = Pk / (Pk + R)
+
+    xk = xk + (Kk * (y_ruido[i] - xk))
+
+    Pk = (1 - Kk) * Pk
 
     ## Aumento el valor del indice en una unidad
     i += 1
 
     ## Agrego el valor corregido a un vector
-    y_denoised.append(x_t)
+    y_denoised.append(xk)
 
 ## Hago el pasaje de tipo <<list>> a tipo <<ndarray>>
 y_denoised = np.array(y_denoised)
 
-TransformadaFourier(y_denoised, T)
+# TransformadaFourier(y_denoised, T)
 
 ## Analisis armónico de la señal ruidosa
 armonicos_denoised = harm_analysis(y_denoised, FS = 1 / T, n_harm = 10)
@@ -339,15 +328,18 @@ amplitud_fund_denoised = np.sqrt(2 * fund_mag_denoised)
 ## Calculo la amplitud de los armónicos no fundamentales (como sinusoidales)
 amplitud_no_fund_denoised = np.sqrt(2 * no_fund_mag_denoised)
 
-## Impresión de amplitudes denoised
-print(amplitud_fund_denoised)
-print(amplitud_no_fund_denoised)
+# ## Impresión de amplitudes denoised
+# print(amplitud_fund_denoised)
+# print(amplitud_no_fund_denoised)
 
 ## Comparo amplitudes relativas
-print(amplitud_no_fund_denoised[1]/amplitud_no_fund_denoised[2])
-print(amplitud_no_fund[1]/amplitud_no_fund[2])
-print(amplitud_no_fund_ruido[1]/amplitud_no_fund_ruido[2])
+print(amplitud_no_fund_denoised[1]/amplitud_no_fund_denoised[4])
+print(amplitud_no_fund[1]/amplitud_no_fund[4])
+print(amplitud_no_fund_ruido[1]/amplitud_no_fund_ruido[4])
 
-## Graficación de la señal de error
-plt.plot(x,y - y_denoised)
+# ## Graficación
+plt.plot(x,y_ruido, label = "Ruidosa")
+plt.plot(x,y_denoised, label = "Denoised")
+plt.plot(x,y,label = "Normal")
+plt.legend()
 plt.show()
