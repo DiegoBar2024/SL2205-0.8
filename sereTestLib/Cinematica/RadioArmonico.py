@@ -19,7 +19,7 @@ from skinematics.quat import *
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S267/3S267.csv"
+ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S300/3S300.csv"
 
 ## Lectura de datos
 data = pd.read_csv(ruta)
@@ -44,31 +44,7 @@ tiempo = (tiempo - tiempo[0]) / 1000
 ## Defino la señal a procesar
 señal = acel[:,2]
 
-## MÉTODO I: A MANO
-## Se obtiene el espectro de toda la señal completa aplicando la transformada de Fourier
-## Ya que es una señal real se cumple la simetría conjugada
-(frecuencias, transformada) = TransformadaFourier(señal, periodoMuestreo)
-
-## Cálculo de los coeficientes de Fourier en semieje positivo
-coefs = (2 / señal.shape[0]) * np.abs(transformada)[:señal.shape[0]//2]
-
-## Calculo de las frecuencias en el semieje positivo
-frecs = frecuencias[:señal.shape[0]//2]
-
-## Elimino la componente de contínua de la señal
-coefs[0] = 0
-
-## Determino la posición en la que se da el máximo. 
-## ESTOY ASUMIENDO QUE EL MÁXIMO SE DA EN LA COMPONENTE FUNDAMNENTAL (no tiene porque ocurrir!)
-## Ésta será considerada como la frecuencia fundamental de la señal
-pos_maximo = np.argmax(coefs)
-
-## Frecuencia fundamental de la señal
-## La frecuencia fundamental de la señal en las aceleraciones CC (craneo-cervical) y AP (antero-posterior) son iguales.
-## Se podría interpretar como la frecuencia fundamental de los pasos en la marcha de la persona
-frec_fund = frecs[pos_maximo]
-
-## MÉTODO II: USANDO HARM_ANALYSIS
+## MÉTODO I: USANDO HARM_ANALYSIS
 ## ¡Ojo! Éste método vale únicamente cuando el armónico fundamental es el de MAYOR amplitud (no siempre se cumple!)
 
 ## Defino cantidad de armónicos no fundamentales a calcular
@@ -98,60 +74,87 @@ amplitud_fund = np.sqrt(2 * fund_mag)
 ## Calculo la amplitud de los armónicos no fundamentales (como sinusoidales)
 amplitud_no_fund = np.sqrt(2 * no_fund_mag)
 
+print(amplitud_fund)
+print(amplitud_no_fund)
+
+## MÉTODO II: A MANO
+## Se obtiene el espectro de toda la señal completa aplicando la transformada de Fourier
+## Ya que es una señal real se cumple la simetría conjugada
+(frecuencias, transformada) = TransformadaFourier(señal, periodoMuestreo)
+
+## Cálculo de los coeficientes de Fourier en semieje positivo
+coefs = (2 / señal.shape[0]) * np.abs(transformada)[:señal.shape[0]//2]
+
+## Calculo de las frecuencias en el semieje positivo
+frecs = frecuencias[:señal.shape[0]//2]
+
+## Elimino la componente de contínua de la señal
+coefs[0] = 0
+
+## Determino la posición en la que se da el máximo. 
+## ESTOY ASUMIENDO QUE EL MÁXIMO SE DA EN LA COMPONENTE FUNDAMNENTAL (no tiene porque ocurrir!)
+## Ésta será considerada como la frecuencia fundamental de la señal
+pos_maximo = np.argmax(coefs)
+
+## Frecuencia fundamental de la señal
+## La frecuencia fundamental de la señal en las aceleraciones CC (craneo-cervical) y AP (antero-posterior) son iguales.
+## Se podría interpretar como la frecuencia fundamental de los pasos en la marcha de la persona
+frec_fund = frecs[pos_maximo]
+
 ## -------------------------------------- CORRECCIÓN DE EJES ----------------------------------
 
-## Armamos el diccionario con los datos a ingresar
-dict_datos = {'acc': acel, 'omega' : gyro, 'rate' : 1 / periodoMuestreo}
+# ## Armamos el diccionario con los datos a ingresar
+# dict_datos = {'acc': acel, 'omega' : gyro, 'rate' : 1 / periodoMuestreo}
 
-## Matriz de rotación inicial
-## Es importante tener en cuenta la orientación inicial de la persona
-orient_inicial = np.array([np.array([1,0,0]), np.array([0,0,1]), np.array([0,1,0])])
+# ## Matriz de rotación inicial
+# ## Es importante tener en cuenta la orientación inicial de la persona
+# orient_inicial = np.array([np.array([1,0,0]), np.array([0,0,1]), np.array([0,1,0])])
 
-## Creacion de instancia IMU_Base
-imu_analytic = IMU_Base(in_data = dict_datos, q_type = 'analytical', R_init = orient_inicial, calculate_position = False)
+# ## Creacion de instancia IMU_Base
+# imu_analytic = IMU_Base(in_data = dict_datos, q_type = 'analytical', R_init = orient_inicial, calculate_position = False)
 
-## Accedo a los cuaterniones resultantes
-q_analytic = imu_analytic.quat
+# ## Accedo a los cuaterniones resultantes
+# q_analytic = imu_analytic.quat
 
-## Accedo a la velocidad resultante
-vel_analytic = imu_analytic.vel
+# ## Accedo a la velocidad resultante
+# vel_analytic = imu_analytic.vel
 
-## Accedo a la posición resultante
-pos_analytic = imu_analytic.pos
+# ## Accedo a la posición resultante
+# pos_analytic = imu_analytic.pos
 
-## Accedo a la aceleración corregida
-acc_analytic = imu_analytic.accCorr
+# ## Accedo a la aceleración corregida
+# acc_analytic = imu_analytic.accCorr
 
 ## ----------------------------- PROCESADO DE SEÑAL CON EJES CORREGIDOS -----------------------
 
-## Defino la nueva señal
-señal = acc_analytic[:,2]
+# ## Defino la nueva señal
+# señal = acc_analytic[:,2]
 
-## Transformada de Fourier
-(frecuencias, transformada) = TransformadaFourier(señal, periodoMuestreo)
+# ## Transformada de Fourier
+# (frecuencias, transformada) = TransformadaFourier(señal, periodoMuestreo)
 
 ## ----------------------------------------- CÁLCULO DEL HARMONIC RATIO ------------------------------------------
 
-# ## Numerador del HR (armónicos pares) suponiendo aceleración AP/CC
-# num_HR = 0
+## Numerador del HR (armónicos pares) suponiendo aceleración AP/CC
+num_HR = 0
 
-# ## Itero para cada uno de los armónicos pares que tengo
-# for i in range (0, n_harm, 2):
+## Itero para cada uno de los armónicos pares que tengo
+for i in range (0, n_harm, 2):
     
-#     ## Sumo la magnitud del armónico par correspondiente
-#     num_HR += no_fund_mag[i]
+    ## Sumo la magnitud del armónico par correspondiente
+    num_HR += amplitud_no_fund[i]
 
-# ## Denominador del HR (armónicos impares) suponiendo aceleración AP/CC
-# den_HR = fund_mag
+## Denominador del HR (armónicos impares) suponiendo aceleración AP/CC
+den_HR = amplitud_fund
 
-# ## Itero para cada uno de los armónicos impares que tengo
-# for i in range(1, n_harm, 2):
+## Itero para cada uno de los armónicos impares que tengo
+for i in range(1, n_harm, 2):
 
-#     ## Sumo la magnitud del armónico impar correspondiente
-#     den_HR += no_fund_mag[i]
+    ## Sumo la magnitud del armónico impar correspondiente
+    den_HR += amplitud_no_fund[i]
 
-# ## Calculo el HR de la persona
-# HR = num_HR / den_HR
+## Calculo el HR de la persona
+HR = num_HR / den_HR
 
 ## ----------------------------------------- GRÁFICAS ------------------------------------------
 
@@ -171,17 +174,18 @@ señal = acc_analytic[:,2]
 
 ## ----------------------------------- EJEMPLO DE PRUEBA ------------------------------------------
 
+## PRUEBA SIN ADICIÓN DE RUIDO
 # Cantidad de muestras
 N = 600
 
 # Período de muestreo
-T = 1.0 / 1200.0
+T = 1.0 / 1500.0
 
 ## Vector de tiempos
 x = np.linspace(0.0, N * T, N, endpoint = False)
 
 ## Función
-y = np.cos(50.0 * 2.0 * np.pi * x) + 0.5 * np.cos(100.0 * 2.0 * np.pi * x) + 0.25 * np.cos(150 * 2.0 * np.pi * x) + 0.125 * np.cos(200 * 2.0 * np.pi * x) +  0.1 * np.cos(300 * 2.0 * np.pi * x) + 0.05 * np.sin(500*2*np.pi*x)
+y = np.cos(50.0 * 2.0 * np.pi * x) + 0.5 * np.cos(100.0 * 2.0 * np.pi * x) + 0.75 * np.cos(150 * 2.0 * np.pi * x) + 0.125 * np.cos(200 * 2.0 * np.pi * x) +  0.1 * np.cos(300 * 2.0 * np.pi * x) + 0.05 * np.sin(500*2*np.pi*x)
 
 ## Transformada de Fourier
 TransformadaFourier(y, T)
@@ -198,14 +202,61 @@ fund_db = armonicos['fund_db']
 ## Hago el pasaje del valor obtenido en decibeles a magnitud
 fund_mag = db2mag(fund_db)
 
-## Calculo la amplitud del armónico fundamental
-amplitud_fund = np.sqrt(2 * fund_mag)
-
 ## Potencias de los armónicos no fundamentales (como sinusoidales)
 no_fund_db = np.array(armonicos['pot_armonicos'])
 
 ## Hago el pasaje de los valores obtenidos en decibeles a magnitud
 no_fund_mag = db2mag(no_fund_db)
 
+## Calculo la amplitud del armónico fundamental
+amplitud_fund = np.sqrt(2 * fund_mag)
+
 ## Calculo la amplitud de los armónicos no fundamentales (como sinusoidales)
 amplitud_no_fund = np.sqrt(2 * no_fund_mag)
+
+print(amplitud_fund)
+print(amplitud_no_fund)
+
+## PRUEBA CON ADICIÓN DE RUIDO
+## Genero un vector de ruido normal que tenga las mismas dimensiones que el vector de la función
+## El parámetro <<loc>> me indica el valor medio del ruido gaussiano
+## El parámetro <<scale>> me indica la desviación estándar del ruido gaussiano
+## El parámetro <<size>> me indica la longitud del vector de ruido (quiero que tenga la misma longitud que mi señal)
+ruido = np.random.normal(loc = 0, scale = 0.3, size = len(y))
+
+## Construyo la señal ruidosa
+y_ruido = y + ruido
+
+## Transformada de Fourier de señal ruidosa
+TransformadaFourier(y_ruido, T)
+
+## Analisis armónico de la señal ruidosa
+armonicos_ruido = harm_analysis(y_ruido, FS = 1 / T, n_harm = 10)
+
+## Obtengo frecuencia fundamental de la señal
+frec_fund_ruido = armonicos_ruido['fund_freq']
+
+## Potencia de la componente fundamental de la señal
+fund_db_ruido = armonicos_ruido['fund_db']
+
+## Hago el pasaje del valor obtenido en decibeles a magnitud
+fund_mag_ruido = db2mag(fund_db_ruido)
+
+## Potencias de los armónicos no fundamentales (como sinusoidales)
+no_fund_db_ruido = np.array(armonicos_ruido['pot_armonicos'])
+
+## Hago el pasaje de los valores obtenidos en decibeles a magnitud
+no_fund_mag_ruido = db2mag(no_fund_db_ruido)
+
+## Calculo la amplitud del armónico fundamental
+amplitud_fund_ruido = np.sqrt(2 * fund_mag_ruido)
+
+## Calculo la amplitud de los armónicos no fundamentales (como sinusoidales)
+amplitud_no_fund_ruido = np.sqrt(2 * no_fund_mag_ruido)
+
+print(amplitud_fund_ruido)
+print(amplitud_no_fund_ruido)
+
+## CONCLUSIÓN: A medida que aumenta el nivel de ruido los valores de amplitud de armónicos obtenidos son cada vez menos precisos
+## Para poder tener una buena precisión en los valores de amplitudes de armónicos es necesario reducir el ruido lo más posible
+## La presencia de ruido hace mucho la diferencia porque introduce armónicos en frecuencia que inicialmente no están y deforma los picos ya existentes

@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 from scipy import signal
 from harm_analysis import *
 from control import *
+from skinematics.imus import analytical, IMU_Base
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
@@ -34,10 +35,34 @@ tiempo = np.array(data['Time'])
 ## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
 tiempo = (tiempo - tiempo[0]) / 1000
 
+## -------------------------------------- CORRECCIÓN DE EJES ----------------------------------
+
+## Armamos el diccionario con los datos a ingresar
+dict_datos = {'acc': acel, 'omega' : gyro, 'rate' : 1 / periodoMuestreo}
+
+## Matriz de rotación inicial
+## Es importante tener en cuenta la orientación inicial de la persona
+orient_inicial = np.array([np.array([1,0,0]), np.array([0,0,1]), np.array([0,1,0])])
+
+## Creacion de instancia IMU_Base
+imu_analytic = IMU_Base(in_data = dict_datos, q_type = 'analytical', R_init = orient_inicial, calculate_position = False)
+
+## Accedo a los cuaterniones resultantes
+q_analytic = imu_analytic.quat
+
+## Accedo a la velocidad resultante
+vel_analytic = imu_analytic.vel
+
+## Accedo a la posición resultante
+pos_analytic = imu_analytic.pos
+
+## Accedo a la aceleración corregida
+acc_analytic = imu_analytic.accCorr
+
 ## ----------------------------------------- PREPROCESADO ------------------------------------------
 
 ## Se calcula la magnitud de la señal de aceleración
-magnitud = Magnitud(acel)
+magnitud = Magnitud(acc_analytic)
 
 ## Se hace la normalización en amplitud y offset de la señal de magnitud
 mag_normalizada = Normalizacion(magnitud)
@@ -97,3 +122,19 @@ tiempo_medio = np.mean(sep_tiempos)
 
 ## Desviación estándar de la separación de tiempos
 desv_tiempos = np.std(sep_tiempos)
+
+## ----------------------------------------- GRÁFICAS ------------------------------------------
+
+# plt.plot(acc_analytic[:,0], color = 'r', label = '$a_x$')
+# plt.plot(acc_analytic[:,1], color = 'b', label = '$a_y$')
+# plt.plot(acc_analytic[:,2], color = 'g', label = '$a_z$')
+
+# ## Nomenclatura de ejes. En el eje x tenemos el tiempo (s) y en el eje y la aceleracion (m/s2)
+# plt.xlabel("Tiempo (s)")
+# plt.ylabel("Aceleracion $(m/s^2)$")
+
+# ## Agrego la leyenda para poder identificar que curva corresponde a cada aceleración
+# plt.legend()
+
+# ## Despliego la gráfica
+# plt.show()
