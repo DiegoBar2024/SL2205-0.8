@@ -17,6 +17,7 @@ from skinematics.imus import analytical, IMU_Base
 from skinematics.sensors import xsens
 from skinematics.quat import *
 from filterpy.kalman import *
+from findpeaks.findpeaks import findpeaks
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
@@ -47,6 +48,10 @@ señal = acel[:,2]
 
 ## MÉTODO I: USANDO HARM_ANALYSIS
 ## ¡Ojo! Éste método vale únicamente cuando el armónico fundamental es el de MAYOR amplitud (no siempre se cumple!)
+## Además éste método tiene algunos problemas para calcular las amplitudes de los armónicos
+## Lo que hace es básicamente tomar el máximo valor de coeficiente de Fourier como frecuencia fundamental y despues indexa en las frecuencias armónicas
+## El problema es que no tiene porque estar el pico justo en la frecuencia donde el algoritmo supone que tengo el armónico! O sea puede haber un bache, por ejemplo
+## Ésto lo hace muy poco robusto en ese sentido
 
 ## Defino cantidad de armónicos no fundamentales a calcular
 n_harm = 19
@@ -75,9 +80,6 @@ amplitud_fund = np.sqrt(2 * fund_mag)
 ## Calculo la amplitud de los armónicos no fundamentales (como sinusoidales)
 amplitud_no_fund = np.sqrt(2 * no_fund_mag)
 
-print(amplitud_fund)
-print(amplitud_no_fund)
-
 ## MÉTODO II: A MANO
 ## Se obtiene el espectro de toda la señal completa aplicando la transformada de Fourier
 ## Ya que es una señal real se cumple la simetría conjugada
@@ -101,6 +103,13 @@ pos_maximo = np.argmax(coefs)
 ## La frecuencia fundamental de la señal en las aceleraciones CC (craneo-cervical) y AP (antero-posterior) son iguales.
 ## Se podría interpretar como la frecuencia fundamental de los pasos en la marcha de la persona
 frec_fund = frecs[pos_maximo]
+
+## MÉTODO III: USANDO INTERPOLACIÓN DE PICOS
+picos = findpeaks(method = 'peakdetect', interpolate = 50)
+
+results = picos.fit(coefs)
+
+picos.plot()
 
 ## -------------------------------------- CORRECCIÓN DE EJES ----------------------------------
 
@@ -222,7 +231,7 @@ amplitud_no_fund = np.sqrt(2 * no_fund_mag)
 ## PRUEBA CON ADICIÓN DE RUIDO
 
 ## Desviación estándar del ruido
-desv_estandar = 0.5
+desv_estandar = 2
 
 ## Genero un vector de ruido normal que tenga las mismas dimensiones que el vector de la función
 ## El parámetro <<loc>> me indica el valor medio del ruido gaussiano
@@ -272,25 +281,34 @@ amplitud_no_fund_ruido = np.sqrt(2 * no_fund_mag_ruido)
 ## Inicializo el índice que voy a utilizar para iterar
 i = 0
 
-## Inicializo el estado inicial en el valor inicial de la señal
+## Estado inicial
 xk = 0
+
+## Error inicial
 Pk = 0
 
+## Error de proceso
 Q = 1
-R = 10
+
+## Error de medición
+R = 100
 
 ## Creo una lista en donde me voy a guardar la señal filtrada
 y_denoised = []
 
 ## Mientras no se termine de iterar en toda la señal
 while i < len(y):
-    
+
+    ## Predicción del estado
     Pk = Pk + Q
 
+    ## Cálculo de la ganancia del filtro de Kalman
     Kk = Pk / (Pk + R)
 
+    ## Actualización del resultado en base a resultados de medición
     xk = xk + (Kk * (y_ruido[i] - xk))
 
+    ## Actualización del valor del error
     Pk = (1 - Kk) * Pk
 
     ## Aumento el valor del indice en una unidad
@@ -328,18 +346,22 @@ amplitud_fund_denoised = np.sqrt(2 * fund_mag_denoised)
 ## Calculo la amplitud de los armónicos no fundamentales (como sinusoidales)
 amplitud_no_fund_denoised = np.sqrt(2 * no_fund_mag_denoised)
 
+## CONCLUSIÓN: Éste algoritmo de Kalman está bastante limitado. Me reduce bastante bien la excursión de la señal ruidosa cuando tengo un ruido con una amplitud muy grande
+## Sin embargo deforma bastante la señal de modo que el contenido en armónicos se ve bastante modificado cuando hago el procesamiento
+## Cambiando los valores de Q (error de proceso) y R (error de medición) se pueden lograr diferentes desempeños, pero lo recomendable es mantener Q < R
+
 # ## Impresión de amplitudes denoised
 # print(amplitud_fund_denoised)
 # print(amplitud_no_fund_denoised)
 
-## Comparo amplitudes relativas
-print(amplitud_no_fund_denoised[1]/amplitud_no_fund_denoised[4])
-print(amplitud_no_fund[1]/amplitud_no_fund[4])
-print(amplitud_no_fund_ruido[1]/amplitud_no_fund_ruido[4])
+# ## Comparo amplitudes relativas
+# print(amplitud_no_fund_denoised[1]/amplitud_no_fund_denoised[4])
+# print(amplitud_no_fund[1]/amplitud_no_fund[4])
+# print(amplitud_no_fund_ruido[1]/amplitud_no_fund_ruido[4])
 
-# ## Graficación
-plt.plot(x,y_ruido, label = "Ruidosa")
-plt.plot(x,y_denoised, label = "Denoised")
-plt.plot(x,y,label = "Normal")
-plt.legend()
-plt.show()
+# # ## Graficación
+# plt.plot(x,y_ruido, label = "Ruidosa")
+# plt.plot(x,y_denoised, label = "Denoised")
+# #plt.plot(x,y,label = "Normal")
+# plt.legend()
+# plt.show()

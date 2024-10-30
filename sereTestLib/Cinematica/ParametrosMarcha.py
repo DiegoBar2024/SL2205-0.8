@@ -15,7 +15,7 @@ from skinematics.imus import analytical, IMU_Base
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S278/3S278.csv"
+ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S268/3S268.csv"
 
 ## Lectura de datos
 data = pd.read_csv(ruta)
@@ -100,16 +100,13 @@ no_fund_mag = db2mag(no_fund_db)
 ## ----------------------------------------- DETECCIÓN DE PICOS ------------------------------------------
 
 ## Cálculo de umbral óptimo
-(T, stdT) = CalculoUmbral(señal = normal_filtrada)
+(T, stdT) = CalculoUmbral(señal = mag_normalizada)
 
 ## Se hace el llamado a la función de detección de picos configurando un umbral de entrada T
-picos = DeteccionPicos(normal_filtrada, umbral = T)
-
-## Cálculo del índice donde se encuentra ciclo potencial inicial
-IPC = CicloPotencialInicial(picos)
+picos = DeteccionPicos(mag_normalizada, umbral = T)
 
 ## Se hace la graficación de la señal marcando los picos
-GraficacionPicos(normal_filtrada, picos)
+GraficacionPicos(mag_normalizada, picos)
 
 ## Obtengo el vector con las separaciones de los picos
 separaciones = SeparacionesPicos(picos)
@@ -122,6 +119,55 @@ tiempo_medio = np.mean(sep_tiempos)
 
 ## Desviación estándar de la separación de tiempos
 desv_tiempos = np.std(sep_tiempos)
+
+## Graficación como valores de dispersión de las señales de separación de tiempos
+plt.axhline(y = tiempo_medio + desv_tiempos, linestyle = '-', color = 'r')
+plt.axhline(y = tiempo_medio, linestyle = '-', color = 'b')
+plt.axhline(y = tiempo_medio - desv_tiempos, linestyle = '-', color = 'g')
+plt.scatter(x = np.arange(start = 0, stop = len(sep_tiempos)), y = sep_tiempos)
+plt.show()
+
+## La idea es ahora en base a la dispersión eliminar ciertos valores y quedarme con aquellos que estén más concentrados (próximos a la media)
+## O sea se deciden eliminar aquellos valores que estén muy alejados interpretándose como errores en el momento de hacer la detección de picos
+## Se explicita la condición de filtrado de que me quedo con aquellos tiempos que tengan una separación menor a la media + 0.5 * desviacion estándar
+condicion_filtrado_1 = sep_tiempos < tiempo_medio + 0.5 * desv_tiempos
+
+## Se hace el filtrado de aquellos tiempos que estén en el intervalo definido antes
+filtrado_tiempos_1 = sep_tiempos[condicion_filtrado_1]
+
+## Se explicita la condición de filtrado de que me quedo con aquellos tiempos que tengan una separación mayor a la media - 0.5 * desviacion estándar
+condicion_filtrado_2 = filtrado_tiempos_1 > tiempo_medio - 0.5 * desv_tiempos
+
+## Se hace el filtrado de aquellos tiempos que estén en el intervalo definido antes
+filtrado_tiempos = filtrado_tiempos_1[condicion_filtrado_2]
+
+## Se calcula el valor medio luego de realizar el filtrado
+media_filtrado = np.mean(filtrado_tiempos)
+
+## Se calcula la desviación estándar luego de realizar el filtrado
+desv_filtrado = np.std(filtrado_tiempos)
+
+## Obtengo la proporción de separaciones que se encuentran dentro del rango (media - desv_estandar, media + desv_estandar)
+## Cuanto mayor sea éste índice mejor ya que va a ser más constante el tiempo de separación de los pasos y es más consistente
+## Se puede poner como valor aceptable para interpretar ésto un valor de índice mínimo de 0.75
+muestras_interior = filtrado_tiempos[media_filtrado - desv_filtrado < filtrado_tiempos]
+
+## Hago la segunda parte del filtrado para evitar que no se contabilicen datos repetidos
+muestras_interior = muestras_interior[media_filtrado + desv_filtrado > muestras_interior]
+
+## Calculo la proporción de muestras en el interior del rango comparado con el exterior
+proporcion_int_ext = len(muestras_interior) / len(filtrado_tiempos)
+
+print(proporcion_int_ext)
+print(media_filtrado)
+print(desv_filtrado)
+
+## Graficación de la dispersión de los puntos de la señal filtrada
+plt.axhline(y = media_filtrado + desv_filtrado, linestyle = '-', color = 'r')
+plt.axhline(y = media_filtrado, linestyle = '-', color = 'b')
+plt.axhline(y = media_filtrado - desv_filtrado, linestyle = '-', color = 'g')
+plt.scatter(x = np.arange(start = 0, stop = len(filtrado_tiempos)), y = filtrado_tiempos)
+plt.show()
 
 ## ----------------------------------------- GRÁFICAS ------------------------------------------
 

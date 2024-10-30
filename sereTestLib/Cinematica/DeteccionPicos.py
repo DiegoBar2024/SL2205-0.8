@@ -61,7 +61,7 @@ def SeparacionesPicos(picos):
     ## Retorno el vector de separaciones
     return separaciones
 
-def CalculoUmbral(señal, Tmin = 0.2, Tmax = 0.7, step = 0.001):
+def CalculoUmbral(señal, Tmin = 0.4, Tmax = 0.7, step = 0.001):
     """
     Dada una señal de entrada se hace el cálculo del umbral óptimo para la detección de picos.
     Se usa para ésto un algoritmo que logre minimizar la desviación estándar del vector de distancias entre picos
