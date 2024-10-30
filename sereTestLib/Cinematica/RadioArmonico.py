@@ -21,7 +21,7 @@ from findpeaks.findpeaks import findpeaks
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S300/3S300.csv"
+ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S296/3S296.csv"
 
 ## Lectura de datos
 data = pd.read_csv(ruta)
@@ -44,7 +44,7 @@ tiempo = (tiempo - tiempo[0]) / 1000
 ## ----------------------------------------- DETECCIÓN DE FRECUENCIA FUNDAMENTAL ------------------------------------------
 
 ## Defino la señal a procesar
-señal = acel[:,2]
+señal = acel[:,0]
 
 ## MÉTODO I: USANDO HARM_ANALYSIS
 ## ¡Ojo! Éste método vale únicamente cuando el armónico fundamental es el de MAYOR amplitud (no siempre se cumple!)
@@ -104,44 +104,37 @@ pos_maximo = np.argmax(coefs)
 ## Se podría interpretar como la frecuencia fundamental de los pasos en la marcha de la persona
 frec_fund = frecs[pos_maximo]
 
-## MÉTODO III: USANDO INTERPOLACIÓN DE PICOS
-picos = findpeaks(method = 'peakdetect', interpolate = 50)
-
-results = picos.fit(coefs)
-
-picos.plot()
-
 ## -------------------------------------- CORRECCIÓN DE EJES ----------------------------------
 
-# ## Armamos el diccionario con los datos a ingresar
-# dict_datos = {'acc': acel, 'omega' : gyro, 'rate' : 1 / periodoMuestreo}
+## Armamos el diccionario con los datos a ingresar
+dict_datos = {'acc': acel, 'omega' : gyro, 'rate' : 1 / periodoMuestreo}
 
-# ## Matriz de rotación inicial
-# ## Es importante tener en cuenta la orientación inicial de la persona
-# orient_inicial = np.array([np.array([1,0,0]), np.array([0,0,1]), np.array([0,1,0])])
+## Matriz de rotación inicial
+## Es importante tener en cuenta la orientación inicial de la persona
+orient_inicial = np.array([np.array([1,0,0]), np.array([0,0,1]), np.array([0,1,0])])
 
-# ## Creacion de instancia IMU_Base
-# imu_analytic = IMU_Base(in_data = dict_datos, q_type = 'analytical', R_init = orient_inicial, calculate_position = False)
+## Creacion de instancia IMU_Base
+imu_analytic = IMU_Base(in_data = dict_datos, q_type = 'analytical', R_init = orient_inicial, calculate_position = False)
 
-# ## Accedo a los cuaterniones resultantes
-# q_analytic = imu_analytic.quat
+## Accedo a los cuaterniones resultantes
+q_analytic = imu_analytic.quat
 
-# ## Accedo a la velocidad resultante
-# vel_analytic = imu_analytic.vel
+## Accedo a la velocidad resultante
+vel_analytic = imu_analytic.vel
 
-# ## Accedo a la posición resultante
-# pos_analytic = imu_analytic.pos
+## Accedo a la posición resultante
+pos_analytic = imu_analytic.pos
 
-# ## Accedo a la aceleración corregida
-# acc_analytic = imu_analytic.accCorr
+## Accedo a la aceleración corregida
+acc_analytic = imu_analytic.accCorr
 
 ## ----------------------------- PROCESADO DE SEÑAL CON EJES CORREGIDOS -----------------------
 
-# ## Defino la nueva señal
-# señal = acc_analytic[:,2]
+## Defino la nueva señal
+señal = acc_analytic[:,2]
 
-# ## Transformada de Fourier
-# (frecuencias, transformada) = TransformadaFourier(señal, periodoMuestreo)
+## Transformada de Fourier
+(frecuencias, transformada) = TransformadaFourier(señal, periodoMuestreo)
 
 ## ----------------------------------------- CÁLCULO DEL HARMONIC RATIO ------------------------------------------
 
@@ -195,10 +188,10 @@ T = 1.0 / 1500.0
 x = np.linspace(0.0, N * T, N, endpoint = False)
 
 ## Función
-y = np.cos(50.0 * 2.0 * np.pi * x) + 0.5 * np.cos(100.0 * 2.0 * np.pi * x) + 0.75 * np.cos(150 * 2.0 * np.pi * x) + 0.125 * np.cos(200 * 2.0 * np.pi * x) +  0.1 * np.cos(300 * 2.0 * np.pi * x) + 0.05 * np.sin(500*2*np.pi*x)
+y = 0.3 * np.cos(50.0 * 2.0 * np.pi * x) + 0.2 * np.cos(100.0 * 2.0 * np.pi * x) + 0.1 * np.cos(150 * 2.0 * np.pi * x) + 0.05 * np.cos(200 * 2.0 * np.pi * x) +  0.01 * np.cos(300 * 2.0 * np.pi * x)
 
-# ## Transformada de Fourier
-# TransformadaFourier(y, T)
+## Transformada de Fourier
+TransformadaFourier(y, T)
 
 ## Analisis armónico de la señal
 armonicos = harm_analysis(y, FS = 1 / T, n_harm = 10)
@@ -231,7 +224,7 @@ amplitud_no_fund = np.sqrt(2 * no_fund_mag)
 ## PRUEBA CON ADICIÓN DE RUIDO
 
 ## Desviación estándar del ruido
-desv_estandar = 2
+desv_estandar = 0.5
 
 ## Genero un vector de ruido normal que tenga las mismas dimensiones que el vector de la función
 ## El parámetro <<loc>> me indica el valor medio del ruido gaussiano
@@ -242,8 +235,8 @@ ruido = np.random.normal(loc = 0, scale = desv_estandar, size = len(y))
 ## Construyo la señal ruidosa
 y_ruido = y + ruido
 
-# ## Transformada de Fourier de señal ruidosa
-# TransformadaFourier(y_ruido, T)
+## Transformada de Fourier de señal ruidosa
+TransformadaFourier(y_ruido, T)
 
 ## Analisis armónico de la señal ruidosa
 armonicos_ruido = harm_analysis(y_ruido, FS = 1 / T, n_harm = 10)
@@ -350,18 +343,18 @@ amplitud_no_fund_denoised = np.sqrt(2 * no_fund_mag_denoised)
 ## Sin embargo deforma bastante la señal de modo que el contenido en armónicos se ve bastante modificado cuando hago el procesamiento
 ## Cambiando los valores de Q (error de proceso) y R (error de medición) se pueden lograr diferentes desempeños, pero lo recomendable es mantener Q < R
 
-# ## Impresión de amplitudes denoised
-# print(amplitud_fund_denoised)
-# print(amplitud_no_fund_denoised)
+## Impresión de amplitudes denoised
+print(amplitud_fund_denoised)
+print(amplitud_no_fund_denoised)
 
-# ## Comparo amplitudes relativas
-# print(amplitud_no_fund_denoised[1]/amplitud_no_fund_denoised[4])
-# print(amplitud_no_fund[1]/amplitud_no_fund[4])
-# print(amplitud_no_fund_ruido[1]/amplitud_no_fund_ruido[4])
+## Comparo amplitudes relativas
+print(amplitud_no_fund_denoised[1]/amplitud_no_fund_denoised[4])
+print(amplitud_no_fund[1]/amplitud_no_fund[4])
+print(amplitud_no_fund_ruido[1]/amplitud_no_fund_ruido[4])
 
-# # ## Graficación
-# plt.plot(x,y_ruido, label = "Ruidosa")
-# plt.plot(x,y_denoised, label = "Denoised")
-# #plt.plot(x,y,label = "Normal")
-# plt.legend()
-# plt.show()
+# ## Graficación
+plt.plot(x,y_ruido, label = "Ruidosa")
+plt.plot(x,y_denoised, label = "Denoised")
+#plt.plot(x,y,label = "Normal")
+plt.legend()
+plt.show()

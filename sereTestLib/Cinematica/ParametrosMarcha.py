@@ -15,7 +15,8 @@ from skinematics.imus import analytical, IMU_Base
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S268/3S268.csv"
+## Ruta del archivo
+ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S299/3S299.csv"
 
 ## Lectura de datos
 data = pd.read_csv(ruta)
@@ -88,11 +89,11 @@ frec_fund = armonicos['fund_freq']
 ## Potencia de la componente fundamental de la señal
 fund_db = armonicos['fund_db']
 
-## Hago el pasaje del valor obtenido en decibeles a magnitud
-fund_mag = db2mag(fund_db)
-
 ## Potencias de los armónicos no fundamentales
 no_fund_db = np.array(armonicos['pot_armonicos'])
+
+## Hago el pasaje del valor obtenido en decibeles a magnitud
+fund_mag = db2mag(fund_db)
 
 ## Hago el pasaje de los valores obtenidos en decibeles a magnitud
 no_fund_mag = db2mag(no_fund_db)
@@ -158,6 +159,9 @@ muestras_interior = muestras_interior[media_filtrado + desv_filtrado > muestras_
 ## Calculo la proporción de muestras en el interior del rango comparado con el exterior
 proporcion_int_ext = len(muestras_interior) / len(filtrado_tiempos)
 
+## Calculo la segunda diferencia
+sep_tiempos_seg = np.diff(sep_tiempos)
+
 print(proporcion_int_ext)
 print(media_filtrado)
 print(desv_filtrado)
@@ -167,6 +171,10 @@ plt.axhline(y = media_filtrado + desv_filtrado, linestyle = '-', color = 'r')
 plt.axhline(y = media_filtrado, linestyle = '-', color = 'b')
 plt.axhline(y = media_filtrado - desv_filtrado, linestyle = '-', color = 'g')
 plt.scatter(x = np.arange(start = 0, stop = len(filtrado_tiempos)), y = filtrado_tiempos)
+plt.show()
+
+## Derivada segunda
+plt.scatter(x = np.arange(start = 0, stop = len(sep_tiempos_seg)), y = sep_tiempos_seg)
 plt.show()
 
 ## ----------------------------------------- GRÁFICAS ------------------------------------------
