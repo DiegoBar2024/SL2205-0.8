@@ -16,7 +16,7 @@ from skinematics.imus import analytical, IMU_Base
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
 ## Ruta del archivo
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S299/3S299.csv"
+ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S287/3S287.csv"
 
 ## Lectura de datos
 data = pd.read_csv(ruta)
@@ -60,7 +60,7 @@ pos_analytic = imu_analytic.pos
 ## Accedo a la aceleración corregida
 acc_analytic = imu_analytic.accCorr
 
-## ----------------------------------------- PREPROCESADO ------------------------------------------
+## ------------------------------------------- PREPROCESADO ------------------------------------------
 
 ## Se calcula la magnitud de la señal de aceleración
 magnitud = Magnitud(acc_analytic)
@@ -71,32 +71,17 @@ mag_normalizada = Normalizacion(magnitud)
 ## Se realiza un filtrado de medianas para eliminar algunos picos no relevantes de la señal
 normal_filtrada = signal.medfilt(mag_normalizada, kernel_size = 11)
 
-## ----------------------------------------- ANÁLISIS EN FRECUENCIA ---------------------------------------------------
+## --------------------------------------- ANÁLISIS EN FRECUENCIA ----------------------------------------
 
-## Defino la señal a procesar
-señal = magnitud
-
-## Se obtiene el espectro de toda la señal completa aplicando la transformada de Fourier
-## Ya que es una señal real se cumple la simetría conjugada
-(frecuencias, transformada) = TransformadaFourier(señal, periodoMuestreo)
-
-## Obtengo información de los armónicos de la señal mediante el uso de <<harm_analysis>>
-armonicos = harm_analysis(señal, FS = 1 / periodoMuestreo)
+## Análisis de armónicos
+armonicos = harm_analysis(magnitud, FS = 1 / periodoMuestreo)
 
 ## Obtengo frecuencia fundamental de la señal
 frec_fund = armonicos['fund_freq']
 
-## Potencia de la componente fundamental de la señal
-fund_db = armonicos['fund_db']
-
-## Potencias de los armónicos no fundamentales
-no_fund_db = np.array(armonicos['pot_armonicos'])
-
-## Hago el pasaje del valor obtenido en decibeles a magnitud
-fund_mag = db2mag(fund_db)
-
-## Hago el pasaje de los valores obtenidos en decibeles a magnitud
-no_fund_mag = db2mag(no_fund_db)
+## Estimación del tiempo de paso en base al análisis en frecuencia
+## La estimación se hace en base al armónico de mayor amplitud de la señal
+tiempo_paso_frecuencia = 1 / frec_fund
 
 ## ----------------------------------------- DETECCIÓN DE PICOS ------------------------------------------
 
@@ -105,6 +90,9 @@ no_fund_mag = db2mag(no_fund_db)
 
 ## Se hace el llamado a la función de detección de picos configurando un umbral de entrada T
 picos = DeteccionPicos(mag_normalizada, umbral = T)
+
+## A partir de lo anterior genero un vector que me diga las posiciones temporales de los picos
+picos_tiempo = picos * periodoMuestreo
 
 ## Se hace la graficación de la señal marcando los picos
 GraficacionPicos(mag_normalizada, picos)
@@ -162,9 +150,132 @@ proporcion_int_ext = len(muestras_interior) / len(filtrado_tiempos)
 ## Calculo la segunda diferencia
 sep_tiempos_seg = np.diff(sep_tiempos)
 
-print(proporcion_int_ext)
+## Graficación de la dispersión de los puntos de la señal filtrada
+plt.axhline(y = media_filtrado + desv_filtrado, linestyle = '-', color = 'r')
+plt.axhline(y = media_filtrado, linestyle = '-', color = 'b')
+plt.axhline(y = media_filtrado - desv_filtrado, linestyle = '-', color = 'g')
+plt.scatter(x = np.arange(start = 0, stop = len(filtrado_tiempos)), y = filtrado_tiempos)
+plt.show()
+
+## Estimación del tiempo de paso en base a la detección de picos
+tiempo_paso_picos = media_filtrado
+
 print(media_filtrado)
 print(desv_filtrado)
+
+## --------------------------------- DETECCIÓN DE PICOS DEFECTUOSOS ---------------------------------
+
+## Creo una lista donde guardo las separaciones mayores a lo razonable
+sep_defect_ind = []
+
+## Itero para cada una de las separaciones de picos que tengo
+## La idea es, en caso de que los picos superen a la media por una distancia mayor al 50% de la desviación
+for i in range (len(sep_tiempos)):
+
+    ## En caso de que la i-ésima separación se aparte de la media más del 50% de la desviación estandar, la considero como defectuosa
+    ## Recuerdo que la sep(i) = pico(i + 1) - pico(i) como el i-ésimo valor de la separación
+    if (sep_tiempos[i] > tiempo_medio + 0.5 * desv_tiempos):
+    
+        ## La agrego a la lista de defectuosas
+        sep_defect_ind.append(i)
+
+## ----------------------------- SEGMENTACIÓN DE PICOS DEFECTUOSOS --------------------------------
+
+## Creo una lista vacía en donde voy a guardar los defectuosos segmentados
+defectuosos = []
+
+## Itero para cada uno de los segmentos defectuosos detectados
+for i in sep_defect_ind:
+
+    ## Hago la segmentación de la señal en los segmentos defectuosos
+    segmento = mag_normalizada[picos[i] - 2 : picos[i + 1] + 2]
+
+    ## Luego lo agrego a la señal segmentada
+    defectuosos.append(segmento)
+
+## ----------------------------- DETECCIÓN DE PICOS TRAMOS DEFECTUOSOS -----------------------------
+
+## Inicializo un valor que me permita iterar en todos los índices del vector de defectuosos normalizados
+indice_defect = 0
+
+## Itero para cada uno de los índices que tengo
+for i in sep_defect_ind:
+
+    ## Cálculo de umbral óptimo
+    (T, stdT) = CalculoUmbral(señal = defectuosos[indice_defect], Tmin = 0.2, Tmax = 0.3)
+
+    ## Se hace el llamado a la función de detección de picos configurando un umbral de entrada T
+    picos_def = DeteccionPicos(defectuosos[indice_defect], umbral = T)
+
+    # ## Se hace la graficación de la señal marcando los picos
+    # GraficacionPicos(defectuosos[indice_defect], picos_def)
+
+    ## Actualizo el valor del índice
+    indice_defect += 1
+
+    ## Agrego los picos interpolados a la lista de picos de la señal completa
+    picos = np.concatenate((picos, np.add(picos_def, picos[i])), axis = None)
+
+## Reordeno el vector con los picos interpolados
+picos = np.sort(picos)
+
+## Se hace la graficación de la señal marcando los picos con picos interpolados
+GraficacionPicos(mag_normalizada, picos)
+
+## ----------------------------- DATOS DE PASOS LUEGO DE INTERPOLAR PICOS -----------------------------
+
+## Obtengo el vector con las separaciones de los picos
+separaciones = SeparacionesPicos(picos)
+
+## Hago la traduccion de muestras a valores de tiempo usando la frecuencia de muestreo dada
+sep_tiempos = separaciones * periodoMuestreo
+
+## Valor medio de la separación de tiempos
+tiempo_medio = np.mean(sep_tiempos)
+
+## Desviación estándar de la separación de tiempos
+desv_tiempos = np.std(sep_tiempos)
+
+## Graficación como valores de dispersión de las señales de separación de tiempos
+plt.axhline(y = tiempo_medio + desv_tiempos, linestyle = '-', color = 'r')
+plt.axhline(y = tiempo_medio, linestyle = '-', color = 'b')
+plt.axhline(y = tiempo_medio - desv_tiempos, linestyle = '-', color = 'g')
+plt.scatter(x = np.arange(start = 0, stop = len(sep_tiempos)), y = sep_tiempos)
+plt.show()
+
+## La idea es ahora en base a la dispersión eliminar ciertos valores y quedarme con aquellos que estén más concentrados (próximos a la media)
+## O sea se deciden eliminar aquellos valores que estén muy alejados interpretándose como errores en el momento de hacer la detección de picos
+## Se explicita la condición de filtrado de que me quedo con aquellos tiempos que tengan una separación menor a la media + 0.5 * desviacion estándar
+condicion_filtrado_1 = sep_tiempos < tiempo_medio + 0.5 * desv_tiempos
+
+## Se hace el filtrado de aquellos tiempos que estén en el intervalo definido antes
+filtrado_tiempos_1 = sep_tiempos[condicion_filtrado_1]
+
+## Se explicita la condición de filtrado de que me quedo con aquellos tiempos que tengan una separación mayor a la media - 0.5 * desviacion estándar
+condicion_filtrado_2 = filtrado_tiempos_1 > tiempo_medio - 0.5 * desv_tiempos
+
+## Se hace el filtrado de aquellos tiempos que estén en el intervalo definido antes
+filtrado_tiempos = filtrado_tiempos_1[condicion_filtrado_2]
+
+## Se calcula el valor medio luego de realizar el filtrado
+media_filtrado = np.mean(filtrado_tiempos)
+
+## Se calcula la desviación estándar luego de realizar el filtrado
+desv_filtrado = np.std(filtrado_tiempos)
+
+## Obtengo la proporción de separaciones que se encuentran dentro del rango (media - desv_estandar, media + desv_estandar)
+## Cuanto mayor sea éste índice mejor ya que va a ser más constante el tiempo de separación de los pasos y es más consistente
+## Se puede poner como valor aceptable para interpretar ésto un valor de índice mínimo de 0.75
+muestras_interior = filtrado_tiempos[media_filtrado - desv_filtrado < filtrado_tiempos]
+
+## Hago la segunda parte del filtrado para evitar que no se contabilicen datos repetidos
+muestras_interior = muestras_interior[media_filtrado + desv_filtrado > muestras_interior]
+
+## Calculo la proporción de muestras en el interior del rango comparado con el exterior
+proporcion_int_ext = len(muestras_interior) / len(filtrado_tiempos)
+
+## Calculo la segunda diferencia
+sep_tiempos_seg = np.diff(sep_tiempos)
 
 ## Graficación de la dispersión de los puntos de la señal filtrada
 plt.axhline(y = media_filtrado + desv_filtrado, linestyle = '-', color = 'r')
@@ -173,9 +284,30 @@ plt.axhline(y = media_filtrado - desv_filtrado, linestyle = '-', color = 'g')
 plt.scatter(x = np.arange(start = 0, stop = len(filtrado_tiempos)), y = filtrado_tiempos)
 plt.show()
 
-## Derivada segunda
-plt.scatter(x = np.arange(start = 0, stop = len(sep_tiempos_seg)), y = sep_tiempos_seg)
-plt.show()
+## Estimación del tiempo de paso en base a la detección de picos
+tiempo_paso_picos = media_filtrado
+
+print(media_filtrado)
+print(desv_filtrado)
+
+print("Tiempo: " + str(tiempo_paso_frecuencia))
+
+## ------------------------------ DETECCIÓN DE PICOS DEMASIADO JUNTOS ---------------------------
+
+
+## ----------------------------------------- SEGMENTACIÓN ------------------------------------------
+
+## Creo una lista vacía en donde voy a guardar los pasos segmentados
+segmentada = []
+
+## Itero para cada uno de los pasos que tengo detectados
+for i in range (len(picos) - 1):
+
+    ## Hago la segmentación de la señal
+    segmento = magnitud[picos[i] : picos[i + 1]]
+
+    ## Luego lo agrego a la señal segmentada
+    segmentada.append(segmento)
 
 ## ----------------------------------------- GRÁFICAS ------------------------------------------
 
@@ -191,4 +323,7 @@ plt.show()
 # plt.legend()
 
 # ## Despliego la gráfica
+# plt.show()
+
+# plt.plot(defect_normalizados[0])
 # plt.show()

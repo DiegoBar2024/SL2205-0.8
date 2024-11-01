@@ -107,10 +107,7 @@ gSens_analytic = imu_analytic.gCorr
 ## Accedo a la aceleración con compensación de deriva
 accComp_analytic = imu_analytic.accReSpaceComp
 
-## ------------------------------------------------VALOR MEDIO --------------------------------------------------------
-
-
-## ------------------------------------------------TESTING --------------------------------------------------------
+## ------------------------------------------------GRAFICACIÓN --------------------------------------------------------
 
 # ## Grafico los datos. En mi caso las tres aceleraciones en el mismo eje
 # #plt.plot(tiempo, acel[:,2], color = 'r', label = '$a_x$')
