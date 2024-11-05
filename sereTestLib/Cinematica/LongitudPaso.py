@@ -18,6 +18,7 @@ from scipy.integrate import cumulative_trapezoid, simpson
 from Magnitud import *
 from Normalizacion import *
 from DeteccionPicos import * 
+from Segmentacion import picos_sucesivos, frec_fund
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
@@ -68,7 +69,7 @@ acc_analytic = imu_analytic.accCorr
 ## Accedo a la acleración del sensor luego de restar la gravedad
 accSens_analytic = imu_analytic.accSens
 
-## ----------------------------------------- PREPROCESADO ------------------------------------------
+## ------------------------------------------- PREPROCESADO -------------------------------------------
 
 ## Se calcula la magnitud de la señal de aceleración
 magnitud = Magnitud(acc_analytic)
@@ -79,39 +80,26 @@ mag_normalizada = Normalizacion(magnitud)
 ## Se realiza un filtrado de medianas para eliminar algunos picos no relevantes de la señal
 normal_filtrada = signal.medfilt(mag_normalizada, kernel_size = 11)
 
-## ------------------------------------------------ INTEGRACIÓN --------------------------------------------------------
+## ------------------------------------- INTEGRACIÓN ACELERACIÓN --------------------------------------
 
 ## Integro aceleración para obtener velocidad
 vel_z = cumulative_trapezoid(acc_analytic[:,2], dx = periodoMuestreo, initial = 0)
-#vel_z = cumulative_trapezoid(acel[:,1] - constants.g, dx = periodoMuestreo, initial = 0)
+
+## --------------------------------------- FILTRADO VELOCIDAD -----------------------------------------
+
+## Filtro de Butterworth de orden 4, pasaaltos, frecuencia de corte 1Hz
+## La idea es aplicar un filtro intermedio a la velocidad vertical antes de volver a integrar para obtener posición
+sos = signal.butter(N = 4, Wn = 1, btype = 'highpass', fs = 1 / periodoMuestreo, output = 'sos')
+
+## Velocidad vertical luego de haber aplicado la etapa de filtrado pasaaltos
+vel_z_filtrada = signal.sosfiltfilt(sos, vel_z)
+
+## -------------------------------------- INTEGRACIÓN VELOCIDAD ----------------------------------------
 
 ## Integro velocidad para obtener posición
-pos_z = cumulative_trapezoid(vel_z, dx = periodoMuestreo, initial = 0)
+pos_z = cumulative_trapezoid(vel_z_filtrada, dx = periodoMuestreo, initial = 0)
 
-## ----------------------------------------- DETECCIÓN DE PICOS ------------------------------------------
-
-## Cálculo de umbral óptimo
-(T, stdT) = CalculoUmbral(señal = mag_normalizada)
-
-## Se hace el llamado a la función de detección de picos configurando un umbral de entrada T
-picos = DeteccionPicos(mag_normalizada, umbral = T)
-
-## Se hace la graficación de la señal marcando los picos
-GraficacionPicos(mag_normalizada, picos)
-
-## Obtengo el vector con las separaciones de los picos
-separaciones = SeparacionesPicos(picos)
-
-## Hago la traduccion de muestras a valores de tiempo usando la frecuencia de muestreo dada
-sep_tiempos = separaciones * periodoMuestreo
-
-## Valor medio de la separación de tiempos
-tiempo_medio = np.mean(sep_tiempos)
-
-## Desviación estándar de la separación de tiempos
-desv_tiempos = np.std(sep_tiempos)
-
-## ------------------------------------------------ FILTRADO --------------------------------------------------------
+## ---------------------------------------- FILTRADO POSICIÓN ------------------------------------------
 
 ## Con el fin de eliminar la deriva hago una etapa de filtrado pasaaltos
 ## Etapa de filtrado pasaaltos de Butterworth con frecuencia de corte 0.1Hz de orden 4
@@ -119,44 +107,80 @@ sos = signal.butter(N = 4, Wn = 0.1, btype = 'highpass', fs = 1 / periodoMuestre
 
 ## Calculo la posición en el eje vertical luego de hacer el filtrado
 ## La cantidad de tiempo que transcurre entre dos valles debe ser igual al tiempo de paso
-pos_z_filtrada = signal.sosfilt(sos, pos_z)
+pos_z_filtrada = signal.sosfiltfilt(sos, pos_z)
 
-## ----------------------------------------- SEGMENTACIÓN ------------------------------------------
+## Graficación de la posición filtrada
+plt.plot(pos_z_filtrada)
+plt.show()
+
+## -------------------------------------- SEGMENTACIÓN DE PASOS ----------------------------------------
 
 ## Creo una lista vacía en donde voy a guardar los pasos segmentados
 segmentada = []
 
 ## Itero para cada uno de los pasos que tengo detectados
-for i in range (len(picos) - 1):
+for i in range (len(picos_sucesivos) - 1):
 
     ## Hago la segmentación de la señal
-    segmento = pos_z_filtrada[picos[i] : picos[i + 1]]
+    segmento = pos_z_filtrada[picos_sucesivos[i] : picos_sucesivos[i + 1]]
 
     ## Luego lo agrego a la señal segmentada
     segmentada.append(segmento)
 
-## ------------------------------------------------ GRAFICACIÓN --------------------------------------------------------
+## -------------------------------- VARIACIÓN DE ALTURA CENTRO DE MASA ----------------------------------
 
-# ## Valores a graficar
-# plt.plot(tiempo, acc_analytic[:,0], color = 'r', label = '$a_x$')
-# plt.plot(tiempo, acc_analytic[:,1], color = 'b', label = '$a_y$')
-# plt.plot(tiempo, acc_analytic[:,2], color = 'g', label = '$a_z$')
+## Creo una lista donde voy a almacenar las variaciones de altura del centro de masa en cada tramo
+desp_vert_COM = []
 
-# ## Nomenclatura de ejes. En el eje x tenemos el tiempo (s) y en el eje y la aceleracion (m/s2)
-# plt.xlabel("Tiempo (s)")
-# plt.ylabel("Aceleracion $(m/s^2)$")
+## Itero para cada uno de los segmentos de pasos detectados
+for i in range (len(segmentada)):
 
-# ## Agrego la leyenda para poder identificar que curva corresponde a cada aceleración
-# plt.legend()
+    ## Calculo la variación de altura del centro de masa en base a la diferencia entre el desplazamiento vertical máximo y mínimo
+    d_step = abs(max(segmentada[i]) - min(segmentada[i]))
 
-# ## Despliego la gráfica
+    ## Agrego el desplazamiento máximo del COM calculado a la lista
+    desp_vert_COM.append(d_step)
+
+## ---------------------------- GRAFICACIÓN VARIACIÓN ALTURA CENTRO DE MASA -----------------------------
+
+# plt.scatter(x = np.arange(start = 0, stop = len(desp_vert_COM)), y = desp_vert_COM)
 # plt.show()
 
-# GraficacionPicos(pos_z_filtrada, picos)
+## --------------------------------- CÁLCULO DE LA LONGITUD DEL PASO ------------------------------------
 
-# plt.plot(tiempo, pos_z_filtrada)
-# plt.plot(tiempo, acc_analytic[:,2])
-# plt.show()
+## Especifico la longitud de la pierna del individuo en metros
+## Ésto debe considerarse como una entrada al sistema. Es un parámetro que puede medirse
+## ¡IMPORTANTE: ÉSTE PARÁMETRO CAMBIA CON CADA PERSONA! SINO EL RESULTADO DA CUALQUIER COSA
+long_pierna = 0.916
 
-plt.plot(segmentada[4])
+## Creo una lista donde voy a almacenar la longitud de los pasos de la persona
+long_pasos = []
+
+## Itero para cada uno de los segmentos de pasos detectados
+for i in range (len(segmentada)):
+    
+    ## Calculo la longitud del paso con la fórmula sugerida por Zijlstra
+    long_paso = 2 * np.sqrt(2 * long_pierna * desp_vert_COM[i] - desp_vert_COM[i] ** 2)
+
+    ## Agrego el paso a la lista de longitud de pasos
+    long_pasos.append(long_paso)
+
+## --------------------------------- CÁLCULO DE LA VELOCIDAD DE MARCHA -----------------------------------
+
+## Se calcula la longitud de paso promedio
+long_paso_promedio = np.mean(long_pasos)
+
+## Se calcula la duración de paso promedio como el inverso de la cadencia
+tiempo_paso_promedio = 1 / frec_fund
+
+## Se calcula la velocidad de marcha como el cociente entre éstas cantidades
+velocidad_marcha = long_paso_promedio / tiempo_paso_promedio
+
+print("Longitud paso promedio (m): ", long_paso_promedio)
+print("Duracion de paso promedio (s): ", tiempo_paso_promedio)
+print("Velocidad de marcha (m/s): ", velocidad_marcha)
+
+## ----------------------------------- GRAFICACIÓN LONGITUD DE PASOS -------------------------------------
+
+plt.scatter(x = np.arange(start = 0, stop = len(long_pasos)), y = long_pasos)
 plt.show()

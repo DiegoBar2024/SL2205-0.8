@@ -22,7 +22,7 @@ def DeteccionPicos(señal, umbral):
     ## Retorno una lista que me devuelve las POSICIONES de los picos en la señal de entrada
     return picos
 
-def GraficacionPicos(señal, picos):
+def GraficacionPicos(señal, picos, tiempo = [], dt = None):
     """
     Dada una señal de entrada y sus picos calculados, se realiza la gráfica de la señal marcando con una cruz los instantes de los picos
 
@@ -30,16 +30,39 @@ def GraficacionPicos(señal, picos):
     ----------
     señal: ndarray(N,)
         Señal de entrada para la cual fueron detectados los picos
+    señal: ndarray(N,)
+        Vector de tiempos para la señal de entrada
     picos: ndarray(M,)
         Vector que me da las posiciones de la señal en las cuales fueron detectados los picos
+    dt: int
+        Período de muestreo de la señal
     """
 
-    ## Se especifica que se quiere graficar <<señal>>
-    plt.plot(señal)
+    ## En caso de que el vector de tiempo de entrada sea vacío
+    if any(tiempo):
+        
+        ## Se especifica que se quiere graficar <<señal>>
+        plt.plot(tiempo, señal)
+    
+    ## En caso de que el vector de tiempo de entrada sea no vacío
+    else:
 
-    ## Se especifica que se quieren mostrar en la gráfica los picos de la señal en los instantes en que ocurren
-    ## Ademas se dice que los picos se indiquen con "x"
-    plt.plot(picos, señal[picos], "x")
+        ## Se especifica que se quiere graficar <<señal>>
+        plt.plot(señal)
+
+    ## En caso de que haya un valor de período de muestreo de entrada
+    if dt != None:
+
+        ## Se especifica que se quieren mostrar en la gráfica los picos de la señal en los instantes en que ocurren
+        ## Ademas se dice que los picos se indiquen con "x"
+        plt.plot(picos * dt, señal[picos], "x")
+    
+    ## En caso de que no haya un valor dt de entrada
+    else:
+
+        ## Se hace la gráfica normal
+        plt.plot(picos, señal[picos], "x")
+
 
     ## Se despliega la gráfica
     plt.show()
