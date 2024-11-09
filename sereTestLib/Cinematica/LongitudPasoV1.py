@@ -18,11 +18,11 @@ from scipy.integrate import cumulative_trapezoid, simpson
 from Magnitud import *
 from Normalizacion import *
 from DeteccionPicos import * 
-from Segmentacion import picos_sucesivos, frec_fund
+from Segmentacion import picos_sucesivos, frec_fund, pasos
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S299/3S299.csv"
+ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S274/3S274.csv"
 
 ## Lectura de datos
 data = pd.read_csv(ruta)
@@ -42,54 +42,19 @@ tiempo = np.array(data['Time'])
 ## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
 tiempo = (tiempo - tiempo[0]) / 1000
 
-## ------------------------------------------ CORRECCIÓN DE EJES ------------------------------------
-
-## Armamos el diccionario con los datos a ingresar
-dict_datos = {'acc': acel, 'omega' : gyro, 'rate' : 1 / periodoMuestreo}
-
-## Matriz de rotación inicial
-## Es importante tener en cuenta la orientación inicial de la persona
-orient_inicial = np.array([np.array([1,0,0]), np.array([0,0,1]), np.array([0,1,0])])
-
-## Creacion de instancia IMU_Base
-imu_analytic = IMU_Base(in_data = dict_datos, q_type = 'analytical', R_init = orient_inicial, calculate_position = False)
-
-## Accedo a los cuaterniones resultantes
-q_analytic = imu_analytic.quat
-
-## Accedo a la velocidad resultante
-vel_analytic = imu_analytic.vel
-
-## Accedo a la posición resultante
-pos_analytic = imu_analytic.pos
-
-## Accedo a la aceleración corregida
-acc_analytic = imu_analytic.accCorr
-
-## Accedo a la acleración del sensor luego de restar la gravedad
-accSens_analytic = imu_analytic.accSens
-
-## ------------------------------------------- PREPROCESADO -------------------------------------------
-
-## Se calcula la magnitud de la señal de aceleración
-magnitud = Magnitud(acc_analytic)
-
-## Se hace la normalización en amplitud y offset de la señal de magnitud
-mag_normalizada = Normalizacion(magnitud)
-
-## Se realiza un filtrado de medianas para eliminar algunos picos no relevantes de la señal
-normal_filtrada = signal.medfilt(mag_normalizada, kernel_size = 11)
-
 ## ------------------------------------- INTEGRACIÓN ACELERACIÓN --------------------------------------
 
+## Defino la señal de aceleración vertical como la señal medida en el eje z menos la gravedad (aproximación)
+acel_vert = acel[:,1] - constants.g
+
 ## Integro aceleración para obtener velocidad
-vel_z = cumulative_trapezoid(acc_analytic[:,2], dx = periodoMuestreo, initial = 0)
+vel_z = cumulative_trapezoid(acel_vert, dx = periodoMuestreo, initial = 0)
 
 ## --------------------------------------- FILTRADO VELOCIDAD -----------------------------------------
 
-## Filtro de Butterworth de orden 4, pasaaltos, frecuencia de corte 1Hz
+## Filtro de Butterworth de orden 4, pasaaltos, frecuencia de corte 0.5Hz
 ## La idea es aplicar un filtro intermedio a la velocidad vertical antes de volver a integrar para obtener posición
-sos = signal.butter(N = 4, Wn = 1, btype = 'highpass', fs = 1 / periodoMuestreo, output = 'sos')
+sos = signal.butter(N = 4, Wn = 0.5, btype = 'highpass', fs = 1 / periodoMuestreo, output = 'sos')
 
 ## Velocidad vertical luego de haber aplicado la etapa de filtrado pasaaltos
 vel_z_filtrada = signal.sosfiltfilt(sos, vel_z)
@@ -102,16 +67,12 @@ pos_z = cumulative_trapezoid(vel_z_filtrada, dx = periodoMuestreo, initial = 0)
 ## ---------------------------------------- FILTRADO POSICIÓN ------------------------------------------
 
 ## Con el fin de eliminar la deriva hago una etapa de filtrado pasaaltos
-## Etapa de filtrado pasaaltos de Butterworth con frecuencia de corte 0.1Hz de orden 4
-sos = signal.butter(N = 4, Wn = 0.1, btype = 'highpass', fs = 1 / periodoMuestreo, output = 'sos')
+## Etapa de filtrado pasaaltos de Butterworth con frecuencia de corte 0.5Hz de orden 4
+sos = signal.butter(N = 4, Wn = 0.5, btype = 'highpass', fs = 1 / periodoMuestreo, output = 'sos')
 
 ## Calculo la posición en el eje vertical luego de hacer el filtrado
 ## La cantidad de tiempo que transcurre entre dos valles debe ser igual al tiempo de paso
 pos_z_filtrada = signal.sosfiltfilt(sos, pos_z)
-
-## Graficación de la posición filtrada
-plt.plot(pos_z_filtrada)
-plt.show()
 
 ## -------------------------------------- SEGMENTACIÓN DE PASOS ----------------------------------------
 
@@ -119,10 +80,10 @@ plt.show()
 segmentada = []
 
 ## Itero para cada uno de los pasos que tengo detectados
-for i in range (len(picos_sucesivos) - 1):
+for i in range (len(pasos) - 1):
 
     ## Hago la segmentación de la señal
-    segmento = pos_z_filtrada[picos_sucesivos[i] : picos_sucesivos[i + 1]]
+    segmento = pos_z_filtrada[pasos[i][0] : pasos[i][1]]
 
     ## Luego lo agrego a la señal segmentada
     segmentada.append(segmento)
@@ -151,7 +112,7 @@ for i in range (len(segmentada)):
 ## Especifico la longitud de la pierna del individuo en metros
 ## Ésto debe considerarse como una entrada al sistema. Es un parámetro que puede medirse
 ## ¡IMPORTANTE: ÉSTE PARÁMETRO CAMBIA CON CADA PERSONA! SINO EL RESULTADO DA CUALQUIER COSA
-long_pierna = 0.916
+long_pierna = 0.85
 
 ## Creo una lista donde voy a almacenar la longitud de los pasos de la persona
 long_pasos = []

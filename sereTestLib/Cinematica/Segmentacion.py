@@ -15,8 +15,7 @@ from skinematics.imus import analytical, IMU_Base
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
-## Ruta del archivo
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S299/3S299.csv"
+ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S274/3S274.csv"
 
 ## Lectura de datos
 data = pd.read_csv(ruta)
@@ -66,7 +65,7 @@ acc_analytic = imu_analytic.accCorr
 ## ------------------------------------------ PREPROCESADO ---------------------------------------------
 
 ## Se calcula la magnitud de la señal de aceleración
-magnitud = Magnitud(acc_analytic)
+magnitud = Magnitud(acel)
 
 ## Se hace la normalización en amplitud y offset de la señal de magnitud
 mag_normalizada = Normalizacion(magnitud)
@@ -137,7 +136,7 @@ picos_sucesivos = [pico_maximo_inicial]
 ind_picos_sucesivos = 0
 
 ## Mientras que el rango no supere la longitud de la señal, que siga iterando
-while (picos_sucesivos[-1] + 1.3 * muestras_paso < cant_muestras):
+while (picos_sucesivos[-1] + muestras_paso < cant_muestras):
 
     ## Se calcula el rango de separación donde se espera que esté el próximo pico.
     ## Empíricamente se escoge [0.7 * P, 1.3 * P] donde P sería la cantidad de muestras por pico (paper de Zhao)
@@ -163,7 +162,7 @@ while (picos_sucesivos[-1] + 1.3 * muestras_paso < cant_muestras):
                 break
 
         ## Seteo la referencia al pico previo sumado 0.7 * P en caso de que no haya ningún pico detectado en el rango actual
-        rango = muestras_paso + rango
+        rango = 0.7 * muestras_paso + rango
 
     ## Obtengo el valor se la señal de magnitud normalizada para éstos picos
     segment_picos = segment_rango[picos_rango]
@@ -173,10 +172,6 @@ while (picos_sucesivos[-1] + 1.3 * muestras_paso < cant_muestras):
 
     ## Como están en el mismo orden puedo indexar el pico máximo en la lista de los picos detectados en el rango
     pico_maximo = picos_rango[ind_pico_maximo]
-
-    ## Graficacion de picos detectados en el rango
-    ## Se hace la graficación de la señal marcando los picos
-    # GraficacionPicos(segment_rango, pico_maximo)
 
     ## Agrego a la lista de picos sucesivos el pico detectado
     ## Recuerdo que debo sumarle al pico detectado el primer elemento del rango para llevarlo a la escala real
@@ -188,7 +183,41 @@ picos_sucesivos = np.array(picos_sucesivos)
 ## Se hace la graficación de la señal marcando los picos
 GraficacionPicos(mag_normalizada, picos_sucesivos, tiempo, periodoMuestreo)
 
+## ----------------------------------------- CONJUNTO DE PASOS -----------------------------------------
+
+## Creo una lista donde voy a almacenar todos los pasos
+pasos = []
+
+## Itero para cada uno de los picos detectados
+for i in range (len(picos_sucesivos) - 1):
+    
+    ## En caso que la distancia entre picos esté en un rango aceptable, concluyo que ahí se habrá detectado un paso
+    if (0.7 * muestras_paso < picos_sucesivos[i + 1] - picos_sucesivos[i] < 1.3 * muestras_paso):
+        
+        ## Entonces el par de picos me está diciendo que ahí hay un paso y entonces me lo guardo
+        pasos.append((picos_sucesivos[i], picos_sucesivos[i + 1]))
+    
+## ----------------------------------------- DURACIÓN DE PASOS -----------------------------------------
+
+## Creo una lista donde voy a almacenar las muestras entre todos los pasos
+muestras_pasos = []
+
+## Creo una lista en donde voy a almacenar las duraciones de todos los pasos
+duraciones_pasos = []
+
+## Itero para cada uno de los pasos detectados
+for i in range (len(pasos)):
+    
+    ## Calculo la diferencia entre ambos valores de la tupla en términos temporales
+    diff_pasos = pasos[i][1] - pasos[i][0]
+
+    ## Almaceno la diferencia de muestras en la lista de muestras entre pasos
+    muestras_pasos.append(diff_pasos)
+
+    ## Almaceno la diferencia temporal entre los pasos en otra lista
+    duraciones_pasos.append(diff_pasos * periodoMuestreo)
+
 ## ------------------------------- GRAFICACIÓN DURACIÓN PASOS POST MÉTODO ------------------------------
 
-plt.scatter(x = np.arange(start = 0, stop = len(np.diff(picos_sucesivos))), y = np.diff(picos_sucesivos))
+plt.scatter(x = np.arange(start = 0, stop = len(duraciones_pasos)), y = duraciones_pasos)
 plt.show()
