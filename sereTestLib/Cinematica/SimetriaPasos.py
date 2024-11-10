@@ -22,7 +22,8 @@ from Segmentacion import picos_sucesivos, frec_fund, pasos
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S274/3S274.csv"
+## Ruta del archivo
+ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S299/3S299.csv"
 
 ## Lectura de datos
 data = pd.read_csv(ruta)
@@ -64,7 +65,7 @@ piernas_pasos = []
 for i in range (len(pasos) - 1):
 
     ## Hago la segmentación de la señal
-    segmento = acel_ML_filtrada[pasos[i][0] : pasos[i][1]]
+    segmento = acel_ML_filtrada[pasos[i]['IC'][0] : pasos[i]['IC'][1]]
 
     ## Calculo la diferencia del segmento para ver una aproximación de la derivada en cada paso
     ## Sean x = a el extremo izquierdo y x = b el extremo derecho
@@ -94,3 +95,5 @@ for i in range (len(pasos) - 1):
 
     ## Asocio cada paso con su orientación según lo que calculé antes
     pasos_orientacion.append((piernas_pasos[i], pasos[i][0], pasos[i][1]))
+
+print(pasos_orientacion)

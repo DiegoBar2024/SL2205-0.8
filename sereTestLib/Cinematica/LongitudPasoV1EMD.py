@@ -23,7 +23,8 @@ import emd
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S274/3S274.csv"
+## Ruta del archivo
+ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S308/3S308.csv"
 
 ## Lectura de datos
 data = pd.read_csv(ruta)
@@ -90,7 +91,7 @@ segmentada = []
 for i in range (len(pasos) - 1):
 
     ## Hago la segmentación de la señal
-    segmento = pos_vert_procesada[pasos[i][0] : pasos[i][1]]
+    segmento = pos_vert_procesada[pasos[i]['IC'][0] : pasos[i]['IC'][1]]
 
     ## Luego lo agrego a la señal segmentada
     segmentada.append(segmento)
