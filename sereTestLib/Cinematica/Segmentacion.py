@@ -17,7 +17,7 @@ from scipy import constants
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
 ## Ruta del archivo
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S308/3S308.csv"
+ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S228/3S228.csv"
 
 ## Lectura de datos
 data = pd.read_csv(ruta)
@@ -84,8 +84,18 @@ acc_AP = acel[:,2]
 ## A partir del armónico fundamental obtengo la cadencia
 filtro = signal.butter(N = 4, Wn = [0.5, 2.5], btype = 'bandpass', fs = 1 / periodoMuestreo, output = 'sos')
 
-## Aplico el filtro anterior
+## Aplico el filtro anterior a la aceleración anteroposterior
 acel_filtrada = signal.sosfiltfilt(filtro, acc_AP)
+
+filtro2 = signal.butter(N = 4, Wn = [0.5, 7.5], btype = 'bandpass', fs = 1 / periodoMuestreo, output = 'sos')
+
+## Aplico filtro anterior a la señal vertical
+acc_vertical = signal.sosfiltfilt(filtro2, acel[:,1])
+
+plt.plot(-acel[:,2], label = 'AP')
+plt.plot(acc_vertical + 10, label = 'VERT')
+plt.legend()
+plt.show()
 
 ## Se obtiene el espectro de toda la señal completa aplicando la transformada de Fourier
 ## Ya que es una señal real se cumple la simetría conjugada
@@ -117,13 +127,10 @@ tiempo_paso_frecuencia = 1 / frec_fund
 ## Calculo la cantidad promedio de muestras que tengo en mi señal por cada paso
 muestras_paso = tiempo_paso_frecuencia / periodoMuestreo
 
-print("Muestras por paso: ", muestras_paso)
-print("Cadencia: ", frec_fund)
-
 ## -------------------------------------- DETECCIÓN PRIMER PICO ----------------------------------------
 
 ## Especifico un umbral predefinido para la detección de picos
-umbral = 0.1
+umbral = 0.2
 
 ## Hago la detección de picos para un umbral predefinido
 picos = DeteccionPicos(acc_AP_norm, umbral = umbral)
@@ -189,14 +196,8 @@ while (rango[0] < cant_muestras):
     ## Empíricamente se escoge [0.7 * P, 1.3 * P] donde P sería la cantidad de muestras por pico (paper de Zhao)
     rango = picos_sucesivos[ind_picos_sucesivos] + np.array([0.7 * muestras_paso, 1.3 * muestras_paso])
 
-    ## Hago lo mismo para la señal opuesta
-    rangoTO = picos_sucesivosTO[ind_picos_sucesivosTO] + np.array([0.7 * muestras_paso, 1.3 * muestras_paso])
-
     ## Aumento en una unidad el valor del índice
     ind_picos_sucesivos += 1
-
-    ## Hago lo mismo para la otra variable
-    ind_picos_sucesivosTO += 1
 
     ## Mientras que no haya picos detectados en el rango, sigo iterando éste sub bucle
     while True:
@@ -219,7 +220,7 @@ while (rango[0] < cant_muestras):
         ## Seteo la referencia al pico previo sumado 0.7 * P en caso de que no haya ningún pico detectado en el rango actual
         rango = 0.7 * muestras_paso + rango
 
-        ## En caso que el bucle haya salido porque se detectaron picos
+    ## En caso que el bucle haya salido porque se detectaron picos
     if len(picos_rango) > 0:
 
         ## Obtengo el valor se la señal de aceleración AP para éstos picos
@@ -235,7 +236,17 @@ while (rango[0] < cant_muestras):
         ## Recuerdo que debo sumarle al pico detectado el primer elemento del rango para llevarlo a la escala real
         picos_sucesivos.append(pico_maximo + int(rango[0]))
     
-    ## Hago lo mismo para la señal opuesta
+## Hago lo mismo para la señal opuesta
+## Mientras que el rango no supere la longitud de la señal, que siga iterando
+while (rangoTO[0] < cant_muestras):
+
+    ## Se calcula el rango de separación donde se espera que esté el próximo pico.
+    ## Empíricamente se escoge [0.7 * P, 1.3 * P] donde P sería la cantidad de muestras por pico (paper de Zhao)
+    rangoTO = picos_sucesivosTO[ind_picos_sucesivosTO] + np.array([0.7 * muestras_paso, 1.3 * muestras_paso])
+
+    ## Aumento en una unidad el valor del índice
+    ind_picos_sucesivosTO += 1
+
     ## Mientras que no haya picos detectados en el rango, sigo iterando éste sub bucle
     while True:
 
@@ -334,8 +345,8 @@ for i in range (len(pasos)):
 
 ## ------------------------------- GRAFICACIÓN DURACIÓN PASOS POST MÉTODO ------------------------------
 
-plt.scatter(x = np.arange(start = 0, stop = len(duraciones_pasos)), y = duraciones_pasos)
-plt.show()
+# plt.scatter(x = np.arange(start = 0, stop = len(duraciones_pasos)), y = duraciones_pasos)
+# plt.show()
 
 ## --------------------------------------- TIEMPO ENTRE IC Y TC ----------------------------------------
 
@@ -359,5 +370,33 @@ dist_IC_TC_tiempo = np.multiply(periodoMuestreo, dist_IC_TC)
 
 ## ---------------------------------- GRAFICACIÓN TIEMPO ENTRE IC Y TC ---------------------------------
 
-plt.scatter(x = np.arange(start = 0, stop = len(dist_IC_TC_tiempo)), y = dist_IC_TC_tiempo)
-plt.show()
+# plt.scatter(x = np.arange(start = 0, stop = len(dist_IC_TC_tiempo)), y = dist_IC_TC_tiempo)
+# plt.show()
+
+## --------------------------------------- CALCULO DOBLE ESTANCIA --------------------------------------
+
+## Genero una lista vacía donde voy a calcular las proporciones de doble estancia en un paso
+doble_estancia = []
+
+## Itero para cada uno de los pasos detectados
+for i in range (len(pasos)):
+
+    ## Calculo la proporcion de la doble estancia
+    doble_estancia_paso = (pasos[i]['TC'] - pasos[i]['IC'][0]) / (pasos[i]['IC'][1] - pasos[i]['IC'][0])
+
+    ## En caso que la doble estancia tenga un valor no permitido, que se saltee ésta parte
+    if abs(doble_estancia_paso) > 1:
+
+        ## Se saltea ésta iteración
+        continue
+
+    ## La agrego a la lista
+    doble_estancia.append(doble_estancia_paso)
+
+## ------------------------------- GRAFICACIÓN DOBLE ESTANCIA EN CADA PASO -----------------------------
+
+# plt.scatter(x = np.arange(start = 0, stop = len(doble_estancia)), y = doble_estancia)
+# plt.show()
+
+## LA DETECCIÓN DE LOS IC (INITIAL CONTACTS) PARECE ESTAR CORRECTA (PICOS DE AP)
+## LA DETECCIÓN DE LOS FC (TERMINAL CONTACTS) FALTA CORREGIR AUN

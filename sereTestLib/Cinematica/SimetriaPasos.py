@@ -23,7 +23,7 @@ from Segmentacion import picos_sucesivos, frec_fund, pasos
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
 ## Ruta del archivo
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S299/3S299.csv"
+ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S222/3S222.csv"
 
 ## Lectura de datos
 data = pd.read_csv(ruta)
