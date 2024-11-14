@@ -1,49 +1,8 @@
-import skinematics.quat
-from skinematics.imus import analytical, IMU_Base
-from skinematics.sensors import xsens
-from skinematics.quat import *
-import numpy as np
-import pandas as pd
-from matplotlib import pyplot as plt
-from Integracion import CalcularVelocidades
-from Fourier import TransformadaFourier
-from ValoresMagnetometro import ValoresMagnetometro
-from Muestreo import PeriodoMuestreo
-from scipy import constants
-from skinematics.sensors.xsens import XSens
-import numpy as np
-from scipy import integrate
-from Filtros import FiltroMediana
-from scipy.integrate import cumulative_trapezoid, simpson
-from Magnitud import *
-from Normalizacion import *
-from DeteccionPicos import * 
-from Segmentacion import picos_sucesivos, frec_fund, pasos
+## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
-## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
+from Segmentacion import *
 
-## Ruta del archivo
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S222/3S222.csv"
-
-## Lectura de datos
-data = pd.read_csv(ruta)
-
-## Hallo el período de muestreo de las señales
-periodoMuestreo = PeriodoMuestreo(data)
-
-## Armamos una matriz donde las columnas sean las aceleraciones
-acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(data['AC_z'])]).transpose()
-
-## Armamos una matriz donde las columnas sean los valores de los giros
-gyro = np.array([np.array(data['GY_x']), np.array(data['GY_y']), np.array(data['GY_z'])]).transpose()
-
-## Separo el vector de tiempos del dataframe
-tiempo = np.array(data['Time'])
-
-## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
-tiempo = (tiempo - tiempo[0]) / 1000
-
-## -------------------------------------- FILTRADO ACELERACIÓN ---------------------------------------
+## --------------------------------------- FILTRADO ACELERACIÓN ----------------------------------------
 
 ## Defino la señal de aceleración mediolateral como la aceleración medida por el sensor
 acel_ML = acel[:,0]
@@ -53,6 +12,12 @@ sos = signal.butter(N = 4, Wn = [0.5, 1.1], btype = 'bandpass', fs = 1 / periodo
 
 ## Aplico la etapa de filtrado a la señal
 acel_ML_filtrada = signal.sosfiltfilt(sos, acel_ML)
+
+plt.plot(acc_analytic[:,1] - np.mean(acc_analytic[:,1]), label = 'Corregida')
+plt.plot(acel[:,0], label = 'Original')
+plt.plot(acel_ML_filtrada,label='Pasos')
+plt.legend()
+plt.show()
 
 ## -------------------------------------- DISTINCIÓN DE PASOS ------------------------------------------
 

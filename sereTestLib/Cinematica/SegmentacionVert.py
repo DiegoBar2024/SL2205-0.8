@@ -74,44 +74,29 @@ acc_analytic = imu_analytic.accCorr
 
 ## ------------------------------------------ PREPROCESADO ---------------------------------------------
 
-## Se calcula la magnitud de la señal de aceleración
-magnitud = Magnitud(acel)
-
-## Se hace la normalización en amplitud y offset de la señal de aceleración anteroposterior
-acc_AP_norm = Normalizacion(-acel[:,2])
+## Se hace la normalización en amplitud y offset de la señal de aceleración vertical
+acc_AP_norm = Normalizacion(acel[:,1] - constants.g)
 
 ## Hago el inverso también para detectar los toe offs
-acc_AP_norm_TO = Normalizacion(acel[:,2])
+acc_AP_norm_TO = Normalizacion(- acel[:,1] + constants.g)
 
 ## ------------------------------------- ANÁLISIS EN FRECUENCIA ----------------------------------------
 
-## Señal de aceleración anteroposterior
-acc_AP = acel[:,2]
+## Señal de aceleración vertical (resto la gravedad que me da una buena aproximación)
+acc_VT = acel[:,1] - constants.g
 
 ## Filtro de Butterworth pasabanda de rango [0.5, 2.5] Hz para que me detecte el armónico fundamental
 ## A partir del armónico fundamental obtengo la cadencia
 filtro = signal.butter(N = 4, Wn = [0.5, 2.5], btype = 'bandpass', fs = 1 / periodoMuestreo, output = 'sos')
 
 ## Aplico el filtro anterior a la aceleración anteroposterior
-acel_filtrada = signal.sosfiltfilt(filtro, acc_AP)
+acel_filtrada = signal.sosfiltfilt(filtro, acc_VT)
 
-# ## Gráficas comparando las aceleraciones corregidas
-# ## La conclusión es que el eje vertical se corrige correctamente según la dirección de la gravedad
-# ## El problema es que losejes en el plano horizontal no quedan bien corregidos y apuntan hacia otro lado
-# plt.plot(acc_analytic[:,2] + constants.g, label = 'Corregida')
-# plt.plot(acel[:,1], label = 'Original')
-# plt.legend()
-# plt.show()
+## Hago la normalizacion de la aceleración vertical filtrada
+acc_AP_norm = Normalizacion(acel_filtrada)
 
-# plt.plot(acc_analytic[:,1] - np.mean(acc_analytic[:,1]), label = 'Corregida')
-# plt.plot(acel[:,0] - np.mean(acel[:,0]), label = 'Original')
-# plt.legend()
-# plt.show()
-
-# plt.plot(acc_analytic[:,0] - np.mean(acc_analytic[:,0]), label = 'Corregida')
-# plt.plot(acel[:,2] - np.mean(acel[:,2]), label = 'Original')
-# plt.legend()
-# plt.show()
+## Lo mismo con el opuesto
+acc_AP_norm_TO = Normalizacion(- acel_filtrada)
 
 ## Se obtiene el espectro de toda la señal completa aplicando la transformada de Fourier
 ## Ya que es una señal real se cumple la simetría conjugada
@@ -308,9 +293,11 @@ picos_sucesivosTO = np.array(picos_sucesivosTO)
 
 ## Se hace la graficación de la señal marcando los picos
 GraficacionPicos(acc_AP_norm, picos_sucesivos)
+# GraficacionPicos(acel[:,1] - constants.g, picos_sucesivos)
 
 ## Grafico la señal con sus picos opuestos
 GraficacionPicos(acc_AP_norm, picos_sucesivosTO)
+# GraficacionPicos(acel[:,1] - constants.g, picos_sucesivosTO)
 
 ## ----------------------------------------- CONJUNTO DE PASOS -----------------------------------------
 
@@ -361,8 +348,8 @@ for i in range (len(pasos)):
 
 ## ------------------------------- GRAFICACIÓN DURACIÓN PASOS POST MÉTODO ------------------------------
 
-# plt.scatter(x = np.arange(start = 0, stop = len(duraciones_pasos)), y = duraciones_pasos)
-# plt.show()
+plt.scatter(x = np.arange(start = 0, stop = len(duraciones_pasos)), y = duraciones_pasos)
+plt.show()
 
 ## --------------------------------------- TIEMPO ENTRE IC Y TC ----------------------------------------
 

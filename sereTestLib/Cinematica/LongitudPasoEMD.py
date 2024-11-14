@@ -1,48 +1,7 @@
-import skinematics.quat
-from skinematics.imus import analytical, IMU_Base
-from skinematics.sensors import xsens
-from skinematics.quat import *
-import numpy as np
-import pandas as pd
-from matplotlib import pyplot as plt
-from Integracion import CalcularVelocidades
-from Fourier import TransformadaFourier
-from ValoresMagnetometro import ValoresMagnetometro
-from Muestreo import PeriodoMuestreo
-from scipy import constants
-from skinematics.sensors.xsens import XSens
-import numpy as np
-from scipy import integrate
-from Filtros import FiltroMediana
-from scipy.integrate import cumulative_trapezoid, simpson
-from Magnitud import *
-from Normalizacion import *
-from DeteccionPicos import *
-from Segmentacion import picos_sucesivos, frec_fund, pasos, doble_estancia
+## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
+
+from Segmentacion import *
 import emd
-
-## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
-
-## Ruta del archivo
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S222/3S222.csv"
-
-## Lectura de datos
-data = pd.read_csv(ruta)
-
-## Hallo el período de muestreo de las señales
-periodoMuestreo = PeriodoMuestreo(data)
-
-## Armamos una matriz donde las columnas sean las aceleraciones
-acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(data['AC_z'])]).transpose()
-
-## Armamos una matriz donde las columnas sean los valores de los giros
-gyro = np.array([np.array(data['GY_x']), np.array(data['GY_y']), np.array(data['GY_z'])]).transpose()
-
-## Separo el vector de tiempos del dataframe
-tiempo = np.array(data['Time'])
-
-## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
-tiempo = (tiempo - tiempo[0]) / 1000
 
 ## ------------------------------------- INTEGRACIÓN ACELERACIÓN ---------------------------------------
 
@@ -50,7 +9,7 @@ tiempo = (tiempo - tiempo[0]) / 1000
 acc_vert = acel[:,1] - constants.g
 
 ## Integro aceleración para obtener velocidad
-vel_vert = cumulative_trapezoid(acc_vert - np.mean(acc_vert), dx = periodoMuestreo, initial = 0)
+vel_vert = cumulative_trapezoid(acc_vert, tiempo, dx = periodoMuestreo, initial = 0)
 
 ## ----------------------------------- DESCOMPOSICIÓN EMD VELOCIDAD ------------------------------------
 
@@ -63,7 +22,7 @@ vel_vert_procesada = imfs_vel_vert[:,0] + imfs_vel_vert[:,1] + imfs_vel_vert[:,2
 ## -------------------------------------- INTEGRACIÓN VELOCIDAD ----------------------------------------
 
 ## Integro velocidad para obtener posición
-pos_vert = cumulative_trapezoid(vel_vert_procesada, dx = periodoMuestreo, initial = 0)
+pos_vert = cumulative_trapezoid(vel_vert_procesada, tiempo, dx = periodoMuestreo, initial = 0)
 
 ## ----------------------------------- DESCOMPOSICIÓN EMD POSICIÓN -------------------------------------
 
@@ -79,7 +38,7 @@ pos_vert_procesada = imfs_pos_vert[:,0] + imfs_pos_vert[:,1] + imfs_pos_vert[:,2
 segmentada = []
 
 ## Itero para cada uno de los pasos que tengo detectados
-for i in range (len(pasos) - 1):
+for i in range (len(pasos)):
 
     ## Hago la segmentación de la señal
     segmento = pos_vert_procesada[pasos[i]['IC'][0] : pasos[i]['IC'][1]]
@@ -141,18 +100,10 @@ velocidad_marcha = long_paso_promedio / tiempo_paso_promedio
 doble_estancia_media = np.mean(doble_estancia)
 
 print('MÉTODO I')
-print("Longitud paso promedio (m): ", long_paso_promedio)
-print("Duracion de paso promedio (s): ", tiempo_paso_promedio)
+print("Longitud de paso (m)\n  Promedio: {}\n  Desviación Estándar: {}\n  Mediana: {}".format(np.mean(long_pasos_m1), np.std(long_pasos_m1), np.median(long_pasos_m1)))
+print("Duración de paso (s)\n  Promedio: {}\n  Desviación Estándar: {}\n  Mediana: {}".format(np.mean(duraciones_pasos), np.std(duraciones_pasos), np.median(duraciones_pasos)))
 print("Velocidad de marcha (m/s): ", velocidad_marcha)
-print("Proporcion de Doble Estancia / Paso: ", doble_estancia_media)
 print("Cadencia (pasos/s): ", frec_fund)
-
-## ----------------------------- CÁLCULO DE LA LONGITUD DEL PASO (MÉTODO II) ---------------------------
-
-## Longitud del pie de la persona. Dato a medir y que puede variar el resultado
-## Éste valor es necesario para estimar el desplazamiento en la fase de doble estancia
-## Si no tengo un valor concreto tomo por defecto 30cm
-long_pie = 0.3
 
 ## ----------------------------------- GRAFICACIÓN LONGITUD DE PASOS -----------------------------------
 
@@ -201,9 +152,8 @@ velocidad_marcha = long_paso_promedio / tiempo_paso_promedio
 ## Calculo la proporción de la doble estancia por paso
 doble_estancia_media = np.mean(doble_estancia)
 
-print('MÉTODO II')
-print("Longitud paso promedio (m): ", long_paso_promedio)
-print("Duracion de paso promedio (s): ", tiempo_paso_promedio)
+print('\nMÉTODO II')
+print("Longitud de paso (m)\n  Promedio: {}\n  Desviación Estándar: {}\n  Mediana: {}".format(np.mean(long_pasos_m2), np.std(long_pasos_m2), np.median(long_pasos_m2)))
+print("Duración de paso (s)\n  Promedio: {}\n  Desviación Estándar: {}\n  Mediana: {}".format(np.mean(duraciones_pasos), np.std(duraciones_pasos), np.median(duraciones_pasos)))
 print("Velocidad de marcha (m/s): ", velocidad_marcha)
-print("Proporcion de Doble Estancia / Paso: ", doble_estancia_media)
 print("Cadencia (pasos/s): ", frec_fund)
