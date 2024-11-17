@@ -17,6 +17,7 @@ from control import *
 from skinematics.imus import analytical, IMU_Base
 from scipy import constants
 from scipy.integrate import cumulative_trapezoid, simpson
+import librosa
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
@@ -80,6 +81,76 @@ acc_AP_norm = Normalizacion(acel[:,1] - constants.g)
 ## Hago el inverso también para detectar los toe offs
 acc_AP_norm_TO = Normalizacion(- acel[:,1] + constants.g)
 
+## ------------------------------------ DETECCIÓN CORTES EN CERO ---------------------------------------
+
+## Filtrado pasabandas para quedarme solo con las componentes de aceleración que interesan
+filtrada = signal.sosfiltfilt(signal.butter(N = 4, Wn = [0.5, 4], btype = 'bandpass', fs = 1 / periodoMuestreo, output = 'sos'), acel[:,1] - constants.g)
+
+## Obtengo los índices booleanos en donde se producen los cruces en cero de la aceleración vertical
+## Los elementos <<True>> son aquellos valores luego de que se produce el corte en 0
+ceros_sin_interpolar = librosa.zero_crossings(filtrada)
+
+## Hago la traducción de elementos booleanos a índices numéricos
+indices_ceros = np.where(ceros_sin_interpolar == True)[0]
+
+## Los heel strikes serán aquellos valores donde se cambia de positivo a negativo
+heel_strikes = np.take(indices_ceros, np.where(filtrada[indices_ceros] > 0))[0]
+
+## Los toe offs serán aquellos valores donde se cambia de negativo a positivo
+toe_offs = np.take(indices_ceros, np.where(filtrada[indices_ceros] < 0))[0]
+
+## Creo una lista donde guardo los ceros heel strike luego de interpolar
+ceros_hs = []
+
+## Creo una lista donde guardo los ceros toe off luego de interpolar
+ceros_to = []
+
+## Itero para cada uno de los ceros HS que detecté
+for i in range (len(heel_strikes)):
+
+    ## Hago una interpolación lineal entre ese punto y el anterior para obtener el verdadero cruce en 0 con el HS
+    cero_hs = np.interp(x = 0, xp = [filtrada[heel_strikes[i] - 1], filtrada[heel_strikes[i]]], fp = [heel_strikes[i] - 1, heel_strikes[i]])
+
+    ## Agrego el cero HS calculado a la lista
+    ceros_hs.append(cero_hs)
+
+## Itero para cada uno de los ceros TO que detecté
+for i in range (len(toe_offs)):
+
+    ## Hago una interpolación lineal entre ese punto y el anterior para obtener el verdadero cruce en 0 con el TO
+    cero_to = np.interp(x = 0, xp = [filtrada[toe_offs[i] - 1], filtrada[toe_offs[i]]], fp = [toe_offs[i] - 1, toe_offs[i]])
+
+    ## Agrego el cero TO calculado a la lista
+    ceros_to.append(cero_to)
+
+## Graficación de Heel Strikes y Toe Offs tomando la aceleración vertical filtrada
+plt.plot(ceros_hs, np.zeros(len(ceros_hs)), "x", label = 'Heel Strikes')
+plt.plot(ceros_to, np.zeros(len(ceros_to)), "o", label = 'Toe Offs')
+plt.plot(filtrada, label = "Aceleracion Vertical Filtrada")
+plt.legend()
+plt.show()
+
+## Graficación de Heel Strikes y Toe Offs tomando la aceleración anteroposterior
+plt.plot(ceros_hs, np.zeros(len(ceros_hs)), "x", label = 'Heel Strikes')
+plt.plot(ceros_to, np.zeros(len(ceros_to)), "o", label = 'Toe Offs')
+plt.plot(-acel[:,2], label = "Aceleracion Anteroposterior")
+plt.legend()
+plt.show()
+
+## ------------------------------------- GRAFICACIÓN HEEL STRIKES --------------------------------------
+
+# ## Graficación de la separación de Heel Strikes
+# plt.scatter(x = np.arange(start = 0, stop = len(np.diff(heel_strikes))), y = np.diff(heel_strikes) * periodoMuestreo)
+# plt.legend("Heel Strikes")
+# plt.show()
+
+## --------------------------------------- GRAFICACIÓN TOE OFFS ----------------------------------------
+
+# ## Graficación de la separación de Toe Offs
+# plt.scatter(x = np.arange(start = 0, stop = len(np.diff(toe_offs))), y = np.diff(toe_offs) * periodoMuestreo)
+# plt.legend("Toe Offs")
+# plt.show()
+
 ## ------------------------------------- ANÁLISIS EN FRECUENCIA ----------------------------------------
 
 ## Señal de aceleración vertical (resto la gravedad que me da una buena aproximación)
@@ -127,6 +198,26 @@ tiempo_paso_frecuencia = 1 / frec_fund
 
 ## Calculo la cantidad promedio de muestras que tengo en mi señal por cada paso
 muestras_paso = tiempo_paso_frecuencia / periodoMuestreo
+
+## ------------------------------------ DETECCIÓN TERMINAL CONTACT -------------------------------------
+
+# ## Filtro pasabajos
+# lowpass = signal.butter(N = 4, Wn = 2.5, btype = 'lowpass', fs = 1 / periodoMuestreo, output = 'sos')
+
+# ## Aplico el filtro anterior a la aceleración vertical
+# acel_lowpass = signal.sosfiltfilt(lowpass, acel[:,1])
+
+# plt.plot(acel_lowpass)
+# plt.show()
+
+# lowpass = signal.firwin(numtaps = 30, cutoff = 3.5, pass_zero = 'lowpass', fs = 1 / periodoMuestreo)
+
+# ## Aplico el filtro anterior a la aceleración vertical
+# acel_lowpass = signal.convolve(acel[:,1], lowpass, mode = 'same')
+
+# plt.plot(-acel[:,2])
+# plt.plot(acel_lowpass)
+# plt.show()
 
 ## -------------------------------------- DETECCIÓN PRIMER PICO ----------------------------------------
 

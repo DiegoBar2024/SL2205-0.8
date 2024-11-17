@@ -63,7 +63,6 @@ def GraficacionPicos(señal, picos, tiempo = [], dt = None):
         ## Se hace la gráfica normal
         plt.plot(picos, señal[picos], "x")
 
-
     ## Se despliega la gráfica
     plt.show()
 

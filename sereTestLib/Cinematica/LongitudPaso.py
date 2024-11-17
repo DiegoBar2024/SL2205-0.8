@@ -45,6 +45,9 @@ for i in range (len(pasos)):
     ## Hago la segmentación de la señal
     segmento = pos_z_filtrada[pasos[i]['IC'][0] : pasos[i]['IC'][1]]
 
+    plt.plot(segmento)
+    plt.show()
+
     ## Luego lo agrego a la señal segmentada
     segmentada.append(segmento)
 
