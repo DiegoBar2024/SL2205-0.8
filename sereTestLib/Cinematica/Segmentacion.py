@@ -22,7 +22,7 @@ import librosa
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
 ## Identificación del paciente
-numero_paciente = '255'
+numero_paciente = '303'
 
 ## Ruta del archivo
 ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/3S{}.csv".format(numero_paciente, numero_paciente)
@@ -103,7 +103,8 @@ filtrada = signal.sosfiltfilt(signal.butter(N = 4, Wn = [0.5, 4], btype = 'bandp
 ceros_sin_interpolar = librosa.zero_crossings(filtrada)
 
 ## Hago la traducción de elementos booleanos a índices numéricos
-indices_ceros = np.where(ceros_sin_interpolar == True)[0]
+## Me aseguro también de eliminar el primer elemento donde se detecta un cambio de signo. O sea el instante inicial donde no tiene sentido contabilizar un HS o un TO
+indices_ceros = np.where(ceros_sin_interpolar == True)[0][1:]
 
 ## Los heel strikes serán aquellos valores donde se cambia de positivo a negativo
 heel_strikes = np.take(indices_ceros, np.where(filtrada[indices_ceros] > 0))[0]
@@ -130,7 +131,7 @@ for i in range (len(heel_strikes)):
 for i in range (len(toe_offs)):
 
     ## Hago una interpolación lineal entre ese punto y el anterior para obtener el verdadero cruce en 0 con el TO
-    cero_to = np.interp(x = 0, xp = [filtrada[toe_offs[i] - 1], filtrada[toe_offs[i]]], fp = [toe_offs[i] - 1, toe_offs[i]])
+    cero_to = np.interp(x = 0, xp = [filtrada[toe_offs[i]], filtrada[toe_offs[i] - 1]], fp = [toe_offs[i], toe_offs[i] - 1])
 
     ## Agrego el cero TO calculado a la lista
     ceros_to.append(cero_to)
@@ -147,6 +148,59 @@ plt.plot(ceros_hs, np.zeros(len(ceros_hs)), "x", label = 'Heel Strikes')
 plt.plot(ceros_to, np.zeros(len(ceros_to)), "o", label = 'Toe Offs')
 plt.plot(-acel[:,2], label = "Aceleracion Anteroposterior")
 plt.legend()
+plt.show()
+
+print("Tiempo Paso Promedio: {}".format(np.mean(np.diff(ceros_hs)) * periodoMuestreo))
+print("Tiempo Paso Desviación Estándar: {}".format(np.std(np.diff(ceros_hs)) * periodoMuestreo))
+print("Tiempo Paso Mediana: {}".format(np.median(np.diff(ceros_hs)) * periodoMuestreo))
+
+## ------------------------------------ DETECCIÓN PRIMER EVENTO ----------------------------------------
+
+## En caso que el primer cero del HS se encuentre antes del primer cero del TO
+if ceros_hs[0] < ceros_to[0]:
+
+    ## Entonces el primer evento va a ser un Heel Strike
+    primer_evento = 'hs'
+
+## En caso que el primer cero del TO se encuentre antes del primer cero del HS
+else:
+
+    ## Entonces el primer evento va a ser un Toe Off
+    primer_evento = 'to'
+
+## ------------------------------- PROPORCIÓN ESTANCIA DOBLE Y SIMPLE ----------------------------------
+
+## Creo una lista donde voy a guardar las proporciones de estancia doble y simple
+proporciones_paso = []
+
+## Itero para cada uno de los eventos que tengo detectados
+for i in range (len(ceros_hs) - 1):
+
+    ## En caso que el primer evento sea un HS
+    if primer_evento == 'hs':
+
+        ## Calculo la proporción del paso como DoubleStance/SingleStance = (TO[i]-HS[i])/(HS[i+1]-TO[i])
+        proporcion = (ceros_to[i] - ceros_hs[i]) / (ceros_hs[i + 1] - ceros_to[i])
+
+        ## Agrego la proporción calculada a la lista de proporciones de paso
+        proporciones_paso.append(proporcion)
+    
+    ## En caso que el primer evento sea un TO
+    else:
+
+        ## Calculo la proporción del paso como DoubleStance/SingleStance = (TO[i+1]-HS[i])/(HS[i]-TO[i])
+        proporcion = (ceros_to[i + 1] - ceros_hs[i]) / (ceros_hs[i] - ceros_to[i])
+
+        ## Agrego la proporción calculada a la lista de proporciones de paso
+        proporciones_paso.append(proporcion)
+
+print("\nValor medio Double/Single: {}".format(np.mean(proporciones_paso)))
+print("Desviación Estándar Double/Single: {}".format(np.std(proporciones_paso)))
+print("Mediana Double/Single: {}".format(np.median(proporciones_paso)))
+
+## --------------------------------- GRAFICACIÓN PROPORCIONES PASOS ------------------------------------
+
+plt.scatter(x = np.arange(start = 0, stop = len(proporciones_paso)), y = proporciones_paso)
 plt.show()
 
 ## ------------------------------------- ANÁLISIS EN FRECUENCIA ----------------------------------------

@@ -34,6 +34,32 @@ sos = signal.butter(N = 4, Wn = 0.5, btype = 'highpass', fs = 1 / periodoMuestre
 ## La cantidad de tiempo que transcurre entre dos valles debe ser igual al tiempo de paso
 pos_z_filtrada = signal.sosfiltfilt(sos, pos_z)
 
+## ---------------------------------- CÁLCULO DE ALTURA DEL HS Y TO ------------------------------------
+
+## Creo una lista de las alturas de los HS
+alturas_hs = []
+
+## Creo una lista de las alturas de los TO
+alturas_to = []
+
+## Itero para cada uno de los ceros HS que detecté
+for i in range (len(heel_strikes)):
+
+    ## Hago la interpolación para obtener la altura en el instante del heel strike
+    altura_hs = np.interp(x = ceros_hs[i], xp = [heel_strikes[i] - 1, heel_strikes[i]], fp = [pos_z_filtrada[heel_strikes[i] - 1], pos_z_filtrada[heel_strikes[i]]])
+
+    ## Lo agrego a la lista
+    alturas_hs.append(altura_hs)
+
+## Itero para cada uno de los ceros TO que detecté
+for i in range (len(heel_strikes)):
+
+    ## Hago la interpolación para obtener la altura en el instante del toe off
+    altura_to = np.interp(x = ceros_to[i], xp = [toe_offs[i] - 1, toe_offs[i]], fp = [pos_z_filtrada[toe_offs[i] - 1], pos_z_filtrada[toe_offs[i]]])
+
+    ## Lo agrego a la lista
+    alturas_to.append(altura_to)
+
 ## -------------------------------------- SEGMENTACIÓN DE PASOS ----------------------------------------
 
 ## Creo una lista vacía en donde voy a guardar los pasos segmentados
@@ -44,9 +70,6 @@ for i in range (len(pasos)):
 
     ## Hago la segmentación de la señal
     segmento = pos_z_filtrada[pasos[i]['IC'][0] : pasos[i]['IC'][1]]
-
-    plt.plot(segmento)
-    plt.show()
 
     ## Luego lo agrego a la señal segmentada
     segmentada.append(segmento)
