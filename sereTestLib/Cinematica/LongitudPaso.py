@@ -34,13 +34,25 @@ sos = signal.butter(N = 4, Wn = 0.5, btype = 'highpass', fs = 1 / periodoMuestre
 ## La cantidad de tiempo que transcurre entre dos valles debe ser igual al tiempo de paso
 pos_z_filtrada = signal.sosfiltfilt(sos, pos_z)
 
-## ---------------------------------- CÁLCULO DE ALTURA DEL HS Y TO ------------------------------------
+## --------------------------- CÁLCULO DE ALTURA DEL HS Y TO SIN INTERPOLAR ----------------------------
 
-## Creo una lista de las alturas de los HS
-alturas_hs = []
+## Creo una lista de las alturas de los HS sin interpolar
+alturas_hs_sinterp = pos_z_filtrada[heel_strikes]
 
-## Creo una lista de las alturas de los TO
-alturas_to = []
+## Creo una lista de las alturas de los TO sin interpolar
+alturas_to_sinterp = pos_z_filtrada[toe_offs]
+
+# plt.plot(pos_z_filtrada)
+# plt.plot(toe_offs, alturas_to_sinterp, 'o')
+# plt.show()
+
+## ---------------------------- CÁLCULO DE ALTURA DEL HS Y TO INTERPOLADOS -----------------------------
+
+## Creo una lista de las alturas de los HS interpoladas (más preciso pero decimal)
+alturas_hs_interp = []
+
+## Creo una lista de las alturas de los TO interpoladas (más preciso pero decimal)
+alturas_to_interp = []
 
 ## Itero para cada uno de los ceros HS que detecté
 for i in range (len(heel_strikes)):
@@ -49,18 +61,107 @@ for i in range (len(heel_strikes)):
     altura_hs = np.interp(x = ceros_hs[i], xp = [heel_strikes[i] - 1, heel_strikes[i]], fp = [pos_z_filtrada[heel_strikes[i] - 1], pos_z_filtrada[heel_strikes[i]]])
 
     ## Lo agrego a la lista
-    alturas_hs.append(altura_hs)
+    alturas_hs_interp.append(altura_hs)
 
 ## Itero para cada uno de los ceros TO que detecté
-for i in range (len(heel_strikes)):
+for i in range (len(toe_offs)):
 
     ## Hago la interpolación para obtener la altura en el instante del toe off
     altura_to = np.interp(x = ceros_to[i], xp = [toe_offs[i] - 1, toe_offs[i]], fp = [pos_z_filtrada[toe_offs[i] - 1], pos_z_filtrada[toe_offs[i]]])
 
     ## Lo agrego a la lista
-    alturas_to.append(altura_to)
+    alturas_to_interp.append(altura_to)
 
-## -------------------------------------- SEGMENTACIÓN DE PASOS ----------------------------------------
+## ------------------------------ SEGMENTACIÓN DE PASOS (ZERO CROSSING) --------------------------------
+
+## Creo una lista vacía en donde voy a guardar los pasos segmentados HS-HS con el método Zero Crossing
+segmentada_zc = []
+
+## Creo una lista vacía donde voy guardando los valores medios de las alturas entre HS y TO
+alturas_medias = []
+
+## Itero para cada uno de los pasos que tengo detectados
+for i in range (len(pasos_zc)):
+
+    ## Hago la segmentación de la señal
+    segmento_zc = pos_z_filtrada[pasos_zc[i]['IC'][0] : pasos_zc[i]['IC'][1]]
+
+    ## En caso que el primer evento sea un Toe Off
+    if primer_evento == 'to':
+
+        ## Calculo el valor medio de las alturas del TO y del HS correspondientes en el paso
+        altura_media = (alturas_hs_sinterp[i] + alturas_to_sinterp[i + 1]) / 2
+
+        # ## Graficación del paso
+        # plt.plot(segmento_zc)
+        # plt.plot(pasos_zc[i]['TC'] - pasos_zc[i]['IC'][0], alturas_to_sinterp[i + 1], 'o')
+        # plt.plot(0, alturas_hs_sinterp[i], 'x')
+        # plt.axhline(y = altura_media)
+        # plt.show()
+    
+    ## En caso que el primer evento sea un Heel Strike
+    else:
+
+        ## Calculo el valor medio de las alturas del TO y del HS correspondientes en el paso
+        altura_media = (alturas_hs_sinterp[i] + alturas_to_sinterp[i]) / 2
+
+        # ## Graficación del paso
+        # plt.plot(segmento_zc)
+        # plt.plot(pasos_zc[i]['TC'] - pasos_zc[i]['IC'][0], alturas_to_sinterp[i], 'o')
+        # plt.plot(0, alturas_hs_sinterp[i], 'x')
+        # plt.axhline(y = altura_media)
+        # plt.show()
+
+    ## Agrego la altura media calculada en el paso a la lista correspondiente
+    alturas_medias.append(altura_media)
+
+    ## Agrego el segmento a la lista de segmentos
+    segmentada_zc.append(segmento_zc)
+
+## -------------------------- CALCULO DE LA LONGITUD DE PASO (ZERO CROSSING) ---------------------------
+
+## Especifico la longitud de la pierna del individuo en metros
+## Ésto debe considerarse como una entrada al sistema. Es un parámetro que puede medirse
+## ¡IMPORTANTE: ÉSTE PARÁMETRO CAMBIA CON CADA PERSONA! SINO EL RESULTADO DA CUALQUIER COSA
+long_pierna = 0.9
+
+## Creo una lista donde voy a guardar las longitudes de pasos
+long_pasos_zc = []
+
+## Itero para cada uno de los pasos que tengo detectados
+for i in range (len(pasos_zc)):
+
+    ## Calculo la excursión vertical máxima que tengo en el paso en el tramo single stance
+    altura_maxima_sstance = abs(max(segmentada_zc[i]) - alturas_medias[i])
+
+    ## Calculo la excursión vertical máxima que tengo en el paso en el tramo double stance
+    altura_maxima_dstance = abs(alturas_medias[i] - min(segmentada_zc[i]))
+
+    ## Hago la estimación del desplazamiento horizontal del CoM en single stance
+    desp_sstance = 2 * long_pierna * np.sin(np.arccos(1 - altura_maxima_sstance / long_pierna))
+
+    ## Hago el cálculo de la longitud del péndulo auxiliar segun la relación l' = l.Srel donde Srel es la proporción del paso
+    ## Recuerdo que estoy tomando la hipótesis de que la velocidad del CoM se mantiene mas o menos constante
+    long_aux = proporciones_paso[i] * long_pierna
+    
+    ## Hago la estimación del desplazamiento horizontal del CoM en double stance
+    desp_dstance = 2 * long_aux * np.sin(np.arccos(1 - altura_maxima_dstance / long_aux))
+
+    ## Calculo la longitud del paso como la suma entre el desplazamiento horizontal del CoM en single stance y double stance
+    long_paso_zc = desp_dstance + desp_sstance
+
+    ## Agrego la longitud de paso calculada a la lista
+    long_pasos_zc.append(long_paso_zc)
+
+print('MÉTODO ZERO CROSSING')
+print("Longitud de paso (m)\n  Promedio: {}\n  Desviación Estándar: {}\n  Mediana: {}".format(np.mean(long_pasos_zc), np.std(long_pasos_zc), np.median(long_pasos_zc)))
+
+## --------------------------- GRAFICACIÓN LONGITUD DE PASO (ZERO CROSSING) ---------------------------
+
+plt.scatter(x = np.arange(start = 0, stop = len(long_pasos_zc)), y = long_pasos_zc)
+plt.show()
+
+## ------------------------------ SEGMENTACIÓN DE PASOS (PEAK DETECTION) -------------------------------
 
 ## Creo una lista vacía en donde voy a guardar los pasos segmentados
 segmentada = []
@@ -95,11 +196,6 @@ for i in range (len(segmentada)):
 
 ## ----------------------------- CÁLCULO DE LA LONGITUD DEL PASO (MÉTODO I) ----------------------------
 
-## Especifico la longitud de la pierna del individuo en metros
-## Ésto debe considerarse como una entrada al sistema. Es un parámetro que puede medirse
-## ¡IMPORTANTE: ÉSTE PARÁMETRO CAMBIA CON CADA PERSONA! SINO EL RESULTADO DA CUALQUIER COSA
-long_pierna = 0.9
-
 ## Creo una lista donde voy a almacenar la longitud de los pasos de la persona
 long_pasos_m1 = []
 
@@ -127,7 +223,7 @@ velocidad_marcha = long_paso_promedio / tiempo_paso_promedio
 ## Calculo la proporción de la doble estancia por paso
 doble_estancia_media = np.mean(doble_estancia)
 
-print('MÉTODO I')
+print('\nMÉTODO I')
 print("Longitud de paso (m)\n  Promedio: {}\n  Desviación Estándar: {}\n  Mediana: {}".format(np.mean(long_pasos_m1), np.std(long_pasos_m1), np.median(long_pasos_m1)))
 print("Duración de paso (s)\n  Promedio: {}\n  Desviación Estándar: {}\n  Mediana: {}".format(np.mean(duraciones_pasos), np.std(duraciones_pasos), np.median(duraciones_pasos)))
 print("Velocidad de marcha (m/s): ", velocidad_marcha)

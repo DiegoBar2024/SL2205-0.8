@@ -22,7 +22,7 @@ import librosa
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
 ## Identificación del paciente
-numero_paciente = '303'
+numero_paciente = '263'
 
 ## Ruta del archivo
 ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/3S{}.csv".format(numero_paciente, numero_paciente)
@@ -200,8 +200,33 @@ print("Mediana Double/Single: {}".format(np.median(proporciones_paso)))
 
 ## --------------------------------- GRAFICACIÓN PROPORCIONES PASOS ------------------------------------
 
-plt.scatter(x = np.arange(start = 0, stop = len(proporciones_paso)), y = proporciones_paso)
-plt.show()
+# plt.scatter(x = np.arange(start = 0, stop = len(proporciones_paso)), y = proporciones_paso)
+# plt.show()
+
+## -------------------------------- CONJUNTO DE PASOS (ZERO CROSSING) ----------------------------------
+
+## Creo una lista donde voy a guardar los pasos detectados por Zero Crossing
+pasos_zc = []
+
+## Itero para cada uno de los eventos HS que tengo detectados
+for i in range (len(ceros_hs) - 1):
+
+    ## En caso de que el primer evento haya sido un Heel Strike
+    if primer_evento == 'hs':
+
+        ## Defino el paso como un diccionario donde tengo [HS[i], HS[i+1]] como los ICs y [TO[i]] como el TC
+        ## Tengo que agregar los valores de los HS y TO para luego poder hacer la segmentación de la señal de posición al medir el paso
+        paso_zc = {'IC': (heel_strikes[i], heel_strikes[i + 1]),'TC': toe_offs[i]}
+    
+    ## En caso que el primer evento haya sido un Toe Off
+    else:
+
+        ## Defino el paso como un diccionario donde tengo [HS[i], HS[i+1]] como los ICs y [TO[i+1]] como el TC
+        ## Tengo que agregar los valores de los HS y TO para luego poder hacer la segmentación de la señal de posición al medir el paso
+        paso_zc = {'IC': (heel_strikes[i], heel_strikes[i + 1]),'TC': toe_offs[i + 1]}
+    
+    ## Agrego el paso detectado a la lista de pasos
+    pasos_zc.append(paso_zc)
 
 ## ------------------------------------- ANÁLISIS EN FRECUENCIA ----------------------------------------
 
