@@ -2,11 +2,7 @@ import matplotlib.pyplot as plt
 import scaleogram as scg
 import seaborn as sns
 import numpy as np
-import sys
 import pywt
-import obspy
-from obspy.imaging.cm import obspy_sequential
-from obspy.signal.tf_misfit import cwt
 
 # Cantidad de muestras
 N = 600

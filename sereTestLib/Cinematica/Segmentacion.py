@@ -18,6 +18,7 @@ from skinematics.imus import analytical, IMU_Base
 from scipy import constants
 from scipy.integrate import cumulative_trapezoid, simpson
 import librosa
+import pywt
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
@@ -239,24 +240,6 @@ filtro = signal.butter(N = 4, Wn = [0.5, 2.5], btype = 'bandpass', fs = 1 / peri
 
 ## Aplico el filtro anterior a la aceleración anteroposterior
 acel_filtrada = signal.sosfiltfilt(filtro, acc_AP)
-
-# ## Gráficas comparando las aceleraciones corregidas
-# ## La conclusión es que el eje vertical se corrige correctamente según la dirección de la gravedad
-# ## El problema es que losejes en el plano horizontal no quedan bien corregidos y apuntan hacia otro lado
-# plt.plot(acc_analytic[:,2] + constants.g, label = 'Corregida')
-# plt.plot(acel[:,1], label = 'Original')
-# plt.legend()
-# plt.show()
-
-# plt.plot(acc_analytic[:,1] - np.mean(acc_analytic[:,1]), label = 'Corregida')
-# plt.plot(acel[:,0] - np.mean(acel[:,0]), label = 'Original')
-# plt.legend()
-# plt.show()
-
-# plt.plot(acc_analytic[:,0] - np.mean(acc_analytic[:,0]), label = 'Corregida')
-# plt.plot(acel[:,2] - np.mean(acel[:,2]), label = 'Original')
-# plt.legend()
-# plt.show()
 
 ## Se obtiene el espectro de toda la señal completa aplicando la transformada de Fourier
 ## Ya que es una señal real se cumple la simetría conjugada
