@@ -1,6 +1,6 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
-from SegmentacionVert import *
+from sereTestLib.Cinematica.SegmentacionM3 import *
 
 ## --------------------------- PROCESADO DE LA SEÑAL DE ACELERACIÓN VERTICAL ---------------------------
 

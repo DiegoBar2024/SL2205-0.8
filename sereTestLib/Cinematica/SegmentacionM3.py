@@ -18,12 +18,11 @@ from skinematics.imus import analytical, IMU_Base
 from scipy import constants
 from scipy.integrate import cumulative_trapezoid, simpson
 import librosa
-import pywt
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
 ## Identificación del paciente
-numero_paciente = '267'
+numero_paciente = '250'
 
 ## Ruta del archivo
 ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/3S{}.csv".format(numero_paciente, numero_paciente)
@@ -49,50 +48,13 @@ tiempo = (tiempo - tiempo[0]) / 1000
 ## Cantidad de muestras de la señal
 cant_muestras = len(tiempo)
 
-## -------------------------------------- CORRECCIÓN DE EJES -------------------------------------------
-
-## Armamos el diccionario con los datos a ingresar
-dict_datos = {'acc': acel, 'omega' : gyro, 'rate' : 1 / periodoMuestreo}
-
-## Matriz de rotación inicial
-## Es importante tener en cuenta la orientación inicial de la persona
-orient_inicial = np.array([np.array([1,0,0]), np.array([0,0,1]), np.array([0,1,0])])
-
-## Creacion de instancia IMU_Base
-imu_analytic = IMU_Base(in_data = dict_datos, q_type = 'analytical', R_init = orient_inicial, calculate_position = False)
-
-## Accedo a los cuaterniones resultantes
-q_analytic = imu_analytic.quat
-
-## Accedo a la velocidad resultante
-vel_analytic = imu_analytic.vel
-
-## Accedo a la posición resultante
-pos_analytic = imu_analytic.pos
-
-## Accedo a la aceleración corregida
-## acc_analytic[:,2] --> Es la aceleración vertical
-acc_analytic = imu_analytic.accCorr
-
-## ------------------------------------ DETECCIÓN CORTES EN CERO ---------------------------------------
-
-## Obtengo los índices booleanos en donde se producen los cruces en cero de la aceleración vertical
-## Los elementos <<True>> son aquellos valores luego de que se produce el corte en 0
-ceros = librosa.zero_crossings(acel[:,1] - constants.g)
-
-## Hago la traducción de elementos booleanos a índices numéricos
-indices_ceros = np.where(ceros == True)
-
 ## ------------------------------------------ PREPROCESADO ---------------------------------------------
 
-## Se calcula la magnitud de la señal de aceleración
-magnitud = Magnitud(acel)
-
-## Se hace la normalización en amplitud y offset de la señal de aceleración anteroposterior
-acc_AP_norm = Normalizacion(-acel[:,2])
+## Se hace la normalización en amplitud y offset de la señal de aceleración vertical
+acc_AP_norm = Normalizacion(acel[:,1] - constants.g)
 
 ## Hago el inverso también para detectar los toe offs
-acc_AP_norm_TO = Normalizacion(acel[:,2])
+acc_AP_norm_TO = Normalizacion(- acel[:,1] + constants.g)
 
 ## ------------------------------------ DETECCIÓN CORTES EN CERO ---------------------------------------
 
@@ -104,8 +66,7 @@ filtrada = signal.sosfiltfilt(signal.butter(N = 4, Wn = [0.5, 4], btype = 'bandp
 ceros_sin_interpolar = librosa.zero_crossings(filtrada)
 
 ## Hago la traducción de elementos booleanos a índices numéricos
-## Me aseguro también de eliminar el primer elemento donde se detecta un cambio de signo. O sea el instante inicial donde no tiene sentido contabilizar un HS o un TO
-indices_ceros = np.where(ceros_sin_interpolar == True)[0][1:]
+indices_ceros = np.where(ceros_sin_interpolar == True)[0]
 
 ## Los heel strikes serán aquellos valores donde se cambia de positivo a negativo
 heel_strikes = np.take(indices_ceros, np.where(filtrada[indices_ceros] > 0))[0]
@@ -132,7 +93,7 @@ for i in range (len(heel_strikes)):
 for i in range (len(toe_offs)):
 
     ## Hago una interpolación lineal entre ese punto y el anterior para obtener el verdadero cruce en 0 con el TO
-    cero_to = np.interp(x = 0, xp = [filtrada[toe_offs[i]], filtrada[toe_offs[i] - 1]], fp = [toe_offs[i], toe_offs[i] - 1])
+    cero_to = np.interp(x = 0, xp = [filtrada[toe_offs[i] - 1], filtrada[toe_offs[i]]], fp = [toe_offs[i] - 1, toe_offs[i]])
 
     ## Agrego el cero TO calculado a la lista
     ceros_to.append(cero_to)
@@ -151,95 +112,37 @@ plt.plot(-acel[:,2], label = "Aceleracion Anteroposterior")
 plt.legend()
 plt.show()
 
-print("Tiempo Paso Promedio: {}".format(np.mean(np.diff(ceros_hs)) * periodoMuestreo))
-print("Tiempo Paso Desviación Estándar: {}".format(np.std(np.diff(ceros_hs)) * periodoMuestreo))
-print("Tiempo Paso Mediana: {}".format(np.median(np.diff(ceros_hs)) * periodoMuestreo))
+## ------------------------------------- GRAFICACIÓN HEEL STRIKES --------------------------------------
 
-## ------------------------------------ DETECCIÓN PRIMER EVENTO ----------------------------------------
-
-## En caso que el primer cero del HS se encuentre antes del primer cero del TO
-if ceros_hs[0] < ceros_to[0]:
-
-    ## Entonces el primer evento va a ser un Heel Strike
-    primer_evento = 'hs'
-
-## En caso que el primer cero del TO se encuentre antes del primer cero del HS
-else:
-
-    ## Entonces el primer evento va a ser un Toe Off
-    primer_evento = 'to'
-
-## ------------------------------- PROPORCIÓN ESTANCIA DOBLE Y SIMPLE ----------------------------------
-
-## Creo una lista donde voy a guardar las proporciones de estancia doble y simple
-proporciones_paso = []
-
-## Itero para cada uno de los eventos que tengo detectados
-for i in range (len(ceros_hs) - 1):
-
-    ## En caso que el primer evento sea un HS
-    if primer_evento == 'hs':
-
-        ## Calculo la proporción del paso como DoubleStance/SingleStance = (TO[i]-HS[i])/(HS[i+1]-TO[i])
-        proporcion = (ceros_to[i] - ceros_hs[i]) / (ceros_hs[i + 1] - ceros_to[i])
-
-        ## Agrego la proporción calculada a la lista de proporciones de paso
-        proporciones_paso.append(proporcion)
-    
-    ## En caso que el primer evento sea un TO
-    else:
-
-        ## Calculo la proporción del paso como DoubleStance/SingleStance = (TO[i+1]-HS[i])/(HS[i]-TO[i])
-        proporcion = (ceros_to[i + 1] - ceros_hs[i]) / (ceros_hs[i] - ceros_to[i])
-
-        ## Agrego la proporción calculada a la lista de proporciones de paso
-        proporciones_paso.append(proporcion)
-
-print("\nValor medio Double/Single: {}".format(np.mean(proporciones_paso)))
-print("Desviación Estándar Double/Single: {}".format(np.std(proporciones_paso)))
-print("Mediana Double/Single: {}".format(np.median(proporciones_paso)))
-
-## --------------------------------- GRAFICACIÓN PROPORCIONES PASOS ------------------------------------
-
-# plt.scatter(x = np.arange(start = 0, stop = len(proporciones_paso)), y = proporciones_paso)
+# ## Graficación de la separación de Heel Strikes
+# plt.scatter(x = np.arange(start = 0, stop = len(np.diff(heel_strikes))), y = np.diff(heel_strikes) * periodoMuestreo)
+# plt.legend("Heel Strikes")
 # plt.show()
 
-## -------------------------------- CONJUNTO DE PASOS (ZERO CROSSING) ----------------------------------
+## --------------------------------------- GRAFICACIÓN TOE OFFS ----------------------------------------
 
-## Creo una lista donde voy a guardar los pasos detectados por Zero Crossing
-pasos_zc = []
-
-## Itero para cada uno de los eventos HS que tengo detectados
-for i in range (len(ceros_hs) - 1):
-
-    ## En caso de que el primer evento haya sido un Heel Strike
-    if primer_evento == 'hs':
-
-        ## Defino el paso como un diccionario donde tengo [HS[i], HS[i+1]] como los ICs y [TO[i]] como el TC
-        ## Tengo que agregar los valores de los HS y TO para luego poder hacer la segmentación de la señal de posición al medir el paso
-        paso_zc = {'IC': (heel_strikes[i], heel_strikes[i + 1]),'TC': toe_offs[i]}
-    
-    ## En caso que el primer evento haya sido un Toe Off
-    else:
-
-        ## Defino el paso como un diccionario donde tengo [HS[i], HS[i+1]] como los ICs y [TO[i+1]] como el TC
-        ## Tengo que agregar los valores de los HS y TO para luego poder hacer la segmentación de la señal de posición al medir el paso
-        paso_zc = {'IC': (heel_strikes[i], heel_strikes[i + 1]),'TC': toe_offs[i + 1]}
-    
-    ## Agrego el paso detectado a la lista de pasos
-    pasos_zc.append(paso_zc)
+# ## Graficación de la separación de Toe Offs
+# plt.scatter(x = np.arange(start = 0, stop = len(np.diff(toe_offs))), y = np.diff(toe_offs) * periodoMuestreo)
+# plt.legend("Toe Offs")
+# plt.show()
 
 ## ------------------------------------- ANÁLISIS EN FRECUENCIA ----------------------------------------
 
-## Señal de aceleración anteroposterior
-acc_AP = acel[:,2]
+## Señal de aceleración vertical (resto la gravedad que me da una buena aproximación)
+acc_VT = acel[:,1] - constants.g
 
 ## Filtro de Butterworth pasabanda de rango [0.5, 2.5] Hz para que me detecte el armónico fundamental
 ## A partir del armónico fundamental obtengo la cadencia
 filtro = signal.butter(N = 4, Wn = [0.5, 2.5], btype = 'bandpass', fs = 1 / periodoMuestreo, output = 'sos')
 
 ## Aplico el filtro anterior a la aceleración anteroposterior
-acel_filtrada = signal.sosfiltfilt(filtro, acc_AP)
+acel_filtrada = signal.sosfiltfilt(filtro, acc_VT)
+
+## Hago la normalizacion de la aceleración vertical filtrada
+acc_AP_norm = Normalizacion(acel_filtrada)
+
+## Lo mismo con el opuesto
+acc_AP_norm_TO = Normalizacion(- acel_filtrada)
 
 ## Se obtiene el espectro de toda la señal completa aplicando la transformada de Fourier
 ## Ya que es una señal real se cumple la simetría conjugada
@@ -436,11 +339,11 @@ picos_sucesivosTO = np.array(picos_sucesivosTO)
 
 ## Se hace la graficación de la señal marcando los picos
 GraficacionPicos(acc_AP_norm, picos_sucesivos)
-
-GraficacionPicos(acc_AP, indices_ceros[0])
+# GraficacionPicos(acel[:,1] - constants.g, picos_sucesivos)
 
 ## Grafico la señal con sus picos opuestos
 GraficacionPicos(acc_AP_norm, picos_sucesivosTO)
+# GraficacionPicos(acel[:,1] - constants.g, picos_sucesivosTO)
 
 ## ----------------------------------------- CONJUNTO DE PASOS -----------------------------------------
 
@@ -491,8 +394,8 @@ for i in range (len(pasos)):
 
 ## ------------------------------- GRAFICACIÓN DURACIÓN PASOS POST MÉTODO ------------------------------
 
-# plt.scatter(x = np.arange(start = 0, stop = len(duraciones_pasos)), y = duraciones_pasos)
-# plt.show()
+plt.scatter(x = np.arange(start = 0, stop = len(duraciones_pasos)), y = duraciones_pasos)
+plt.show()
 
 ## --------------------------------------- TIEMPO ENTRE IC Y TC ----------------------------------------
 

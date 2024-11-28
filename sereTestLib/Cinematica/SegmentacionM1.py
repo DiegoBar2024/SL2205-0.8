@@ -18,11 +18,12 @@ from skinematics.imus import analytical, IMU_Base
 from scipy import constants
 from scipy.integrate import cumulative_trapezoid, simpson
 import librosa
+import pywt
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
 ## Identificación del paciente
-numero_paciente = '250'
+numero_paciente = '299'
 
 ## Ruta del archivo
 ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/3S{}.csv".format(numero_paciente, numero_paciente)
@@ -48,126 +49,28 @@ tiempo = (tiempo - tiempo[0]) / 1000
 ## Cantidad de muestras de la señal
 cant_muestras = len(tiempo)
 
-## -------------------------------------- CORRECCIÓN DE EJES -------------------------------------------
-
-## Armamos el diccionario con los datos a ingresar
-dict_datos = {'acc': acel, 'omega' : gyro, 'rate' : 1 / periodoMuestreo}
-
-## Matriz de rotación inicial
-## Es importante tener en cuenta la orientación inicial de la persona
-orient_inicial = np.array([np.array([1,0,0]), np.array([0,0,1]), np.array([0,1,0])])
-
-## Creacion de instancia IMU_Base
-imu_analytic = IMU_Base(in_data = dict_datos, q_type = 'analytical', R_init = orient_inicial, calculate_position = False)
-
-## Accedo a los cuaterniones resultantes
-q_analytic = imu_analytic.quat
-
-## Accedo a la velocidad resultante
-vel_analytic = imu_analytic.vel
-
-## Accedo a la posición resultante
-pos_analytic = imu_analytic.pos
-
-## Accedo a la aceleración corregida
-## acc_analytic[:,2] --> Es la aceleración vertical
-acc_analytic = imu_analytic.accCorr
-
 ## ------------------------------------------ PREPROCESADO ---------------------------------------------
 
-## Se hace la normalización en amplitud y offset de la señal de aceleración vertical
-acc_AP_norm = Normalizacion(acel[:,1] - constants.g)
+## Se calcula la magnitud de la señal de aceleración
+magnitud = Magnitud(acel)
+
+## Se hace la normalización en amplitud y offset de la señal de aceleración anteroposterior
+acc_AP_norm = Normalizacion(-acel[:,2])
 
 ## Hago el inverso también para detectar los toe offs
-acc_AP_norm_TO = Normalizacion(- acel[:,1] + constants.g)
-
-## ------------------------------------ DETECCIÓN CORTES EN CERO ---------------------------------------
-
-## Filtrado pasabandas para quedarme solo con las componentes de aceleración que interesan
-filtrada = signal.sosfiltfilt(signal.butter(N = 4, Wn = [0.5, 4], btype = 'bandpass', fs = 1 / periodoMuestreo, output = 'sos'), acel[:,1] - constants.g)
-
-## Obtengo los índices booleanos en donde se producen los cruces en cero de la aceleración vertical
-## Los elementos <<True>> son aquellos valores luego de que se produce el corte en 0
-ceros_sin_interpolar = librosa.zero_crossings(filtrada)
-
-## Hago la traducción de elementos booleanos a índices numéricos
-indices_ceros = np.where(ceros_sin_interpolar == True)[0]
-
-## Los heel strikes serán aquellos valores donde se cambia de positivo a negativo
-heel_strikes = np.take(indices_ceros, np.where(filtrada[indices_ceros] > 0))[0]
-
-## Los toe offs serán aquellos valores donde se cambia de negativo a positivo
-toe_offs = np.take(indices_ceros, np.where(filtrada[indices_ceros] < 0))[0]
-
-## Creo una lista donde guardo los ceros heel strike luego de interpolar
-ceros_hs = []
-
-## Creo una lista donde guardo los ceros toe off luego de interpolar
-ceros_to = []
-
-## Itero para cada uno de los ceros HS que detecté
-for i in range (len(heel_strikes)):
-
-    ## Hago una interpolación lineal entre ese punto y el anterior para obtener el verdadero cruce en 0 con el HS
-    cero_hs = np.interp(x = 0, xp = [filtrada[heel_strikes[i] - 1], filtrada[heel_strikes[i]]], fp = [heel_strikes[i] - 1, heel_strikes[i]])
-
-    ## Agrego el cero HS calculado a la lista
-    ceros_hs.append(cero_hs)
-
-## Itero para cada uno de los ceros TO que detecté
-for i in range (len(toe_offs)):
-
-    ## Hago una interpolación lineal entre ese punto y el anterior para obtener el verdadero cruce en 0 con el TO
-    cero_to = np.interp(x = 0, xp = [filtrada[toe_offs[i] - 1], filtrada[toe_offs[i]]], fp = [toe_offs[i] - 1, toe_offs[i]])
-
-    ## Agrego el cero TO calculado a la lista
-    ceros_to.append(cero_to)
-
-## Graficación de Heel Strikes y Toe Offs tomando la aceleración vertical filtrada
-plt.plot(ceros_hs, np.zeros(len(ceros_hs)), "x", label = 'Heel Strikes')
-plt.plot(ceros_to, np.zeros(len(ceros_to)), "o", label = 'Toe Offs')
-plt.plot(filtrada, label = "Aceleracion Vertical Filtrada")
-plt.legend()
-plt.show()
-
-## Graficación de Heel Strikes y Toe Offs tomando la aceleración anteroposterior
-plt.plot(ceros_hs, np.zeros(len(ceros_hs)), "x", label = 'Heel Strikes')
-plt.plot(ceros_to, np.zeros(len(ceros_to)), "o", label = 'Toe Offs')
-plt.plot(-acel[:,2], label = "Aceleracion Anteroposterior")
-plt.legend()
-plt.show()
-
-## ------------------------------------- GRAFICACIÓN HEEL STRIKES --------------------------------------
-
-# ## Graficación de la separación de Heel Strikes
-# plt.scatter(x = np.arange(start = 0, stop = len(np.diff(heel_strikes))), y = np.diff(heel_strikes) * periodoMuestreo)
-# plt.legend("Heel Strikes")
-# plt.show()
-
-## --------------------------------------- GRAFICACIÓN TOE OFFS ----------------------------------------
-
-# ## Graficación de la separación de Toe Offs
-# plt.scatter(x = np.arange(start = 0, stop = len(np.diff(toe_offs))), y = np.diff(toe_offs) * periodoMuestreo)
-# plt.legend("Toe Offs")
-# plt.show()
+acc_AP_norm_TO = Normalizacion(acel[:,2])
 
 ## ------------------------------------- ANÁLISIS EN FRECUENCIA ----------------------------------------
 
-## Señal de aceleración vertical (resto la gravedad que me da una buena aproximación)
-acc_VT = acel[:,1] - constants.g
+## Señal de aceleración anteroposterior
+acc_AP = acel[:,2]
 
 ## Filtro de Butterworth pasabanda de rango [0.5, 2.5] Hz para que me detecte el armónico fundamental
 ## A partir del armónico fundamental obtengo la cadencia
 filtro = signal.butter(N = 4, Wn = [0.5, 2.5], btype = 'bandpass', fs = 1 / periodoMuestreo, output = 'sos')
 
 ## Aplico el filtro anterior a la aceleración anteroposterior
-acel_filtrada = signal.sosfiltfilt(filtro, acc_VT)
-
-## Hago la normalizacion de la aceleración vertical filtrada
-acc_AP_norm = Normalizacion(acel_filtrada)
-
-## Lo mismo con el opuesto
-acc_AP_norm_TO = Normalizacion(- acel_filtrada)
+acel_filtrada = signal.sosfiltfilt(filtro, acc_AP)
 
 ## Se obtiene el espectro de toda la señal completa aplicando la transformada de Fourier
 ## Ya que es una señal real se cumple la simetría conjugada
@@ -198,26 +101,6 @@ tiempo_paso_frecuencia = 1 / frec_fund
 
 ## Calculo la cantidad promedio de muestras que tengo en mi señal por cada paso
 muestras_paso = tiempo_paso_frecuencia / periodoMuestreo
-
-## ------------------------------------ DETECCIÓN TERMINAL CONTACT -------------------------------------
-
-# ## Filtro pasabajos
-# lowpass = signal.butter(N = 4, Wn = 2.5, btype = 'lowpass', fs = 1 / periodoMuestreo, output = 'sos')
-
-# ## Aplico el filtro anterior a la aceleración vertical
-# acel_lowpass = signal.sosfiltfilt(lowpass, acel[:,1])
-
-# plt.plot(acel_lowpass)
-# plt.show()
-
-# lowpass = signal.firwin(numtaps = 30, cutoff = 3.5, pass_zero = 'lowpass', fs = 1 / periodoMuestreo)
-
-# ## Aplico el filtro anterior a la aceleración vertical
-# acel_lowpass = signal.convolve(acel[:,1], lowpass, mode = 'same')
-
-# plt.plot(-acel[:,2])
-# plt.plot(acel_lowpass)
-# plt.show()
 
 ## -------------------------------------- DETECCIÓN PRIMER PICO ----------------------------------------
 
@@ -260,11 +143,6 @@ ind_pico_maximoTO = np.argmax(acc_AP_norm_TO[picos_rangoTO])
 
 ## Como están en el mismo orden puedo indexar el pico máximo en la lista de los picos detectados en el rango
 pico_maximo_inicialTO = picos_rangoTO[ind_pico_maximoTO]
-
-## ------------------------------- GRAFICACIÓN DURACIÓN PASOS PRE MÉTODO -------------------------------
-
-plt.scatter(x = np.arange(start = 0, stop = len(np.diff(picos))), y = np.diff(picos))
-plt.show()
 
 ## ------------------------------------ DETECCIÓN PICOS SUCESIVOS --------------------------------------
 
@@ -384,11 +262,9 @@ picos_sucesivosTO = np.array(picos_sucesivosTO)
 
 ## Se hace la graficación de la señal marcando los picos
 GraficacionPicos(acc_AP_norm, picos_sucesivos)
-# GraficacionPicos(acel[:,1] - constants.g, picos_sucesivos)
 
 ## Grafico la señal con sus picos opuestos
 GraficacionPicos(acc_AP_norm, picos_sucesivosTO)
-# GraficacionPicos(acel[:,1] - constants.g, picos_sucesivosTO)
 
 ## ----------------------------------------- CONJUNTO DE PASOS -----------------------------------------
 
@@ -437,11 +313,6 @@ for i in range (len(pasos)):
     ## Almaceno la diferencia temporal entre los pasos en otra lista
     duraciones_pasos.append(diff_pasos * periodoMuestreo)
 
-## ------------------------------- GRAFICACIÓN DURACIÓN PASOS POST MÉTODO ------------------------------
-
-plt.scatter(x = np.arange(start = 0, stop = len(duraciones_pasos)), y = duraciones_pasos)
-plt.show()
-
 ## --------------------------------------- TIEMPO ENTRE IC Y TC ----------------------------------------
 
 ## Creo una lista donde almaceno las distancias entre ICs y TCs expresado en muestras
@@ -462,11 +333,6 @@ for i in range (len(pasos)):
 ## Genero la lista de tiempos
 dist_IC_TC_tiempo = np.multiply(periodoMuestreo, dist_IC_TC)
 
-## ---------------------------------- GRAFICACIÓN TIEMPO ENTRE IC Y TC ---------------------------------
-
-# plt.scatter(x = np.arange(start = 0, stop = len(dist_IC_TC_tiempo)), y = dist_IC_TC_tiempo)
-# plt.show()
-
 ## --------------------------------------- CALCULO DOBLE ESTANCIA --------------------------------------
 
 ## Genero una lista vacía donde voy a calcular las proporciones de doble estancia en un paso
@@ -486,8 +352,3 @@ for i in range (len(pasos)):
 
     ## La agrego a la lista
     doble_estancia.append(doble_estancia_paso)
-
-## ------------------------------- GRAFICACIÓN DOBLE ESTANCIA EN CADA PASO -----------------------------
-
-# plt.scatter(x = np.arange(start = 0, stop = len(doble_estancia)), y = doble_estancia)
-# plt.show()
