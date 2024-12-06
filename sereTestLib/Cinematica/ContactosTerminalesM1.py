@@ -18,11 +18,12 @@ from skinematics.imus import analytical, IMU_Base
 from scipy import constants
 from scipy.integrate import cumulative_trapezoid, simpson
 import librosa
+import pywt
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
 ## Identificación del paciente
-numero_paciente = '250'
+numero_paciente = '299'
 
 ## Ruta del archivo
 ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/3S{}.csv".format(numero_paciente, numero_paciente)
@@ -47,14 +48,6 @@ tiempo = (tiempo - tiempo[0]) / 1000
 
 ## Cantidad de muestras de la señal
 cant_muestras = len(tiempo)
-
-## ------------------------------------------ PREPROCESADO ---------------------------------------------
-
-## Se hace la normalización en amplitud y offset de la señal de aceleración vertical
-acc_AP_norm = Normalizacion(acel[:,1] - constants.g)
-
-## Hago el inverso también para detectar los toe offs
-acc_AP_norm_TO = Normalizacion(- acel[:,1] + constants.g)
 
 ## ------------------------------------- ANÁLISIS EN FRECUENCIA ----------------------------------------
 
@@ -192,110 +185,45 @@ while (rango[0] < cant_muestras):
         ## Recuerdo que debo sumarle al pico detectado el primer elemento del rango para llevarlo a la escala real
         picos_sucesivos.append(pico_maximo + int(rango[0]))
 
-## Hago la traducción de array a vector numpy
-picos_sucesivos = np.array(picos_sucesivos)
+## --------------------------- PROCESADO DE LA SEÑAL DE ACELERACIÓN VERTICAL ---------------------------
 
-## Se hace la graficación de la señal marcando los picos
-GraficacionPicos(acc_AP_norm, picos_sucesivos)
+## Uso el método de los papers de Rafael C. Gonzalez
+## Filtrado FIR pasabajos de orden 30 con frecuencia de corte 2.5Hz
+## Pruebo subir un poco la frecuencia de corte del FIR para poder detectar de mejor manera los mínimos locales donde estarían los TO
+lowpass = signal.firwin(numtaps = 30, cutoff = 12.5, pass_zero = 'lowpass', fs = 1 / periodoMuestreo)
 
-## ----------------------------------------- CONJUNTO DE PASOS -----------------------------------------
+## Aplico el filtro anterior a la aceleración vertical
+acel_lowpass = signal.convolve(acel[:,1], lowpass, mode = 'same')
 
-## Creo una lista donde voy a almacenar todos los pasos
-pasos = []
+## --------------------------------- DETECCIÓN DE CONTACTOS TERMINALES ---------------------------------
 
-## Itero para cada uno de los picos detectados
+## Creo una lista vacía en donde voy a guardar los eventos de Toe Off detectados
+toe_offs_min = []
+
+## Itero para cada uno de los pasos que tengo detectados
 for i in range (len(picos_sucesivos) - 1):
-    
-    ## En caso que la distancia entre picos esté en un rango aceptable, concluyo que ahí se habrá detectado un paso
-    if (0.7 * muestras_paso < picos_sucesivos[i + 1] - picos_sucesivos[i] < 1.3 * muestras_paso):
 
-        ## Genero la variable donde guardo el Toe Off a incluír por defecto en 0
-        toe_off = 0
+    ## Hago la segmentación de la señal entre dos picos máximos
+    segmento = acel_lowpass[picos_sucesivos[i] : picos_sucesivos[i + 1]]
 
-        ## Busco el Toe Off que haya detectado para asociarlo al paso
-        for picoTO in picos_sucesivosTO:
-            
-            ## En caso que el Toe Off esté entre los dos ICs
-            if picos_sucesivos[i] < picoTO < picos_sucesivos[i + 1]:
+    ## Hago la detección de mínimos locales en el segmento
+    minimos_segmento = signal.argrelmin(segmento)[0]
 
-                ## Me lo guardo
-                toe_off = picoTO
-        
-        ## Entonces el par de picos me está diciendo que ahí hay un paso y entonces me lo guardo
-        ## Me guardo también el Toe Off que haya detectado entre los dos pasos
-        pasos.append({'IC': (picos_sucesivos[i], picos_sucesivos[i + 1]),'TC': toe_off})
-    
-## ----------------------------------------- DURACIÓN DE PASOS -----------------------------------------
+    ## Me quedo con el primer mínimo el cual yo sé que va a estar asociado al evento de TOE OFF
+    toe_off = minimos_segmento[0]
 
-## Creo una lista donde voy a almacenar las muestras entre todos los pasos
-muestras_pasos = []
+    ## Agrego el TO detectado a la lista de toe offs
+    toe_offs_min.append(toe_off + picos_sucesivos[i])
 
-## Creo una lista en donde voy a almacenar las duraciones de todos los pasos
-duraciones_pasos = []
+    # plt.plot(np.diff(segmento))
+    # plt.plot(toe_off, np.diff(segmento)[toe_off], 'x', label = 'Toe Off')
+    # plt.legend()
+    # plt.show()
 
-## Itero para cada uno de los pasos detectados
-for i in range (len(pasos)):
-    
-    ## Calculo la diferencia entre ambos valores de la tupla en términos temporales
-    diff_pasos = pasos[i]['IC'][1] - pasos[i]['IC'][0]
+# GraficacionPicos(acel_lowpass - constants.g, toe_offs_min)
 
-    ## Almaceno la diferencia de muestras en la lista de muestras entre pasos
-    muestras_pasos.append(diff_pasos)
+## ------------------------------- GRAFICACIÓN DE CONTACTOS TERMINALES ---------------------------------
 
-    ## Almaceno la diferencia temporal entre los pasos en otra lista
-    duraciones_pasos.append(diff_pasos * periodoMuestreo)
-
-## ------------------------------- GRAFICACIÓN DURACIÓN PASOS POST MÉTODO ------------------------------
-
-plt.scatter(x = np.arange(start = 0, stop = len(duraciones_pasos)), y = duraciones_pasos)
+## Hago la graficación del espaciamiento entre Toe Offs
+plt.scatter(x = np.arange(start = 0, stop = len(np.diff(toe_offs_min))), y = np.diff(toe_offs_min) * periodoMuestreo)
 plt.show()
-
-## --------------------------------------- TIEMPO ENTRE IC Y TC ----------------------------------------
-
-## Creo una lista donde almaceno las distancias entre ICs y TCs expresado en muestras
-dist_IC_TC = []
-
-## Creo una lista donde almaceno las distancias entre ICs y TCs expresado en tiempo
-dist_IC_TC_tiempo = []
-
-## Itero para cada uno de los pasos detectados
-for i in range (len(pasos)):
-    
-    ## Calculo la distancia entre IC y TC
-    dist = pasos[i]['TC'] - pasos[i]['IC'][0]
-
-    ## Agrego la distancia a la lista
-    dist_IC_TC.append(dist)
-
-## Genero la lista de tiempos
-dist_IC_TC_tiempo = np.multiply(periodoMuestreo, dist_IC_TC)
-
-## ---------------------------------- GRAFICACIÓN TIEMPO ENTRE IC Y TC ---------------------------------
-
-# plt.scatter(x = np.arange(start = 0, stop = len(dist_IC_TC_tiempo)), y = dist_IC_TC_tiempo)
-# plt.show()
-
-## --------------------------------------- CALCULO DOBLE ESTANCIA --------------------------------------
-
-## Genero una lista vacía donde voy a calcular las proporciones de doble estancia en un paso
-doble_estancia = []
-
-## Itero para cada uno de los pasos detectados
-for i in range (len(pasos)):
-
-    ## Calculo la proporcion de la doble estancia
-    doble_estancia_paso = (pasos[i]['TC'] - pasos[i]['IC'][0]) / (pasos[i]['IC'][1] - pasos[i]['IC'][0])
-
-    ## En caso que la doble estancia tenga un valor no permitido, que se saltee ésta parte
-    if abs(doble_estancia_paso) > 1:
-
-        ## Se saltea ésta iteración
-        continue
-
-    ## La agrego a la lista
-    doble_estancia.append(doble_estancia_paso)
-
-## ------------------------------- GRAFICACIÓN DOBLE ESTANCIA EN CADA PASO -----------------------------
-
-# plt.scatter(x = np.arange(start = 0, stop = len(doble_estancia)), y = doble_estancia)
-# plt.show()

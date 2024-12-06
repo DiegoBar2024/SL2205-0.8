@@ -1,121 +1,27 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
-from Magnitud import Magnitud
-from Normalizacion import Normalizacion
-from DeteccionPicos import *
-from Filtros import FiltroMediana
-from Fourier import TransformadaFourier
-import numpy as np
-import pandas as pd
-from Muestreo import PeriodoMuestreo
-import pandas as pd
-from ValoresMagnetometro import ValoresMagnetometro
-from matplotlib import pyplot as plt
-from scipy import signal
-from harm_analysis import *
-from control import *
-from skinematics.imus import analytical, IMU_Base
-from scipy import constants
-from scipy.integrate import cumulative_trapezoid, simpson
-import librosa
-import pywt
+from ContactosInicialesM2 import *
+from ContactosTerminalesM2 import *
 
-## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
+## --------------------------------------- GRAFICACIÓN DE DATOS ----------------------------------------
 
-## Identificación del paciente
-numero_paciente = '299'
+# ## Graficación de Heel Strikes y Toe Offs tomando la aceleración vertical filtrada
+# plt.plot(ceros_hs, np.zeros(len(ceros_hs)), "x", label = 'Heel Strikes')
+# plt.plot(ceros_to, np.zeros(len(ceros_to)), "o", label = 'Toe Offs')
+# plt.plot(filtrada, label = "Aceleracion Vertical Filtrada")
+# plt.legend()
+# plt.show()
 
-## Ruta del archivo
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/3S{}.csv".format(numero_paciente, numero_paciente)
+# ## Graficación de Heel Strikes y Toe Offs tomando la aceleración anteroposterior
+# plt.plot(ceros_hs, np.zeros(len(ceros_hs)), "x", label = 'Heel Strikes')
+# plt.plot(ceros_to, np.zeros(len(ceros_to)), "o", label = 'Toe Offs')
+# plt.plot(-acel[:,2], label = "Aceleracion Anteroposterior")
+# plt.legend()
+# plt.show()
 
-## Lectura de datos
-data = pd.read_csv(ruta)
-
-## Hallo el período de muestreo de las señales
-periodoMuestreo = PeriodoMuestreo(data)
-
-## Armamos una matriz donde las columnas sean las aceleraciones
-acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(data['AC_z'])]).transpose()
-
-## Armamos una matriz donde las columnas sean los valores de los giros
-gyro = np.array([np.array(data['GY_x']), np.array(data['GY_y']), np.array(data['GY_z'])]).transpose()
-
-## Separo el vector de tiempos del dataframe
-tiempo = np.array(data['Time'])
-
-## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
-tiempo = (tiempo - tiempo[0]) / 1000
-
-## Cantidad de muestras de la señal
-cant_muestras = len(tiempo)
-
-## ------------------------------------ DETECCIÓN CORTES EN CERO ---------------------------------------
-
-## Obtengo los índices booleanos en donde se producen los cruces en cero de la aceleración vertical
-## Los elementos <<True>> son aquellos valores luego de que se produce el corte en 0
-ceros = librosa.zero_crossings(acel[:,1] - constants.g)
-
-## Hago la traducción de elementos booleanos a índices numéricos
-indices_ceros = np.where(ceros == True)
-
-## Filtrado pasabandas para quedarme solo con las componentes de aceleración que interesan
-filtrada = signal.sosfiltfilt(signal.butter(N = 4, Wn = [0.5, 4], btype = 'bandpass', fs = 1 / periodoMuestreo, output = 'sos'), acel[:,1] - constants.g)
-
-## Obtengo los índices booleanos en donde se producen los cruces en cero de la aceleración vertical
-## Los elementos <<True>> son aquellos valores luego de que se produce el corte en 0
-ceros_sin_interpolar = librosa.zero_crossings(filtrada)
-
-## Hago la traducción de elementos booleanos a índices numéricos
-## Me aseguro también de eliminar el primer elemento donde se detecta un cambio de signo. O sea el instante inicial donde no tiene sentido contabilizar un HS o un TO
-indices_ceros = np.where(ceros_sin_interpolar == True)[0][1:]
-
-## Los heel strikes serán aquellos valores donde se cambia de positivo a negativo
-heel_strikes = np.take(indices_ceros, np.where(filtrada[indices_ceros] > 0))[0]
-
-## Los toe offs serán aquellos valores donde se cambia de negativo a positivo
-toe_offs = np.take(indices_ceros, np.where(filtrada[indices_ceros] < 0))[0]
-
-## Creo una lista donde guardo los ceros heel strike luego de interpolar
-ceros_hs = []
-
-## Creo una lista donde guardo los ceros toe off luego de interpolar
-ceros_to = []
-
-## Itero para cada uno de los ceros HS que detecté
-for i in range (len(heel_strikes)):
-
-    ## Hago una interpolación lineal entre ese punto y el anterior para obtener el verdadero cruce en 0 con el HS
-    cero_hs = np.interp(x = 0, xp = [filtrada[heel_strikes[i] - 1], filtrada[heel_strikes[i]]], fp = [heel_strikes[i] - 1, heel_strikes[i]])
-
-    ## Agrego el cero HS calculado a la lista
-    ceros_hs.append(cero_hs)
-
-## Itero para cada uno de los ceros TO que detecté
-for i in range (len(toe_offs)):
-
-    ## Hago una interpolación lineal entre ese punto y el anterior para obtener el verdadero cruce en 0 con el TO
-    cero_to = np.interp(x = 0, xp = [filtrada[toe_offs[i]], filtrada[toe_offs[i] - 1]], fp = [toe_offs[i], toe_offs[i] - 1])
-
-    ## Agrego el cero TO calculado a la lista
-    ceros_to.append(cero_to)
-
-## Graficación de Heel Strikes y Toe Offs tomando la aceleración vertical filtrada
-plt.plot(ceros_hs, np.zeros(len(ceros_hs)), "x", label = 'Heel Strikes')
-plt.plot(ceros_to, np.zeros(len(ceros_to)), "o", label = 'Toe Offs')
-plt.plot(filtrada, label = "Aceleracion Vertical Filtrada")
-plt.legend()
-plt.show()
-
-## Graficación de Heel Strikes y Toe Offs tomando la aceleración anteroposterior
-plt.plot(ceros_hs, np.zeros(len(ceros_hs)), "x", label = 'Heel Strikes')
-plt.plot(ceros_to, np.zeros(len(ceros_to)), "o", label = 'Toe Offs')
-plt.plot(-acel[:,2], label = "Aceleracion Anteroposterior")
-plt.legend()
-plt.show()
-
-print("Tiempo Paso Promedio: {}".format(np.mean(np.diff(ceros_hs)) * periodoMuestreo))
-print("Tiempo Paso Desviación Estándar: {}".format(np.std(np.diff(ceros_hs)) * periodoMuestreo))
-print("Tiempo Paso Mediana: {}".format(np.median(np.diff(ceros_hs)) * periodoMuestreo))
+# print("Tiempo Paso Promedio: {}".format(np.mean(np.diff(ceros_hs)) * periodoMuestreo))
+# print("Tiempo Paso Desviación Estándar: {}".format(np.std(np.diff(ceros_hs)) * periodoMuestreo))
+# print("Tiempo Paso Mediana: {}".format(np.median(np.diff(ceros_hs)) * periodoMuestreo))
 
 ## ------------------------------------ DETECCIÓN PRIMER EVENTO ----------------------------------------
 
@@ -160,7 +66,7 @@ for i in range (len(ceros_hs) - 1):
 ## ----------------------------------------- CONJUNTO DE PASOS -----------------------------------------
 
 ## Creo una lista donde voy a guardar los pasos detectados por Zero Crossing
-pasos_zc = []
+pasos = []
 
 ## Itero para cada uno de los eventos HS que tengo detectados
 for i in range (len(ceros_hs) - 1):
@@ -180,4 +86,61 @@ for i in range (len(ceros_hs) - 1):
         paso_zc = {'IC': (heel_strikes[i], heel_strikes[i + 1]),'TC': toe_offs[i + 1]}
     
     ## Agrego el paso detectado a la lista de pasos
-    pasos_zc.append(paso_zc)
+    pasos.append(paso_zc)
+
+## ----------------------------------------- DURACIÓN DE PASOS -----------------------------------------
+
+## Creo una lista donde voy a almacenar las muestras entre todos los pasos
+muestras_pasos = []
+
+## Creo una lista en donde voy a almacenar las duraciones de todos los pasos
+duraciones_pasos = []
+
+## Itero para cada uno de los pasos detectados
+for i in range (len(pasos)):
+    
+    ## Calculo la diferencia entre ambos valores de la tupla en términos temporales
+    diff_pasos = pasos[i]['IC'][1] - pasos[i]['IC'][0]
+
+    ## Almaceno la diferencia de muestras en la lista de muestras entre pasos
+    muestras_pasos.append(diff_pasos)
+
+    ## Almaceno la diferencia temporal entre los pasos en otra lista
+    duraciones_pasos.append(diff_pasos * periodoMuestreo)
+
+## --------------------------------------- TIEMPO ENTRE IC Y TC ----------------------------------------
+
+## Creo una lista donde almaceno las distancias entre ICs y TCs expresado en muestras
+dist_IC_TC = []
+
+## Itero para cada uno de los pasos detectados
+for i in range (len(pasos)):
+    
+    ## Calculo la distancia entre IC y TC
+    dist = pasos[i]['TC'] - pasos[i]['IC'][0]
+
+    ## Agrego la distancia a la lista
+    dist_IC_TC.append(dist)
+
+## Genero la lista de tiempos
+dist_IC_TC_tiempo = np.multiply(periodoMuestreo, dist_IC_TC)
+
+## --------------------------------------- CALCULO DOBLE ESTANCIA --------------------------------------
+
+## Genero una lista vacía donde voy a calcular las proporciones de doble estancia en un paso
+doble_estancia = []
+
+## Itero para cada uno de los pasos detectados
+for i in range (len(pasos)):
+
+    ## Calculo la proporcion de la doble estancia
+    doble_estancia_paso = (pasos[i]['TC'] - pasos[i]['IC'][0]) / (pasos[i]['IC'][1] - pasos[i]['IC'][0])
+
+    ## En caso que la doble estancia tenga un valor no permitido, que se saltee ésta parte
+    if abs(doble_estancia_paso) > 1:
+
+        ## Se saltea ésta iteración
+        continue
+
+    ## La agrego a la lista
+    doble_estancia.append(doble_estancia_paso)
