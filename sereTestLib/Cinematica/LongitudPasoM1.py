@@ -17,7 +17,7 @@ acel_vert_filtrada = signal.sosfiltfilt(sos, acel_vert)
 ## ------------------------------------- INTEGRACIÓN ACELERACIÓN ---------------------------------------
 
 ## Integro aceleración para obtener velocidad
-vel_z = cumulative_trapezoid(acel_vert, tiempo, dx = periodoMuestreo, initial = 0)
+vel_z = cumulative_trapezoid(acel_vert_filtrada, tiempo, dx = periodoMuestreo, initial = 0)
 
 ## --------------------------------------- FILTRADO VELOCIDAD ------------------------------------------
 

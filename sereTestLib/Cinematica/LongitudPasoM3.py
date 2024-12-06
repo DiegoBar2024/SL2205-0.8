@@ -117,7 +117,7 @@ for i in range (len(pasos)):
 long_pierna = 0.9
 
 ## Creo una lista donde voy a guardar las longitudes de pasos
-long_pasos = []
+long_pasos_m3 = []
 
 ## Itero para cada uno de los pasos que tengo detectados
 for i in range (len(pasos)):
@@ -142,12 +142,12 @@ for i in range (len(pasos)):
     long_paso_zc = desp_dstance + desp_sstance
 
     ## Agrego la longitud de paso calculada a la lista
-    long_pasos.append(long_paso_zc)
+    long_pasos_m3.append(long_paso_zc)
 
 print('MÉTODO 3')
-print("Longitud de paso (m)\n  Promedio: {}\n  Desviación Estándar: {}\n  Mediana: {}".format(np.mean(long_pasos), np.std(long_pasos), np.median(long_pasos)))
+print("Longitud de paso (m)\n  Promedio: {}\n  Desviación Estándar: {}\n  Mediana: {}".format(np.mean(long_pasos_m3), np.std(long_pasos_m3), np.median(long_pasos_m3)))
 
 ## --------------------------- GRAFICACIÓN LONGITUD DE PASO (ZERO CROSSING) ---------------------------
 
-plt.scatter(x = np.arange(start = 0, stop = len(long_pasos)), y = long_pasos)
+plt.scatter(x = np.arange(start = 0, stop = len(long_pasos_m3)), y = long_pasos_m3)
 plt.show()
