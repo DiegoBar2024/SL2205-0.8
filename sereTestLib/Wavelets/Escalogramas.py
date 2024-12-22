@@ -35,7 +35,7 @@ for i in range (len(pasos)):
     ## Le doy a la extensión un valor predefinido de 400 muestras (aproximadamente 2 segundos)
     extension = 400
 
-    ## En caso de que la extensión sea mayor al tiempo que tengo, lo seteo en el limite
+    ## En caso de que la extensión sea mayor al tiempo que tengo, lo seteo en el limite izquierdo
     if extension > pasos[i]['IC'][0]:
 
         ## Actualizo el valor de la extensión a realizar
@@ -97,7 +97,7 @@ for i in range (len(pasos)):
                                             coef5[:,extensiones_pasos[i]: coef5.shape[1] - extensiones_pasos[i]], 
                                             coef6[:,extensiones_pasos[i]: coef6.shape[1] - extensiones_pasos[i]]     ])
 
-    ## Graficación del escalograma
+    ## Graficación del escalograma en el i-ésimo paso
     data = np.abs(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]]) ** 2
     cmap = plt.get_cmap('jet', 256)
     fig = plt.figure(figsize=(5,5))

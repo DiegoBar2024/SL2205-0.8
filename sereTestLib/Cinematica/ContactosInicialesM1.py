@@ -23,7 +23,7 @@ import pywt
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
 ## Identificación del paciente
-numero_paciente = '255'
+numero_paciente = '250'
 
 ## Ruta del archivo
 ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/3S{}.csv".format(numero_paciente, numero_paciente)
