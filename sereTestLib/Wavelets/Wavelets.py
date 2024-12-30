@@ -75,22 +75,42 @@ x = np.linspace(0.0, N * T, N, endpoint = False)
 ## Función
 y = 2 * np.cos(100.0 * 2.0 * np.pi * x)
 
-## Escalas de las wavelets
-escalas = np.arange(0.5, 400, 0.5)
+# for j in range (0, J + 1):
 
-## Ploteo de Escalograma
-coef, scales_freq = pywt.cwt(data = y, scales = escalas, wavelet = 'cmor1.5-1', sampling_period = T)
+#     escalas.append(s_0 * (2 ** (j * d_j)))
 
-data = np.abs(coef) ** 2
-cmap = plt.get_cmap('jet', 256)
-fig = plt.figure(figsize=(5,5))
-ax = fig.add_subplot(111)
-t = np.arange(coef.shape[1]) * T
+# ## Ploteo de Escalograma
+# coef, scales_freq = pywt.cwt(data = y, scales = escalas, wavelet = 'cmor1.5-1', sampling_period = T)
 
-ax.pcolormesh(t, scales_freq, data, cmap=cmap, vmin=data.min(), vmax=data.max(), shading='auto')
+# data = np.abs(coef) ** 2
+# cmap = plt.get_cmap('jet', 256)
+# fig = plt.figure(figsize=(5,5))
+# ax = fig.add_subplot(111)
+# t = np.arange(coef.shape[1]) * T
 
-plt.show()
+# ax.pcolormesh(t, scales_freq, data, cmap=cmap, vmin=data.min(), vmax=data.max(), shading='auto')
 
-# (cA, cD) = pywt.dwt(data = y, wavelet = 'cmor1.5-1')
+# plt.show()
 
+(cA, cD) = pywt.dwt(data = y, wavelet = 'db12', mode = 'periodization')
+
+print(cA)
+print(cD)
+
+suma = 0
+
+for coef in cA:
+
+    suma += coef ** 2
+
+for coef in cD:
+
+    suma += coef ** 2
+
+print(suma)
+print(EnergiaSeñalTiempo(y))
 print(pywt.wavelist(kind='discrete'))
+
+print(len(cA))
+print(len(cD))
+print(len(y))

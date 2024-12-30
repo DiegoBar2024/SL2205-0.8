@@ -14,6 +14,7 @@ import pywt, scipy
 import multiprocessing
 from functools import partial
 from parameters  import wavelet_library
+from matplotlib import pyplot as plt
 
 ## Toma como entrada cada una de las submuestras y calcula la transformada de wavelet para cada una de ellas en los seis canales (AC_x, AC_y, AC_z, GY_x, GY_y, GY_z)
 def create_segments_scalograms(directorio_segmentos_muestra, directorio_scalogramas,escalas = [8,136], dt = 0.005, girox = [0,0], giroz = [0,0], actividades = None, save_files = True):
@@ -181,7 +182,7 @@ def create_segments_scalograms(directorio_segmentos_muestra, directorio_scalogra
         matriz_scalogramas[:,:,3] = scalogram_overlap(dt, datosGYx, scales, cant_muestras_overlap, wavelet_library=wavelet_library)
         matriz_scalogramas[:,:,4] = scalogram_overlap(dt, datosGYy, scales, cant_muestras_overlap, wavelet_library=wavelet_library)
         matriz_scalogramas[:,:,5] = scalogram_overlap(dt, datosGYz, scales, cant_muestras_overlap, wavelet_library=wavelet_library)
-            
+
         ##### CÓDIGO COMO ESTABA ANTES
         ## En otro caso, por ejemplo que se trabaje con la librería 'pywt' se entra a lo siguiente
         ## Se realiza lo mismo que está en el if wavelet_library == 'ssqueezepy' pero 
@@ -271,6 +272,18 @@ def scalogram_overlap(dt:float, signal:np.ndarray, scales:array, overlapS:int, w
     ## En caso de usar <<Scipy>> para hacer la transformada de wavelet ejecuto el siguiente bloque
     if wavelet_library == 'scipy':
         coef= scipy.signal.cwt(signal, wavelet=scipy.signal.morlet2, widths=scales)
+
+    ## Graficación del escalograma en el i-ésimo paso
+    data = np.abs(coef) ** 2
+    cmap = plt.get_cmap('jet', 256)
+    fig = plt.figure(figsize=(5,5))
+    ax = fig.add_subplot(111)
+    t = np.arange(coef.shape[1]) * dt
+    ax.pcolormesh(t, scales_freq, data, cmap=cmap, vmin=data.min(), vmax=data.max(), shading='auto')
+    plt.xlabel("Tiempo (s)")
+    plt.ylabel("Frecuencia (Hz)")
+    plt.title("$|CWT(t,f)|^2$")
+    plt.show()
 
     ## En caso de usar <<Ssqueezepy>> para hacer la transformada de wavelet ejecuto el siguiente bloque
     # if wavelet_library == 'ssqueezepy':

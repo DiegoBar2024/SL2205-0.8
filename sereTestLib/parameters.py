@@ -101,6 +101,7 @@ dir_ae=path_dataset + 'ae_intermediate/'
 dir_ae_train=dir_ae + "train/"
 dir_ae_test=dir_ae + "test/"
 escalas_wavelets = [8,136]
+
 clase_waveletes = 'cmorlet'
 directorio_scalogramas = path_dataset + 'wavelet_cmor/'
 # directorio_scalogramas_train = directorio_scalogramas + 'train/'
