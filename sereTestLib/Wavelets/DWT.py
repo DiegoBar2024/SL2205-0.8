@@ -3,6 +3,7 @@ import scaleogram as scg
 import seaborn as sns
 import numpy as np
 import pywt
+from scipy.fft import fft, ifft, fftfreq
 from scipy import fftpack
 from scipy.integrate import cumulative_trapezoid
 
@@ -16,7 +17,7 @@ T = 1.0 / 1500
 x = np.linspace(0.0, N * T, N, endpoint = False)
 
 ## Función
-y = 2 * np.cos(100.0 * 2.0 * np.pi * x) + 2 * np.sin(75.0 * 2.0 * np.pi * x)
+y = 2 * np.cos(100.0 * 2.0 * np.pi * x) + 2 * np.sin(600 * 2.0 * np.pi * x)
 
 ## ENERGÍA DE LA SEÑAL EN EL DOMINIO DEL TIEMPO
 ## Creo una variable donde guardo la energía calculada
@@ -74,3 +75,72 @@ for wavelet in wavelets_discretas:
 
         ## Calculo el módulo al cuadrado de dicho coeficiente de detalle
         energia += np.abs(coef) ** 2
+
+## Descomposición multinivel usando DWT
+coefs = pywt.wavedec(data = y, wavelet = 'db4', mode = 'periodization', level = 4)
+
+energia_multinivel = 0
+
+for coef in coefs:
+
+    energia_multinivel += np.sum(np.square(coef))
+
+print(energia_multinivel)
+
+# ## TRANSFORMADA DE FOURIER DE LA SEÑAL ORIGINAL
+# ## Por medio de la función <<fft>> calculo la transformada de Fourier de la señal de entrada
+# transformada = fft(y)
+
+# ## Por medio de la función <<fftfreq>> calculo el eje de las frecuencias
+# frecuencias = fftfreq(y.shape[0], T)
+
+# ## Hago la gráfica de los coeficientes de la transformada en función de la frecuencia
+# ## La gráfica se hace únicamente para frecuencias positivas
+# plt.plot(frecuencias[:y.shape[0]//2], (2 / y.shape[0]) * np.abs(transformada[0:y.shape[0]//2]))
+
+# ## Nomenclatura de ejes
+# plt.xlabel("Frecuencia (Hz)")
+# plt.ylabel("Magnitud")
+
+# ## Despliego la gráfica
+# plt.show()
+
+# ## TRANSFORMADA DE FOURIER DE LA APROXIMATION SIGNAL
+# ## Por medio de la función <<fft>> calculo la transformada de Fourier de la señal de entrada
+# transformada = fft(wavelets['db1'][0])
+
+# ## Por medio de la función <<fftfreq>> calculo el eje de las frecuencias
+# frecuencias = fftfreq(wavelets['db1'][0].shape[0], T)
+
+# ## Hago la gráfica de los coeficientes de la transformada en función de la frecuencia
+# ## La gráfica se hace únicamente para frecuencias positivas
+# plt.plot(frecuencias[:wavelets['db1'][0].shape[0]//2], (2 / wavelets['db1'][0].shape[0]) * np.abs(transformada[0:wavelets['db1'][0].shape[0]//2]))
+
+# ## Nomenclatura de ejes
+# plt.xlabel("Frecuencia (Hz)")
+# plt.ylabel("Magnitud")
+
+# ## Despliego la gráfica
+# plt.show()
+
+# ## TRANSFORMADA DE FOURIER DE LA DETAIL SIGNAL
+# ## Por medio de la función <<fft>> calculo la transformada de Fourier de la señal de entrada
+# transformada = fft(wavelets['db1'][1])
+
+# ## Por medio de la función <<fftfreq>> calculo el eje de las frecuencias
+# frecuencias = fftfreq(wavelets['db1'][1].shape[0], T)
+
+# ## Hago la gráfica de los coeficientes de la transformada en función de la frecuencia
+# ## La gráfica se hace únicamente para frecuencias positivas
+# plt.plot(frecuencias[:wavelets['db1'][1].shape[0]//2], (2 / wavelets['db1'][1].shape[0]) * np.abs(transformada[0:wavelets['db1'][1].shape[0]//2]))
+
+# ## Nomenclatura de ejes
+# plt.xlabel("Frecuencia (Hz)")
+# plt.ylabel("Magnitud")
+
+# ## Despliego la gráfica
+# plt.show()
+
+# plt.plot(wavelets['db1'][1])
+# plt.plot(y)
+# plt.show()
