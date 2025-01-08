@@ -17,7 +17,7 @@ T = 1.0 / 200
 x = np.linspace(0.0, N * T, N, endpoint = False)
 
 ## Función
-y = 20 * np.cos(20 * 2.0 * np.pi * x) + 20 * np.cos(2.25 * 2.0 * np.pi * x)
+y = 20 * np.cos(20 * 2.0 * np.pi * x) + 20 * np.cos(2.25 * 2.0 * np.pi * x) + 20 * np.cos(75 * 2.0 * np.pi * x)
 
 ## ENERGÍA DE LA SEÑAL EN EL DOMINIO DEL TIEMPO
 ## Creo una variable donde guardo la energía calculada
@@ -77,7 +77,7 @@ for wavelet in wavelets_discretas:
         energia += np.abs(coef) ** 2
 
 ## Descomposición multinivel usando DWT
-coefs = pywt.wavedec(data = y, wavelet = 'db10', mode = 'periodization', level = 10)
+coefs = pywt.wavedec(data = y, wavelet = 'db20', mode = 'periodization', level = 10)
 
 ## Seteo la variable donde guardo el valor de la energía en 0
 energia_multinivel = 0
