@@ -1,7 +1,4 @@
-import tensorflow as tf
+## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
-fashion_mnist = tf.keras.datasets.fashion_mnist.load_data()
-
-(X_train_full, y_train_full), (X_test, y_test) = fashion_mnist
-
-print(X_test)
+import sys
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')

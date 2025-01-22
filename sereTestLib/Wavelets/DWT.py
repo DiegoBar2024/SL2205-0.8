@@ -1,11 +1,7 @@
 import matplotlib.pyplot as plt
-import scaleogram as scg
-import seaborn as sns
 import numpy as np
 import pywt
-from scipy.fft import fft, ifft, fftfreq
 from scipy import fftpack
-from scipy.integrate import cumulative_trapezoid
 
 # Cantidad de muestras
 N = 600
