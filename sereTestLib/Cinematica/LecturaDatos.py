@@ -1,11 +1,14 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
 import pandas as pd
+from matplotlib import pyplot as plt
+import numpy as np
+from Muestreo import *
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
 ## Especifico la ruta del fichero .txt a abrir
-ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/DefaultTrial_Session2_Shimmer_B5B6_Calibrated_PC.txt"
+ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session5_Rodrigo_1_952D/505_Session5_Shimmer_952D_Calibrated_PC_Rodrigo_1_952D.txt"
 
 ## Especifico la ruta en donde voy a guardar el .csv correspondiente
 ruta_csv = "C:/Yo/Tesis/Tesis/Excel_leidos/Prueba.csv"
@@ -58,3 +61,30 @@ data = data[columnas_deseadas]
 
 ## Escribo el dataframe en un .csv
 data.to_csv(ruta_csv, index = False)
+
+## ----------------------------------------- PREPROCESAMIENTO ------------------------------------------
+
+## Armamos una matriz donde las columnas sean las aceleraciones
+acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(-data['AC_z'])]).transpose()
+
+## Armamos una matriz donde las columnas sean los valores de los giros
+gyro = np.array([np.array(data['GY_x']), np.array(data['GY_y']), np.array(data['GY_z'])]).transpose()
+
+## Separo el vector de tiempos del dataframe
+tiempo = np.array(data['Time'])
+
+## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
+tiempo = (tiempo - tiempo[0]) / 1000
+
+## Cantidad de muestras de la señal
+cant_muestras = len(tiempo)
+
+## Hallo el período de muestreo de las señales
+periodoMuestreo = PeriodoMuestreo(data)
+
+## ------------------------------------------- GRAFICACIÓN ---------------------------------------------
+
+# plt.plot(tiempo, data['AC_x'], label = 'Aceleración Mediolateral')
+# plt.plot(tiempo, data['AC_y'], label = 'Aceleración Vertical')
+# plt.plot(tiempo, data['AC_z'], label = 'Aceleración Anteroposterior')
+# plt.show()

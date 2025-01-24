@@ -48,15 +48,19 @@ pos_z_filtrada = signal.sosfiltfilt(sos, pos_z)
 ## Especifico la longitud de la pierna del individuo en metros
 ## Ésto debe considerarse como una entrada al sistema. Es un parámetro que puede medirse
 ## ¡IMPORTANTE: ÉSTE PARÁMETRO CAMBIA CON CADA PERSONA! SINO EL RESULTADO DA CUALQUIER COSA
-long_pierna = 0.9
+long_pierna = 1
 
 ## Longitud del pie de la persona. Dato a medir y que puede variar el resultado
 ## Éste valor es necesario para estimar el desplazamiento en la fase de doble estancia
 ## Si no tengo un valor concreto tomo por defecto 30cm
-long_pie = 0.25
+long_pie = 0.3
 
 ## Creo una lista donde voy a almacenar la longitud de los pasos de la persona
 long_pasos_m2 = []
+
+## Especifico el coeficiente multiplicativo que uso para ponderar la longitud del pie
+## Los estudios sugieren usar un factor de corrección multiplicativo de 0.75 para la longitud del pie
+factor_correccion_pie = 0.75
 
 ## Itero para cada uno de los segmentos de pasos detectados (IC a IC)
 for i in range (len(pasos)):
@@ -71,7 +75,7 @@ for i in range (len(pasos)):
     d_step = abs(max(tramo_TC_IC) - min(tramo_TC_IC))
 
     ## Calculo longitud del paso sumando la componente single stance y double stance
-    long_paso = 2 * np.sqrt(2 * long_pierna * d_step - d_step ** 2) + 0.75 * long_pie
+    long_paso = 2 * np.sqrt(2 * long_pierna * d_step - d_step ** 2) + factor_correccion_pie * long_pie
 
     ## Guargo la longitud de paso en la lista
     long_pasos_m2.append(long_paso)

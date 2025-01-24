@@ -76,17 +76,20 @@ for i in range (len(segmentada)):
 ## Especifico la longitud de la pierna del individuo en metros
 ## Ésto debe considerarse como una entrada al sistema. Es un parámetro que puede medirse
 ## ¡IMPORTANTE: ÉSTE PARÁMETRO CAMBIA CON CADA PERSONA! SINO EL RESULTADO DA CUALQUIER COSA
-long_pierna = 0.9
+long_pierna = 1
 
 ## Creo una lista donde voy a almacenar la longitud de los pasos de la persona
 long_pasos_m1 = []
+
+## Especifico el coeficiente multiplicativo que uso para ponderar la longitud del paso
+## Los estudios sugieren usar un factor de corrección multiplicativo de 1.25 para la longitud del paso
+factor_correccion = 1.25
 
 ## Itero para cada uno de los segmentos de pasos detectados (IC a IC)
 for i in range (len(segmentada)):
     
     ## Calculo la longitud del paso con la fórmula sugerida por Zijlstra
-    ## Aplico Factor de Corrección multiplicativo de 1.25 (recomendación para no subestimar longitud pasos)
-    long_paso = 1.25 * 2 * np.sqrt(2 * long_pierna * desp_vert_COM[i] - desp_vert_COM[i] ** 2)
+    long_paso = factor_correccion * 2 * np.sqrt(2 * long_pierna * desp_vert_COM[i] - desp_vert_COM[i] ** 2)
 
     ## Agrego el paso a la lista de longitud de pasos
     long_pasos_m1.append(long_paso)

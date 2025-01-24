@@ -10,7 +10,7 @@ from SegmentacionM1 import *
 ## Escalas de las wavelets a utilizar
 ## Se recuerda que la frecuencia me queda f = f_muestreo / escala
 ## Ésto me implica que a escalas más pequeñas tengo frecuencias más grandes
-escalas = np.arange(50, 150, 1)
+escalas = np.arange(50, 200, 1)
 
 ## Tipo de wavelet a utilizar. Wavelet de Morlet Compleja
 ## Parámetro B (Ancho de banda): 1.5 Hz
