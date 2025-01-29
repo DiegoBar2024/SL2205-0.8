@@ -235,7 +235,7 @@ def ingesta_etiquetas(csv_path = dir_etiquetas + 'clasificaciones_antropometrico
 
     df.to_csv(csv_path)
 
-    return(x_inestables_train_clf, x_estables_train_clf, x_inestables_val_clf, x_estables_val_clf, x_ae_train, x_ae_val, x_estables_ae_train, x_inestables_ae_train, x_estables_ae_val, x_inestables_ae_val)
+    return (x_inestables_train_clf, x_estables_train_clf, x_inestables_val_clf, x_estables_val_clf, x_ae_train, x_ae_val, x_estables_ae_train, x_inestables_ae_train, x_estables_ae_val, x_inestables_ae_val)
 
 def ingesta_etiquetas_concat(csv_path = dir_etiquetas + 'clasificaciones_antropometricos_concat.csv', plot_path = dir_etiquetas, seed = 42):
     

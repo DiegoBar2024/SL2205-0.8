@@ -2,8 +2,10 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-from LongitudPasoM1 import long_pasos_m1
+from LongitudPasoM1 import long_pasos_m1, coeficientes
 from LongitudPasoM2 import long_pasos_m2
+from sklearn.linear_model import LinearRegression
+from scipy.stats import linregress
 
 ## ------------------------------------ CÁLCULO DE ERROR (MÉTODO I) ------------------------------------
 
@@ -20,6 +22,14 @@ error_m1 = abs(pasos_control_m1 - long_pasos_m1)
 plt.scatter(x = np.arange(start = 0, stop = len(long_pasos_m1)), y = error_m1)
 plt.legend(["Metodo I"])
 plt.show()
+
+## ------------------------------------- OPTIMIZACIÓN (MÉTODO I) ---------------------------------------
+
+## Calculo el error cuadrático medio actual de los pasos tomados
+error_medio = np.sum(np.square(error_m1)) / len(error_m1)
+
+## Calculo el valor óptimo del factor de corrección usando la regresión lineal (ver análisis teórico)
+optimo = (np.dot(pasos_control_m1, coeficientes)) / (np.sum(np.square(coeficientes)))
 
 ## ----------------------------------- CÁLCULO DE ERROR (MÉTODO II) ------------------------------------
 
