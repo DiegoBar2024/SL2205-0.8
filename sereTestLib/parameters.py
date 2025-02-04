@@ -32,7 +32,7 @@ date = datetime.now()
 date_day = date.strftime('%Y%m%d')
 date = date.strftime('%Y%m%d_%H%M')
 extra = "StandarAum" ### Extra en el nombre del archivo: "Augmented", "StandarAum", "AumGiro", "AumGiroStd"
-clasificador='RF'#lda perceptron svm, NN,RF, AE_MLP hierarchical o kmeans o Transfer
+clasificador='perceptron'#lda perceptron svm, NN,RF, AE_MLP hierarchical o kmeans o Transfer
 loss_name= "mse"             #mse o binary_crosentropy ssim_loss
 project_wandb="SereTest-data" #WandB - Proyecto donde se descargan los datos
 

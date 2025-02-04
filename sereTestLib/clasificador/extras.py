@@ -25,7 +25,7 @@ def clasificador_name_creation(activities, clasificador):
 ## El parámetro <<modelo>> va a ser el modelo del autoencoder ya entrenado
 ## El parámetro <<layer_name>> me dice cuál es el layer del autoencoder de donde yo voy a buscar la salida
 ## Esencialmente ésta función me va a devolver, para todas las muestras de entrada, cuál sería el vector de 256 características COMPRIMIDO arrojado por el autoencoder
-def patient_group_aelda(patient_list,modelo, layer_name = 'Dense_encoder', **params):
+def patient_group_aelda(patient_list, modelo, layer_name = 'Dense_encoder', **params):
     """
     Function that takes as input a list of patients and the parameters for the data generator
     and returns the intermediate layer values for each data sample.

@@ -83,11 +83,17 @@ class DataGeneratorAuto(keras.utils.Sequence):
     def __get_files_lists(self, id_folder):
 
         ## Concateno primero los paths <<self.data_dir>> con <<id_folder>>
-        fullD = os.path.join(self.data_dir, id_folder)
+        fullD = self.data_dir + '/' + id_folder
 
-        ## Guardo en <<files>> la lista de archivos que se encuentran dentro del path dado por fullD
-        files = os.listdir(fullD)
+        try:
+
+            ## Guardo en <<files>> la lista de archivos que se encuentran dentro del path dado por fullD
+            files = os.listdir(fullD)
         
+        except:
+
+            return []
+            
         ## Recuerdo que <<dict_actividades = {'Sentado':'1','Parado':'2','Caminando':'3','Escalera':'4'}>> era aquel diccionario cuyas claves son los nombres de las actividades y los valores son los números asociados
         ## <<actividades>> me va a quedar como resultado una lista cuyos elementos van a ser los valores asociados a las actividades que pasé como lista de entrada en activities
         ## Por ejemplo, suponiendo que <<activities = ['Parado', 'Caminando']>> se me almacenará en <<actividades>> la lista <<actividades = ['2','3']>>
@@ -180,8 +186,16 @@ class DataGeneratorAuto(keras.utils.Sequence):
                 file = self.__get_file(id_folder,file_index)
                 dirIn = self.character + str(pat_id)
                 # Leo el archivo
-                fullPath=self.data_dir+dirIn+'/'+file
-                arch = np.load(fullPath)
+                fullPath=self.data_dir+'/'+dirIn+'/'+file
+                
+                try:
+
+                    arch = np.load(fullPath)
+                
+                except:
+
+                    continue
+
                 # Store sample
                 auxX = arch['X']
                 #print("min",np.min(auxX))

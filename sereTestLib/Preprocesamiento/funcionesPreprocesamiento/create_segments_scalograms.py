@@ -130,6 +130,9 @@ def create_segments_scalograms(directorio_segmentos_muestra, directorio_scalogra
     ## La variable archivo_segmento va a tomar los valores de los elementos de la lista <<archivos_segmentos dinámicos>> que son los nombres de los ficheros .csv que contienen los segmentos a examinar
     for i, archivo_segmento in enumerate(archivos_segmentos_dinamicos):
 
+        ## Aviso que está procesando
+        print(i)
+
         ## Se concatenan <<directorio_segmentos_muestra>> y <<archivo_segmento>> para obtener la ruta completa al segmento .csv
         archivo_entrada = '%s%s' % (directorio_segmentos_muestra, archivo_segmento)
 
@@ -273,17 +276,17 @@ def scalogram_overlap(dt:float, signal:np.ndarray, scales:array, overlapS:int, w
     if wavelet_library == 'scipy':
         coef= scipy.signal.cwt(signal, wavelet=scipy.signal.morlet2, widths=scales)
 
-    ## Graficación del escalograma en el i-ésimo paso
-    data = np.abs(coef) ** 2
-    cmap = plt.get_cmap('jet', 256)
-    fig = plt.figure(figsize=(5,5))
-    ax = fig.add_subplot(111)
-    t = np.arange(coef.shape[1]) * dt
-    ax.pcolormesh(t, scales_freq, data, cmap=cmap, vmin=data.min(), vmax=data.max(), shading='auto')
-    plt.xlabel("Tiempo (s)")
-    plt.ylabel("Frecuencia (Hz)")
-    plt.title("$|CWT(t,f)|^2$")
-    plt.show()
+    # ## Graficación del escalograma en el i-ésimo paso
+    # data = np.abs(coef) ** 2
+    # cmap = plt.get_cmap('jet', 256)
+    # fig = plt.figure(figsize=(5,5))
+    # ax = fig.add_subplot(111)
+    # t = np.arange(coef.shape[1]) * dt
+    # ax.pcolormesh(t, scales_freq, data, cmap=cmap, vmin=data.min(), vmax=data.max(), shading='auto')
+    # plt.xlabel("Tiempo (s)")
+    # plt.ylabel("Frecuencia (Hz)")
+    # plt.title("$|CWT(t,f)|^2$")
+    # plt.show()
 
     ## En caso de usar <<Ssqueezepy>> para hacer la transformada de wavelet ejecuto el siguiente bloque
     # if wavelet_library == 'ssqueezepy':

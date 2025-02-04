@@ -1,6 +1,8 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
 import sys
+from scipy.signal import *
+import numpy as np
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 
 from SegmentacionM1 import *
@@ -96,6 +98,9 @@ for i in range (len(pasos)):
                                             coef4[:,extensiones_pasos[i]: coef4.shape[1] - extensiones_pasos[i]], 
                                             coef5[:,extensiones_pasos[i]: coef5.shape[1] - extensiones_pasos[i]], 
                                             coef6[:,extensiones_pasos[i]: coef6.shape[1] - extensiones_pasos[i]]     ])
+
+    ## Hago el remuestreo de la señal temporal para quue el tensor me quede de dimensión fija
+    matriz_escalogramas[i] = resample(matriz_escalogramas[i], 200, axis = 2)
 
     ## Graficación del escalograma en el i-ésimo paso
     data = np.abs(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]]) ** 2
