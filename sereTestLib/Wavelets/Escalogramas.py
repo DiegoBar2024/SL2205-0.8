@@ -14,10 +14,13 @@ from SegmentacionM1 import *
 ## Ésto me implica que a escalas más pequeñas tengo frecuencias más grandes
 escalas = np.arange(50, 200, 1)
 
+## Creo una variable la cual almacene el ancho de banda de la wavelet
+ancho_banda = 1.5
+
 ## Tipo de wavelet a utilizar. Wavelet de Morlet Compleja
-## Parámetro B (Ancho de banda): 1.5 Hz
+## Parámetro B (Ancho de banda): 1.5 Hz (ajustable)
 ## Parámetro C (Frecuencia Central): 1 Hz
-wavelet = 'cmor1.5-1'
+wavelet = 'cmor{}-1'.format(ancho_banda)
 
 ## ------------------------------------------- SEGMENTACIÓN --------------------------------------------
 

@@ -38,7 +38,9 @@ def ssim_metric(y_true, y_pred):
 
     return loss
 
-def ae_train_save_model(path_to_scalograms_train=dir_preprocessed_data_train, path_to_scalograms_val=dir_preprocessed_data_test , model_path=model_path_ae, input_dimension=inDim, list_of_samples_number_train=[],list_of_samples_number_validation=[], number_epochs=num_epochs, activities=act_ae, batch_size=batch_size,latent_dimension=latent_dimension,debug=False):
+## Función que genera el modelo del autoencoder y lo entrena según los parámetros de entrada
+def ae_train_save_model(path_to_scalograms_train = dir_preprocessed_data_train, path_to_scalograms_val = dir_preprocessed_data_test , model_path = model_path_ae, input_dimension = inDim, list_of_samples_number_train = [], 
+                        list_of_samples_number_validation = [], number_epochs = num_epochs, activities = act_ae, batch_size = batch_size, latent_dimension = latent_dimension, debug = False):
     """
         Function that generates the autoencoder model base on training datagroup. Validates it and saves it.
         NOTE: If more than one activity is given, are trated together
@@ -77,7 +79,7 @@ def ae_train_save_model(path_to_scalograms_train=dir_preprocessed_data_train, pa
     ## En caso de que la función de costo sea "MS_SSIM" ejecuto lo siguiente
     else:
 
-        basic_path = modo_ae+str(latent_dimension)+"".join(act_ae)+str(num_epochs)
+        basic_path = modo_ae + str(latent_dimension)+"".join(act_ae)+str(num_epochs)
         autoencoder = keras.models.load_model(model_path + autoencoder_name+'.h5')
 
         #autoencoder=keras.models.load_model(model_path + autoencoder_name, custom_objects={"ssim_loss":ssim_loss})
@@ -96,14 +98,14 @@ def ae_train_save_model(path_to_scalograms_train=dir_preprocessed_data_train, pa
         ## Creo dicho directorio
         os.makedirs(model_path)
 
-    ## Parámetros de entrenamiento
+    ## Parámetros de entrenamiento del autoencoder
     paramsT = {'data_dir' : path_to_scalograms_train,
                             'dim': input_dimension,
                             'batch_size': batch_size,
                             'shuffle': True,
                             'activities':activities}
 
-    ## Parámetros de validación
+    ## Parámetros de validación del autoencoder
     paramsV= {'data_dir' : path_to_scalograms_val,
                             'dim': input_dimension,
                             'batch_size': batch_size,
@@ -123,7 +125,7 @@ def ae_train_save_model(path_to_scalograms_train=dir_preprocessed_data_train, pa
     # #callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=2)
     # callbacks=[wandb.keras.WandbCallback(save_model=False),tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=2)]
     
-    # Entrenamiento del modelo de autoencoder
+    # Entrenamiento del modelo de autoencoder especificando todos los parámetros correspondientes
     history = autoencoder.fit(x = training_generator,
                     validation_data = validation_generator,
                     epochs = number_epochs,
@@ -135,28 +137,6 @@ def ae_train_save_model(path_to_scalograms_train=dir_preprocessed_data_train, pa
     # Clear keras session. Free memory and reduce loop problems
     del autoencoder
     keras.backend.clear_session()
-
-    #history_image_name =  autoencoder_name+ '_history_evaluation_autoencoder'+".jpg"
-    #plt.plot(history.history["loss"],'*-', label="Training Loss")
-    #plt.plot(history.history["val_loss"],'o-', label="Validation Loss")
-    #plt.legend()
-    #plt.savefig(model_path+history_image_name)
-    #plt.close()
-
-# def autoencoder_model_name_creation(activities):
-#     """
-#     Function that craates the autoencoder model name.
-#     Parameters:
-#     -----------
-#     activities: list
-#         List of activities to train and validate the model.
-    
-#     Returns:
-#     -------
-#     autoencoder_name: str
-#     """
-#     autoencoder_name = modo_ae+'_'+str(latent_dimension)+'_'+act_ae[0]+'_'+str(num_epochs)+'_'+loss_name
-#     return autoencoder_name
 
 ## Función la cual me construye el modelo del autoencoder
 ## <<dim_input>> me da las dimensiones de la entrada del autoencoder. Por defecto tengo dim_input = (128, 600, 6) lo cual quiere decir que mi entrada es un tensor tridimensional de 128 x 600 y profundidad 6. Es decir un tensor de dimensiones 128 x 600 x 6
@@ -180,7 +160,7 @@ def ae_model_builder(dim_input = (128,600,6), filters = (32,16,8), latentDim = 2
 
     """
 
-    chanDim = -1
+    ## Instrucción de inicialización
     init = keras.initializers.he_normal()
 
     ## Defino cuál va a ser la entrada del autoencoder con sus respectivas dimensiones
