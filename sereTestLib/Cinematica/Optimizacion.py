@@ -9,7 +9,7 @@ from scipy.stats import linregress
 
 ## ------------------------------------ CÁLCULO DE ERROR (MÉTODO I) ------------------------------------
 
-## Genero una variable que me guarde la longitud de los pasos esperada expresada en metros
+## Genero una variable que me guarde la longitud de los pasos esperada expresada en metros (valor de control)
 longitud_pasos = 0.50
 
 ## Construyo un vector del tamaño de la cantidad de pasos detectados cuyos valores sean igual a la longitud especificada anteriormente

@@ -245,6 +245,11 @@ for i in range (len(pasos)):
     ## Almaceno la diferencia temporal entre los pasos en otra lista
     duraciones_pasos.append(diff_pasos * periodoMuestreo)
 
+## ---------------------------------------- CANTIDAD DE PASOS ------------------------------------------
+
+## Me guardo en una variable la cantidad total de pasos
+cantidad_pasos = len(pasos)
+
 ## ------------------------------- GRAFICACIÓN DURACIÓN PASOS POST MÉTODO ------------------------------
 
 plt.scatter(x = np.arange(start = 0, stop = len(duraciones_pasos)), y = duraciones_pasos)

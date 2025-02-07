@@ -108,6 +108,11 @@ for i in range (len(pasos)):
     ## Almaceno la diferencia temporal entre los pasos en otra lista
     duraciones_pasos.append(diff_pasos * periodoMuestreo)
 
+## ---------------------------------------- CANTIDAD DE PASOS ------------------------------------------
+
+## Me guardo en una variable la cantidad total de pasos
+cantidad_pasos = len(pasos)
+
 ## --------------------------------------- TIEMPO ENTRE IC Y TC ----------------------------------------
 
 ## Creo una lista donde almaceno las distancias entre ICs y TCs expresado en muestras
