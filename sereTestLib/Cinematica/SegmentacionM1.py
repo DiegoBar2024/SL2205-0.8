@@ -10,7 +10,7 @@ pasos = []
 
 ## Itero para cada uno de los picos detectados
 for i in range (len(picos_sucesivos) - 1):
-    
+
     ## En caso que la distancia entre picos esté en un rango aceptable, concluyo que ahí se habrá detectado un paso
     if (0.7 * muestras_paso < picos_sucesivos[i + 1] - picos_sucesivos[i] < 1.3 * muestras_paso):
 
@@ -30,6 +30,14 @@ for i in range (len(picos_sucesivos) - 1):
         ## Me guardo también el Toe Off que haya detectado entre los dos pasos
         pasos.append({'IC': (picos_sucesivos[i], picos_sucesivos[i + 1]),'TC': toe_off})
     
+    # ## En caso de que la distancia entre los picos sea mayor a la esperada
+    # else:
+
+    #     ## Grafica de la señal recortada en ese tramo
+    #     plt.plot(acc_AP_norm[picos_sucesivos[i] : picos_sucesivos[i + 1]])
+    #     plt.title("Cantidad de muestras: {}\nCantidad de muestras por paso: {}".format(picos_sucesivos[i + 1] - picos_sucesivos[i], muestras_paso))
+    #     plt.show()
+
 ## ----------------------------------------- DURACIÓN DE PASOS -----------------------------------------
 
 ## Creo una lista donde voy a almacenar las muestras entre todos los pasos
@@ -54,8 +62,6 @@ for i in range (len(pasos)):
 
 ## Me guardo en una variable la cantidad total de pasos
 cantidad_pasos = len(pasos)
-
-print(cantidad_pasos)
 
 ## --------------------------------------- TIEMPO ENTRE IC Y TC ----------------------------------------
 

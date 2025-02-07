@@ -217,13 +217,6 @@ for i in range (len(picos_sucesivos) - 1):
     ## Agrego el TO detectado a la lista de toe offs
     toe_offs_min.append(toe_off + picos_sucesivos[i])
 
-    # plt.plot(np.diff(segmento))
-    # plt.plot(toe_off, np.diff(segmento)[toe_off], 'x', label = 'Toe Off')
-    # plt.legend()
-    # plt.show()
-
-# GraficacionPicos(acel_lowpass - constants.g, toe_offs_min)
-
 ## ------------------------------- GRAFICACIÓN DE CONTACTOS TERMINALES ---------------------------------
 
 ## Hago la graficación del espaciamiento entre Toe Offs

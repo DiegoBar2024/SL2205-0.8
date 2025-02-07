@@ -1,0 +1,3 @@
+Datos Rodrigo Sensor 952D
+Error de Mínimos Cuadrados: 0.010092787323094083
+Coeficiente Óptimo: 0.9979793592121227
