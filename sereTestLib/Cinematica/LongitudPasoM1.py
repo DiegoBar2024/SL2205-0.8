@@ -83,7 +83,7 @@ long_pasos_m1 = []
 
 ## Construyo una lista donde guardo los valores del término que multiplica al factor de corrección
 ## Ésto se hace con propósitos de optimización del valor del factor de corrección
-coeficientes = []
+coeficientes_m1 = []
 
 ## Especifico el coeficiente multiplicativo que uso para ponderar la longitud del paso
 ## Los estudios sugieren usar un factor de corrección multiplicativo de 1.25 para la longitud del paso
@@ -96,7 +96,7 @@ for i in range (len(segmentada)):
     long_paso = factor_correccion * 2 * np.sqrt(2 * long_pierna * desp_vert_COM[i] - desp_vert_COM[i] ** 2)
 
     ## Agrego el coeficiente correspondiente a la lista
-    coeficientes.append(2 * np.sqrt(2 * long_pierna * desp_vert_COM[i] - desp_vert_COM[i] ** 2))
+    coeficientes_m1.append(2 * np.sqrt(2 * long_pierna * desp_vert_COM[i] - desp_vert_COM[i] ** 2))
 
     ## Agrego el paso a la lista de longitud de pasos
     long_pasos_m1.append(long_paso)

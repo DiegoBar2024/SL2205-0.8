@@ -2,10 +2,8 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-from LongitudPasoM1 import long_pasos_m1, coeficientes
-from LongitudPasoM2 import long_pasos_m2
-from sklearn.linear_model import LinearRegression
-from scipy.stats import linregress
+from LongitudPasoM1 import long_pasos_m1, coeficientes_m1
+from LongitudPasoM2 import long_pasos_m2, coeficientes_m2, long_pie
 
 ## ------------------------------------ CÁLCULO DE ERROR (MÉTODO I) ------------------------------------
 
@@ -26,38 +24,13 @@ plt.show()
 ## ------------------------------------- OPTIMIZACIÓN (MÉTODO I) ---------------------------------------
 
 ## Calculo el error cuadrático medio actual de los pasos tomados
-error_medio = np.sum(np.square(error_m1)) / len(error_m1)
+error_medio_m1 = np.sum(np.square(error_m1)) / len(error_m1)
 
-## Calculo el valor óptimo del factor de corrección usando la regresión lineal (ver análisis teórico)
-optimo = (np.dot(pasos_control_m1, coeficientes)) / (np.sum(np.square(coeficientes)))
+## Calculo el valor óptimo del factor de corrección usando minimización de error de minimos cuadrados (ver análisis teórico)
+optimo_m1 = (np.dot(pasos_control_m1, coeficientes_m1)) / (np.sum(np.square(coeficientes_m1)))
 
-## ---------------------------- REGISTRO EN ARCHIVO DE TEXTO (MÉTODO I) --------------------------------
-
-# ## SABRINA SENSOR 952D
-# ## Abro el fichero que corresponde a la persona con la que estoy haciendo la prueba
-# fichero = open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/CinematicaRodrigo952D.txt", "w")
-
-# ## Escribo en el archivo el valor del error de mínimos cuadrados en la predicción
-# fichero.write("Datos Rodrigo Sensor 952D\nError de Mínimos Cuadrados: {}".format(error_medio))
-
-# ## Escribo en el archivo el valor óptimo de coeficiente para el método I
-# fichero.write("\nCoeficiente Óptimo: {}".format(optimo))
-
-# ## Cierro el fichero correspdoniente
-# fichero.close()
-
-## RODRIGO SENSOR 952D
-## Abro el fichero que corresponde a la persona con la que estoy haciendo la prueba
-fichero = open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/CinematicaRodrigo952D.txt", "w")
-
-## Escribo en el archivo el valor del error de mínimos cuadrados en la predicción
-fichero.write("Datos Rodrigo Sensor 952D\nError de Mínimos Cuadrados: {}".format(error_medio))
-
-## Escribo en el archivo el valor óptimo de coeficiente para el método I
-fichero.write("\nCoeficiente Óptimo: {}".format(optimo))
-
-## Cierro el fichero correspdoniente
-fichero.close()
+## Impresión en pantalla con el valor óptimo para el método M1
+print("Valor óptimo para el método M1: {}".format(optimo_m1))
 
 ## ----------------------------------- CÁLCULO DE ERROR (MÉTODO II) ------------------------------------
 
@@ -73,3 +46,13 @@ plt.legend(["Metodo II"])
 plt.show()
 
 ## ------------------------------------- OPTIMIZACIÓN (MÉTODO II) --------------------------------------
+
+## Igual a la optimización con el método I aplico un modelo de mínimización de error cuadrático medio
+## Calculo el error cuadrático medio actual de los pasos tomados
+error_medio_m2 = np.sum(np.square(error_m2)) / len(error_m2)
+
+## Calculo el valor óptimo del factor de corrección usando minimización de error de minimos cuadrados (ver análisis teórico)
+optimo_m2 =  (np.sum(np.subtract(pasos_control_m2, coeficientes_m2))) / (long_pie * len(pasos_control_m2))
+
+## Impresión en pantalla con el valor óptimo para el método M2
+print("Valor óptimo para el método M2: {}".format(optimo_m2))

@@ -58,9 +58,13 @@ long_pie = 0.3
 ## Creo una lista donde voy a almacenar la longitud de los pasos de la persona
 long_pasos_m2 = []
 
+## Creo un vector de coeficientes guardando el sumando independiente de la longitud del pie
+coeficientes_m2 = []
+
 ## Especifico el coeficiente multiplicativo que uso para ponderar la longitud del pie
 ## Los estudios sugieren usar un factor de corrección multiplicativo de 0.75 para la longitud del pie
-factor_correccion_pie = 0.75
+## La idea es poder usar éste coeficiente para optimizar el modelo
+factor_correccion_pie = 0.14
 
 ## Itero para cada uno de los segmentos de pasos detectados (IC a IC)
 for i in range (len(pasos)):
@@ -79,6 +83,9 @@ for i in range (len(pasos)):
 
     ## Guargo la longitud de paso en la lista
     long_pasos_m2.append(long_paso)
+
+    ## Agrego el coeficiente correspondiente
+    coeficientes_m2.append(2 * np.sqrt(2 * long_pierna * d_step - d_step ** 2))
 
 ## ----------------------------- CÁLCULO DE PARÁMETROS DE MARCHA (MÉTODO II) ---------------------------
 
