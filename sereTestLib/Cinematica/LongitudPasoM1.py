@@ -71,6 +71,14 @@ for i in range (len(segmentada)):
     ## Agrego el desplazamiento máximo del COM calculado a la lista
     desp_vert_COM.append(d_step)
 
+## ------------------------------------ PARÁMETROS DE OPTIMIZACIÓN -------------------------------------
+
+## Hago la lectura del dataframe donde tengo guardado el historial de parámetros optimizados
+param_optimizado = pd.read_csv("Archivo_optimización")
+
+## Indexo la columna donde tengo guardados los registros existentes de los parámetros obtenidos
+param = param_optimizado["Parametro_M1"]
+
 ## ----------------------------- CÁLCULO DE LA LONGITUD DEL PASO (MÉTODO I) ----------------------------
 
 ## Especifico la longitud de la pierna del individuo en metros
@@ -87,7 +95,8 @@ coeficientes_m1 = []
 
 ## Especifico el coeficiente multiplicativo que uso para ponderar la longitud del paso
 ## Los estudios sugieren usar un factor de corrección multiplicativo de 1.25 para la longitud del paso
-factor_correccion = 1
+## Obtengo de las pruebas el valor óptimo como el promedio de los parámetros optimizados
+factor_correccion = np.mean(param)
 
 ## Itero para cada uno de los segmentos de pasos detectados (IC a IC)
 for i in range (len(segmentada)):

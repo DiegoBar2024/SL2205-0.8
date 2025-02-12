@@ -1,24 +1,13 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
-from Magnitud import Magnitud
 from Normalizacion import Normalizacion
 from DeteccionPicos import *
-from Filtros import FiltroMediana
 from Fourier import TransformadaFourier
 import numpy as np
 import pandas as pd
-from Muestreo import PeriodoMuestreo
-import pandas as pd
-from ValoresMagnetometro import ValoresMagnetometro
-from matplotlib import pyplot as plt
 from scipy import signal
 from harm_analysis import *
 from control import *
-from skinematics.imus import analytical, IMU_Base
-from scipy import constants
-from scipy.integrate import cumulative_trapezoid, simpson
-import librosa
-import pywt
 from LecturaDatos import *
 
 # ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------

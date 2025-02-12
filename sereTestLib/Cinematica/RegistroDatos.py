@@ -1,6 +1,6 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
-from RegistroDatos import *
+from Optimizacion import *
 
 ## ---------------------------- REGISTRO EN ARCHIVO DE TEXTO (MÉTODO I) --------------------------------
 

@@ -1,6 +1,7 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
 from SegmentacionM1 import *
+import pandas as pd
 
 ## -------------------------------------- FILTRADO ACELERACIÓN -----------------------------------------
 
@@ -43,6 +44,14 @@ sos = signal.butter(N = 4, Wn = 0.5, btype = 'highpass', fs = 1 / periodoMuestre
 ## La cantidad de tiempo que transcurre entre dos valles debe ser igual al tiempo de paso
 pos_z_filtrada = signal.sosfiltfilt(sos, pos_z)
 
+## ------------------------------------ PARÁMETROS DE OPTIMIZACIÓN -------------------------------------
+
+## Hago la lectura del dataframe donde tengo guardado el historial de parámetros optimizados
+param_optimizado = pd.read_csv("Archivo_optimización")
+
+## Indexo la columna donde tengo guardados los registros existentes de los parámetros obtenidos
+param = param_optimizado["Parametro_M2"]
+
 ## ----------------------------- CÁLCULO DE LA LONGITUD DEL PASO (MÉTODO II) ---------------------------
 
 ## Especifico la longitud de la pierna del individuo en metros
@@ -52,8 +61,8 @@ long_pierna = 1
 
 ## Longitud del pie de la persona. Dato a medir y que puede variar el resultado
 ## Éste valor es necesario para estimar el desplazamiento en la fase de doble estancia
-## Si no tengo un valor concreto tomo por defecto 30cm
-long_pie = 0.3
+## Obtengo de las pruebas el valor óptimo como el promedio de los parámetros optimizados
+long_pie = np.mean(param)
 
 ## Creo una lista donde voy a almacenar la longitud de los pasos de la persona
 long_pasos_m2 = []
