@@ -8,8 +8,14 @@ from Muestreo import *
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
 ## Especifico la ruta del fichero .txt a abrir
-ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session5_Rodrigo_1_952D/505_Session5_Shimmer_952D_Calibrated_PC_Rodrigo_1_952D.txt"
-# ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session3_Sabrina_1_952D/505_Session3_Shimmer_952D_Calibrated_PC_Sabrina_1_952D.txt"
+
+## Pruebas estandarizadas de 50cm por paso
+# ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session5_Rodrigo_1_952D/505_Session5_Shimmer_952D_Calibrated_PC_Rodrigo_1_952D.txt"
+ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session3_Sabrina_1_952D/505_Session3_Shimmer_952D_Calibrated_PC_Sabrina_1_952D.txt"
+
+## Pruebas sin estandarizar (marcha libre)
+# ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session4_Sabrina_2_952D/505_Session4_Shimmer_952D_Calibrated_PC_Sabrina 2_952D.txt"
+# ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session6_Rodrigo_2_952D/505_Session6_Shimmer_952D_Calibrated_PC.txt"
 
 ## Especifico la ruta en donde voy a guardar el .csv correspondiente
 ruta_csv = "C:/Yo/Tesis/Tesis/Excel_leidos/Prueba.csv"

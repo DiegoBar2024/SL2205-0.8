@@ -71,8 +71,8 @@ for i in range (len(pasos_defectuosos)):
         ## Mi tarea acá es encontrar posibles potenciales pasos intermedios que no fueron detectados
         picos_interpolados = find_peaks(acc_AP_norm[pasos_defectuosos[i]['IC'][0] : pasos_defectuosos[i]['IC'][1]])
 
-        ## Grafico los picos interpolados
-        GraficacionPicos(acc_AP_norm[pasos_defectuosos[i]['IC'][0] : pasos_defectuosos[i]['IC'][1]], picos_interpolados[0])
+        # ## Grafico los picos interpolados
+        # GraficacionPicos(acc_AP_norm[pasos_defectuosos[i]['IC'][0] : pasos_defectuosos[i]['IC'][1]], picos_interpolados[0])
 
 ## ----------------------------------------- DURACIÓN DE PASOS -----------------------------------------
 

@@ -2,6 +2,7 @@
 
 from SegmentacionM1 import *
 import pandas as pd
+import os
 
 ## -------------------------------------- FILTRADO ACELERACIÓN -----------------------------------------
 
@@ -46,11 +47,23 @@ pos_z_filtrada = signal.sosfiltfilt(sos, pos_z)
 
 ## ------------------------------------ PARÁMETROS DE OPTIMIZACIÓN -------------------------------------
 
-## Hago la lectura del dataframe donde tengo guardado el historial de parámetros optimizados
-param_optimizado = pd.read_csv("Archivo_optimización")
+## Especifico la ruta del archivo de optimizacion
+ruta_optim = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Archivo_optimización.csv"
 
-## Indexo la columna donde tengo guardados los registros existentes de los parámetros obtenidos
-param = param_optimizado["Parametro_M2"]
+## Compruebo que el archivo de optimización exista y que tenga al menos un elemento
+if os.path.isfile(ruta_optim):
+
+    ## Hago la lectura del dataframe donde tengo guardado el historial de parámetros optimizados
+    param_optimizado = pd.read_csv(ruta_optim)
+
+    ## Indexo la columna donde tengo guardados los registros existentes de los parámetros obtenidos
+    param = param_optimizado["Parametro_M2"]
+
+## En caso de que el archivo de optimización no se encuentre
+else:
+
+    ## Seteo el parámetro al valor predeterminado de 0.75 (por defecto)
+    param = 0.75
 
 ## ----------------------------- CÁLCULO DE LA LONGITUD DEL PASO (MÉTODO II) ---------------------------
 
@@ -62,7 +75,7 @@ long_pierna = 1
 ## Longitud del pie de la persona. Dato a medir y que puede variar el resultado
 ## Éste valor es necesario para estimar el desplazamiento en la fase de doble estancia
 ## Obtengo de las pruebas el valor óptimo como el promedio de los parámetros optimizados
-long_pie = np.mean(param)
+long_pie = 0.3
 
 ## Creo una lista donde voy a almacenar la longitud de los pasos de la persona
 long_pasos_m2 = []
@@ -73,7 +86,7 @@ coeficientes_m2 = []
 ## Especifico el coeficiente multiplicativo que uso para ponderar la longitud del pie
 ## Los estudios sugieren usar un factor de corrección multiplicativo de 0.75 para la longitud del pie
 ## La idea es poder usar éste coeficiente para optimizar el modelo
-factor_correccion_pie = 0.14
+factor_correccion_pie = np.mean(param)
 
 ## Itero para cada uno de los segmentos de pasos detectados (IC a IC)
 for i in range (len(pasos)):

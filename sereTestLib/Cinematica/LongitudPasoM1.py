@@ -1,6 +1,7 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
 from SegmentacionM1 import *
+import os
 
 ## -------------------------------------- FILTRADO ACELERACIÓN -----------------------------------------
 
@@ -73,11 +74,23 @@ for i in range (len(segmentada)):
 
 ## ------------------------------------ PARÁMETROS DE OPTIMIZACIÓN -------------------------------------
 
-## Hago la lectura del dataframe donde tengo guardado el historial de parámetros optimizados
-param_optimizado = pd.read_csv("Archivo_optimización")
+## Especifico la ruta del archivo de optimizacion
+ruta_optim = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Archivo_optimización.csv"
 
-## Indexo la columna donde tengo guardados los registros existentes de los parámetros obtenidos
-param = param_optimizado["Parametro_M1"]
+## Compruebo que el archivo de optimización exista y que tenga al menos un elemento
+if os.path.isfile(ruta_optim):
+
+    ## Hago la lectura del dataframe donde tengo guardado el historial de parámetros optimizados
+    param_optimizado = pd.read_csv(ruta_optim)
+
+    ## Indexo la columna donde tengo guardados los registros existentes de los parámetros obtenidos
+    param = param_optimizado["Parametro_M1"]
+
+## En caso de que el archivo de optimización no se encuentre
+else:
+
+    ## Seteo el parámetro al valor predeterminado de 1.25 (por defecto)
+    param = 1.25
 
 ## ----------------------------- CÁLCULO DE LA LONGITUD DEL PASO (MÉTODO I) ----------------------------
 
