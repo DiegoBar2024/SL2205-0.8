@@ -1,7 +1,8 @@
-from sereTestLib.parameters import *
+import sys
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
+from parameters import *
 from tensorflow import keras
-from sereTestLib.autoencoder.DataClassAuto import DataGeneratorAuto
-
+# from sereTestLib.autoencoder.DataClassAuto import DataGeneratorAuto
 
 def clasificador_name_creation(activities, clasificador):
     """

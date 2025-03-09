@@ -11,7 +11,7 @@ class DataGeneratorAuto(keras.utils.Sequence):
     Generates data for Keras.
     Be careful. Check if the n_samples is greater than zero before use the output in Keras models.
     '''
-    def __init__(self,  activities=[], list_IDs=[], data_dir='./', batch_size=4, dim=(128,600,6), numClases=2, shuffle=True, long_sample=long_sample):
+    def __init__(self,  activities=[], list_IDs=[], data_dir='./', batch_size = 4, dim = (128,600,6), numClases = 2, shuffle = True, long_sample = long_sample):
         '''Initialization'''
 
         ## En caso de que la muestra sea larga, inicializo el atributo <<character>> con el valor 'L'
@@ -153,7 +153,7 @@ class DataGeneratorAuto(keras.utils.Sequence):
 
         ## Primero lo que hago es usar el metodo <<np.empty>> para crear un tensor X vacío de dimensiones (batch_s, self.dim[0], self.dim[1], self.dim[2])
         ## Los elementos de X van a ser numéricos de tipo punto flotante
-        X = np.empty((batch_s, *self.dim), dtype=np.float32)
+        X = np.empty((batch_s, *self.dim), dtype = np.float32)
 
         ## Generación de datos
         ## Itero para cada i entre 0 y batch_s - 1. Es decir, i = 0, 1, 2 ... batch_s - 1
@@ -166,24 +166,18 @@ class DataGeneratorAuto(keras.utils.Sequence):
             ## <<samples>> me va a almacenar la cantidad de segmentos a procesar asociados al j-ésimo paciente
             samples = self.IDs_len[j]
 
-            if np.shape(self.indexes)[0]>i:
+            if np.shape(self.indexes)[0] > i:
                 num_sample = indexes[i] + 1
                 while (samples <  num_sample):
                     j += 1
                     samples += self.IDs_len[j]
-                    # print('self.indexesss',self.indexes[i])
-                    # print('smaples', samples)
-                    # print('ID lens ',self.IDs_len[j])
                 pat_id = self.list_IDs[j]
                 id_folder = self.character + str(pat_id)
-                # print("i = ", i)
-                # print("j = ", j)
-                # print("Index i: ",indexes[i])
+
                 file_index = indexes[i] - samples + self.IDs_len[j]
-#                print("n_samples ",self.n_samples)
-#                print("samples ",samples)
-#                print("fileindex ",file_index)
-                file = self.__get_file(id_folder,file_index)
+
+                ## Obtengo el archivo donde estan los escalogramas
+                file = self.__get_file(id_folder, file_index)
                 dirIn = self.character + str(pat_id)
                 # Leo el archivo
                 fullPath=self.data_dir+'/'+dirIn+'/'+file
@@ -202,9 +196,6 @@ class DataGeneratorAuto(keras.utils.Sequence):
                 #print("max",np.max(auxX))
                 X[i, : ] = auxX
         return X, X
-
-
-
 
 class DataGeneratorAuto_Tapar_canales(keras.utils.Sequence):
     '''

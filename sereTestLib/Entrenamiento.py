@@ -112,24 +112,32 @@ def Entrenamiento(entrenar_ae = True, preprocesar = False):
 
     print( "Paso 3 - Entrenar clasificador")
 
-    run=wandb.init(project="SereTest-autoencoder",reinit=True,job_type="load ae")
+    run = wandb.init(project="SereTest-autoencoder", reinit = True, job_type = "load ae")
     try:
-        modelo_artifact=run.use_artifact(autoencoder_name+':best')
+        modelo_artifact = run.use_artifact(autoencoder_name + ':best')
     except:
-
-        modelo_artifact=run.use_artifact(autoencoder_name+':latest')
-    modelo_dir=modelo_artifact.download(model_path_ae)
+        modelo_artifact = run.use_artifact(autoencoder_name + ':latest')
+    modelo_dir = modelo_artifact.download(model_path_ae)
     run.finish()
 
-    modelo_autoencoder=ae_load_model(modelo_dir)
+    ## Cargo el modelo del autoencoder a partir de la dirección determinada
+    modelo_autoencoder = ae_load_model(modelo_dir)
 
-    config = {"giro x": girox, "giro z": giroz, "Escalado":escalado, "Clasificador":clasificador,"Actividad":act_clf,"AE":autoencoder_name,"Preprocesamiento":preprocesamiento}
-    run=wandb.init(project="SereTest-clasificador",reinit=True,config=config,job_type="train clf",name=clasificador_name)
-    entrenamiento_clasificador(x_inestables_train, x_estables_train, x_inestables_val, x_estables_val, modelo_autoencoder,clasificador,dir_preprocessed_data_train,dir_preprocessed_data_test, act_clf)
-    trained_model_artifact=wandb.Artifact(clasificador_name, type="model")
+    ## Especifico configuración para el entrenamiento del clasificacor
+    config = {"giro x": girox, "giro z": giroz, "Escalado": escalado, "Clasificador": clasificador, "Actividad": act_clf, "AE": autoencoder_name, "Preprocesamiento": preprocesamiento}
+    
+    ## Inicio una sesión <<wandb>> para el entrenamiento del clasificador
+    run = wandb.init(project = "SereTest-clasificador", reinit = True, config = config, job_type = "train clf", name = clasificador_name)
+    
+    ## Llamo a la función del entrenamiento del clasificador
+    entrenamiento_clasificador(x_inestables_train, x_estables_train, x_inestables_val, x_estables_val, modelo_autoencoder, clasificador, dir_preprocessed_data_train, dir_preprocessed_data_test, act_clf)
+
+    ## Configuración restante de guardado en <<wandb>>
+    trained_model_artifact = wandb.Artifact(clasificador_name, type = "model")
     trained_model_artifact.add_dir(model_path_clf)
     run.log_artifact(trained_model_artifact)
     run.finish()
 
+## Ejecución del programa principal
 if __name__== '__main__':
     Entrenamiento(entrenar_ae = True, preprocesar = False)

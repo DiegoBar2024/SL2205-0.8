@@ -55,7 +55,7 @@ def preprocesamiento_train(sample_id):
     ## El parámetro <<time_overlap>> me va a contener la cantidad de segundos de solapamiento. Usando el valor dado en <<parameters.py>> se tiene <<time_overlap>> = 2
     ## El parámetro <<sampling_period>> me va a contener el período de muestreo de la señal de entrada. Usando el valor dado en <<parameters.py>> se tiene <<sampling_period>> = 0.05
     ## El parámetro <<step>> me va a contener el tamaño de paso. Usando el valor dado en <<parameters.py>> se tiene <<step>> = 3
-    split_and_save_samples_overlap(dir_out_fixed_axes + directorio_muestra, dir_out_ov_split_train + directorio_muestra,time_frame, time_overlap, sampling_period, step = step)
+    split_and_save_samples_overlap(dir_out_fixed_axes + directorio_muestra, dir_out_ov_split_train + directorio_muestra, time_frame, time_overlap, sampling_period, step = step)
 
     ## El parametro <<dir_out_ov_split_rename_train>> va a tener la ruta a donde están los datos para todos los pacientes luego de hacer el procesado previo
     ## Para el caso de MI COMPUTADORA <<dir_out_ov_split_rename_train>> = 'C:/Yo/Tesis/sereData/sereData/Dataset/rename_overlaps/train'
@@ -76,6 +76,7 @@ def preprocesamiento_train(sample_id):
     ## El parámetro <<directorio_muestra>> me va a contener la carpeta correspondiente al paciente analizado y es el que se arma en las líneas de arriba
     ## Por ejemplo, si se está analizando una muestra corta (<<long_sample>> = False) del paciente de ID 215 (<<sample_ID>> = 215)
     ## El parámetro <<act_ae>> es una lista que contiene las actividades que yo quiero procesar. Se importa del fichero <<parameters.py>> y tiene como valor <<act_ae>> = ['Caminando']
+    ## LA SALIDA DE ESTA FUNCIÓN ES LA QUE ENTRA AL MÓDULO DE INTELIGENCIA ARTIFICIAL    
     create_or_augment_scalograms(directorio_scalogramas_train + directorio_muestra, dir_preprocessed_data_train + directorio_muestra, static_window_secs = static_window_secs, actividades = act_ae, movil_window_secs = window_secs, overlap_secs = overlap_secs, fs = fs, escalado = escalado)
 
 for i in range (90, 300):

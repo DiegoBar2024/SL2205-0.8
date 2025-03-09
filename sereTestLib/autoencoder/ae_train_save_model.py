@@ -84,7 +84,7 @@ def ae_train_save_model(path_to_scalograms_train = dir_preprocessed_data_train, 
 
         #autoencoder=keras.models.load_model(model_path + autoencoder_name, custom_objects={"ssim_loss":ssim_loss})
         autoencoder.trainable = True
-        autoencoder.compile(optimizer = tf.keras.optimizers.Adam(lr= 0.0001), loss=ms_ssim)
+        autoencoder.compile(optimizer = tf.keras.optimizers.Adam(lr= 0.0001), loss = ms_ssim)
 
     ## En caso de que la bandera <<debug>> se encuentre seteada en True
     if debug:
@@ -132,6 +132,7 @@ def ae_train_save_model(path_to_scalograms_train = dir_preprocessed_data_train, 
                     verbose = 1)
 
     # Genero el nombre de archivo del autoencoder y lo guardo
+    # Ésto es lo que debo usar como entrada al clasificador
     autoencoder.save(model_path + autoencoder_name + model_extension)
 
     # Clear keras session. Free memory and reduce loop problems

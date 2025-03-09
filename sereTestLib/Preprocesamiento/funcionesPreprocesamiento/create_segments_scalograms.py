@@ -200,12 +200,25 @@ def create_segments_scalograms(directorio_segmentos_muestra, directorio_scalogra
             # for result in pool.map(partial(scalogram_overlap, dt, scales = scales, overlapS = cant_muestras_overlap, wavelet_library = wavelet_library), datos):
             #     matriz_scalogramas[:,:,i] = result
             #     i += 1
-                
-        if save_files:
-            archivo_salida = '%s%s' % (directorio_scalogramas, nombre_base_segmento)
-            for i, dato in zip(range(6), ['ACx', 'ACy', 'ACz', 'GYx', 'GYy', 'GYz']):
-                np.savez_compressed(archivo_salida + str(dato) + '.npz', y=pathology, X=matriz_scalogramas[:,:,i])
 
+        ## Guardado de escalogramas
+        ## En caso de que quiera guardar archivos (en dicho caso la bandera <<save_files>> se encuentra seteada en True)    
+        if save_files:
+            
+            ## Genero el nombre del archivo de salida
+            archivo_salida = '%s%s' % (directorio_scalogramas, nombre_base_segmento)
+
+            ## Hago el guardado de los escalogramas
+            for i, dato in zip(range(6), ['ACx', 'ACy', 'ACz', 'GYx', 'GYy', 'GYz']):
+
+                ## Obtención del tamaño del tensor tridimensional correspondiente al i-ésimo segmento
+                ## Se recuerda que  <<matriz_scalogramas>> tiene la siguiente forma: (f, t, c) para un segmento individual
+                ## f: Especifica la cantidad de valores de frecuencias que tengo
+                ## t: Especifica la cantidad de instantes temporales que tengo
+                ## c: Especifica la cantidad de canales que tengo (en nuestro caso 6 - 3 aceleraciones + 3 giroscopios)
+                np.savez_compressed(archivo_salida + str(dato) + '.npz', y = pathology, X = matriz_scalogramas[:,:,i])
+
+        ## Agrego el escalograma y su nombre base como un diccionario a la lista de escalogramas
         escalogramas_segmentos.append({'escalograma': matriz_scalogramas, 'nombre_base_segmento': nombre_base_segmento})
     
     return escalogramas_segmentos

@@ -180,9 +180,14 @@ elif extra == "AumGiroStd":
     girox=[1,10]
     step=0.5
 
-elif extra== 'StandarAum':
-    overlap_secs= 0.5
-    escalado="standarizado"
+## Esta es la opción que está puesta por defecto
+elif extra == 'StandarAum':
+
+    ## Especifico cantidad de segundos de solapamiento
+    overlap_secs = 0.5
+
+    ## Especifico tipo de escalado
+    escalado = "standarizado"
 
 elif extra=="escalado":
     escalado="normal"
