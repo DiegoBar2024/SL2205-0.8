@@ -1,6 +1,7 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
 import sys
+import tftb
 from Augmentado import *
 from scipy.signal import *
 import numpy as np
@@ -28,6 +29,9 @@ wavelet = 'cmor{}-1'.format(ancho_banda)
 
 ## Construyo el directorio en donde se van a guardar los escalogramas
 directorio_escalogramas = 'C:/Yo/Tesis/sereData/sereData/Dataset/wavelet_cmor/train/S{}/'.format(id_persona)
+
+## Construyo el directorio en donde se van a guardar los datos preprocesados
+directorio_preprocesados = 'C:/Yo/Tesis/sereData/sereData/Dataset/preprocessed_data/train/S{}/'.format(id_persona)
 
 ## Creo el nombre base raíz que voy a usar para guardar los escalogramas
 nombre_base_segmento = "3S{}s".format(id_persona)
@@ -146,11 +150,17 @@ for i in range (1, len(pasos) - (cantidad_pasos - 1)):
     ## Me queda definir <<directorio_scalogramas>> y <<nombre_base_segmento>>
     archivo_salida = '%s%s' % (directorio_escalogramas, "{}{}".format(nombre_base_segmento, str(i - 1)))
 
+    ## Especifico el nombre de archivo de salida de los datos preprocesados
+    archivo_preprocesado = '%s%s' % (directorio_preprocesados, "{}{}".format(nombre_base_segmento, i - 1))
+
     ## Hago el guardado de los escalogramas
     for j, dato in zip(range(6), ['ACx', 'ACy', 'ACz', 'GYx', 'GYy', 'GYz']):
 
         ## Hago el guardado de los escalogramas de cada canal
         np.savez_compressed(archivo_salida + str(dato) + '.npz', y = 0, X = matriz_escalogramas[i][j,:,:])
+
+        ## Hago el guardado de los escalogramas preprocesados de cada canal
+        np.savez_compressed(archivo_preprocesado + "_00" + j + '.npz', y = 0, X = matriz_escalogramas[i][j,:,:])
 
     ## Agrego el escalograma y su nombre base como un diccionario a la lista de escalogramas
     escalogramas_segmentos.append({'escalograma': matriz_escalogramas, 'nombre_base_segmento': nombre_base_segmento})

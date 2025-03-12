@@ -208,10 +208,10 @@ def create_or_augment_scalograms(scalogram_path, output_path, escalado, patients
                 
                 ## X va a ser el tensor tridimensional que tenga el escalograma correspondiente al índice dado por <<file_index>>
                 X = escalogramas[file_index]['escalograma']
-            
+
             ## Inicializo la variable y en 0
             y = 0
-                
+
             # Almaceno la ventana estática
             for i in range(base_window_size - 1):
 

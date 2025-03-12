@@ -190,7 +190,7 @@ while (rango[0] < cant_muestras):
 ## --------------------------- PROCESADO DE LA SEÑAL DE ACELERACIÓN VERTICAL ---------------------------
 
 ## Uso el método de los papers de Rafael C. Gonzalez
-## Filtrado FIR pasabajos de orden 30 con frecuencia de corte 2.5Hz
+## Filtrado FIR pasabajos de orden 30 con frecuencia de corte 12.5Hz
 ## Pruebo subir un poco la frecuencia de corte del FIR para poder detectar de mejor manera los mínimos locales donde estarían los TO
 lowpass = signal.firwin(numtaps = 30, cutoff = 12.5, pass_zero = 'lowpass', fs = 1 / periodoMuestreo)
 
@@ -216,6 +216,10 @@ for i in range (len(picos_sucesivos) - 1):
 
     ## Agrego el TO detectado a la lista de toe offs
     toe_offs_min.append(toe_off + picos_sucesivos[i])
+
+# plt.plot(acel_lowpass)
+# plt.plot(toe_offs_min, acel_lowpass[toe_offs_min], "x")
+# plt.show()
 
 ## ------------------------------- GRAFICACIÓN DE CONTACTOS TERMINALES ---------------------------------
 
