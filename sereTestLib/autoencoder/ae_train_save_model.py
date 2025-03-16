@@ -99,23 +99,33 @@ def ae_train_save_model(path_to_scalograms_train = dir_preprocessed_data_train, 
         os.makedirs(model_path)
 
     ## Parámetros de entrenamiento del autoencoder
+    ## <<data_dir>> me va a decir la ruta donde están los escalogramas que van a ser usados para la validación del autoencoder
+    ## <<dim>> va a contener una tupla de 3 elementos con la dimensión de los escalogramas de entrada
+    ## <<batch_size>> va a contener el tamaño del batch (cantidad de muestras de entrenamiento) que voy a usar para entrenar
+    ## <<activities>> va a ser una lista de strings donde cada cadena es la actividad que voy a analizar
     paramsT = {'data_dir' : path_to_scalograms_train,
-                            'dim': input_dimension,
-                            'batch_size': batch_size,
-                            'shuffle': True,
-                            'activities':activities}
+                            'dim' : input_dimension,
+                            'batch_size' : batch_size,
+                            'shuffle' : True,
+                            'activities' : activities}
 
     ## Parámetros de validación del autoencoder
+    ## <<data_dir>> me va a decir la ruta donde están los escalogramas que van a ser usados para la validación del autoencoder
+    ## <<dim>> va a contener una tupla de 3 elementos con la dimensión de los escalogramas de entrada
+    ## <<batch_size>> va a contener el tamaño del batch (cantidad de muestras de entrenamiento) que voy a usar para entrenar
+    ## <<activities>> va a ser una lista de strings donde cada cadena es la actividad que voy a analizar
     paramsV= {'data_dir' : path_to_scalograms_val,
-                            'dim': input_dimension,
-                            'batch_size': batch_size,
-                            'shuffle': False,
-                            'activities':activities}
+                            'dim' : input_dimension,
+                            'batch_size' : batch_size,
+                            'shuffle' : False,
+                            'activities' : activities}
 
     ## Generación de datos de entrenamiento
+    ## Le paso como argumento los parámetros de entrenamiento
     training_generator = DataGeneratorAuto(list_IDs = list_of_samples_number_train, **paramsT)
     
     ## Generación de datos de validación
+    ## Le paso como argumento los parámetros de validación
     validation_generator = DataGeneratorAuto(list_IDs = list_of_samples_number_validation, **paramsV)
 
     # ## Hago la incialización de WandB
@@ -143,7 +153,7 @@ def ae_train_save_model(path_to_scalograms_train = dir_preprocessed_data_train, 
 ## <<dim_input>> me da las dimensiones de la entrada del autoencoder. Por defecto tengo dim_input = (128, 600, 6) lo cual quiere decir que mi entrada es un tensor tridimensional de 128 x 600 y profundidad 6. Es decir un tensor de dimensiones 128 x 600 x 6
 ## <<filters>> es una tupla cuyos elementos son la cantidad de filtros que tienen las distintas capas del encoder. El decoder tendrá los mismos filtros pero en orden inverso
 ## <<latentDim>> me va a dar la dimensión del espacio latente, es decir me va a dar la representación comprimida de la entrada como un vector de 256 elementos o 256 características
-def ae_model_builder(dim_input = (128,600,6), filters = (32,16,8), latentDim = 256):
+def ae_model_builder(dim_input = (128, 600, 6), filters = (32, 16, 8), latentDim = 256):
     """
     Function that builds the autoencoder model
     Parameters:
@@ -257,12 +267,21 @@ def int_shape(x):
     except ValueError:
         return None
 
+## Función que me permite cargar el modelo del autoencoder
 def ae_load_model(modelo_dir):
-    if loss_name=="ssim_loss":
-        modelo_autoencoder=keras.models.load_model(modelo_dir+ autoencoder_name+'.h5', custom_objects={"ssim_loss":ssim_loss})
-    elif loss_name=="ms_ssim":
-        modelo_autoencoder=keras.models.load_model(modelo_dir+ autoencoder_name+'.h5', custom_objects={"ms_ssim":ms_ssim})
+
+    ## En caso de que la función de costo sea SSIM
+    if loss_name == "ssim_loss":
+        modelo_autoencoder = keras.models.load_model(modelo_dir + autoencoder_name +'.h5', custom_objects = {"ssim_loss": ssim_loss})
+    
+    ## En caso de que la función de costo sea MS SSIM
+    elif loss_name == "ms_ssim":
+        modelo_autoencoder = keras.models.load_model(modelo_dir + autoencoder_name +'.h5', custom_objects = {"ms_ssim": ms_ssim})
+    
+    ## En caso que tenga otra función de costo
     else:
-        modelo_autoencoder=keras.models.load_model(modelo_dir + autoencoder_name+'.h5',custom_objects={"ssim_metric":ssim_metric})
+        modelo_autoencoder = keras.models.load_model(modelo_dir + autoencoder_name +'.h5', custom_objects = {"ssim_metric": ssim_metric})
+    
+    ## Retorno el modelo del autoencoder
     return(modelo_autoencoder)
 

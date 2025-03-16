@@ -99,7 +99,7 @@ def Entrenamiento(entrenar_ae = True, preprocesar = False):
         config = {"giro x": girox, "giro z": giroz, "Escalado": escalado, "Loss": loss_name, "Actividad": act_ae, "Preprocesamiento": preprocesamiento, "lr": base_learning_rate}
         
         ## Comienza la sesión wandb cuyo objetivo va a ser guardar los parámetros del autoencoder luego del entrenamiento
-        run = wandb.init(project="SereTest-autoencoder", reinit = True, config = config, job_type = "train ae", name = autoencoder_name)
+        run = wandb.init(project = "SereTest-autoencoder", reinit = True, config = config, job_type = "train ae", name = autoencoder_name)
 
         ## Se hace un reset de los estados        
         keras.backend.clear_session()

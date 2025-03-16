@@ -2,7 +2,7 @@
 
 import sys
 import tftb
-from Augmentado import *
+from Escalado import *
 from scipy.signal import *
 import numpy as np
 from matplotlib import pyplot as plt
@@ -160,7 +160,7 @@ for i in range (1, len(pasos) - (cantidad_pasos - 1)):
         np.savez_compressed(archivo_salida + str(dato) + '.npz', y = 0, X = matriz_escalogramas[i][j,:,:])
 
         ## Hago el guardado de los escalogramas preprocesados de cada canal
-        np.savez_compressed(archivo_preprocesado + "_00" + j + '.npz', y = 0, X = matriz_escalogramas[i][j,:,:])
+        np.savez_compressed(archivo_preprocesado + "_00" + str(j) + '.npz', y = 0, X = matriz_escalogramas[i][j,:,:])
 
     ## Agrego el escalograma y su nombre base como un diccionario a la lista de escalogramas
     escalogramas_segmentos.append({'escalograma': matriz_escalogramas, 'nombre_base_segmento': nombre_base_segmento})
@@ -195,4 +195,4 @@ for i in range (1, len(pasos) - (cantidad_pasos - 1)):
 ## Por ejemplo, si se está analizando una muestra corta (<<long_sample>> = False) del paciente de ID 215 (<<sample_ID>> = 215)
 ## El parámetro <<act_ae>> es una lista que contiene las actividades que yo quiero procesar. Se importa del fichero <<parameters.py>> y tiene como valor <<act_ae>> = ['Caminando']
 ## LA SALIDA DE ESTA FUNCIÓN ES LA QUE ENTRA AL MÓDULO DE INTELIGENCIA ARTIFICIAL    
-create_or_augment_scalograms(directorio_scalogramas_train + directorio_muestra, dir_preprocessed_data_train + directorio_muestra, static_window_secs = static_window_secs, actividades = act_ae, movil_window_secs = window_secs, overlap_secs = overlap_secs, fs = fs, escalado = escalado)
+Escalado(directorio_scalogramas_train + directorio_muestra, dir_preprocessed_data_train + directorio_muestra, static_window_secs = static_window_secs, actividades = act_ae, movil_window_secs = window_secs, overlap_secs = overlap_secs, fs = fs, escalado = escalado)

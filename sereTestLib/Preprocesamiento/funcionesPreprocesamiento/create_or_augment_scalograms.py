@@ -89,10 +89,22 @@ def create_or_augment_scalograms(scalogram_path, output_path, escalado, patients
     ## Size of the array needed to store the minimum segments in order to
     ## En caso de que el escalado sea "standarizado" (el que tomamos por defecto)
     if escalado == "standarizado":
-        global_max_acc = [0,0,0]
-        global_max_gyro = [0,0,0]
-        global_min_acc = [1000,1000,1000]
-        global_min_gyro= [1000,1000,1000]
+        
+        ## <<global_max_acc>> me va a dar el máximo global de las señales de acelerómetros en cada uno de los tres ejes
+        ## Inicialmente este vector variable se inicializa todo en cero para que luego se pueda sobreescribir
+        global_max_acc = [0, 0, 0]
+
+        ## <<global_max_gyro>> me va a dar el máximo global de las señales de giroscopios en cada uno de los tres ejes
+        ## Inicialmente este vector variable se inicializa todo en cero para que luego se pueda sobreescribir
+        global_max_gyro = [0, 0, 0]
+
+        ## <<global_min_acc>> me va a dar el minimo global de las señales de acelerometros en cada uno de los tres ejes
+        ## Inicialmente este vector variable se inicializa todo en mil para que luego se pueda sobreescribir
+        global_min_acc = [1000, 1000, 1000]
+        
+        ## <<global_min_gyro>> me va a dar el minimo global de las señales de acelerometros en cada uno de los tres ejes
+        ## Inicialmente este vector variable se inicializa todo en mil para que luego se pueda sobreescribir
+        global_min_gyro = [1000, 1000, 1000]
 
         ## Itero para cada valor de segmento en el rango 0, 1, ..., segments - 1
         for segment in np.arange(segments):
@@ -115,19 +127,45 @@ def create_or_augment_scalograms(scalogram_path, output_path, escalado, patients
                 ## X va a ser el tensor tridimensional correspondiente al i-ésimo segmento (dimensiones frecuencia-tiempo-canales)
                 X = escalogramas[segment]['escalograma']
 
-            local_max_acc =  [np.max(np.abs(X[:, :, 0])),np.max(np.abs(X[:, :, 1])),np.max(np.abs(X[:, :, 2]))]
+            ## Hago el cálculo de los máximos y mínimos LOCALES AL ESCALOGRAMA ACTUAL
+            ## Recuerdo que en cada escalograma tridimensional las tres capas superiores contienen los coeficientes de las aceleraciones
+            ## Por otro lado las tres capas inferiores contienen los coeficientes de los giroscopios
+            ## <<local_max_acc>> va a contener el elemento de mayor valor absoluto presente en cada matriz de coeficientes de wavelet de las aceleraciones
+            ## Esto implica que <<local_max_acc>> me va a quedar un vector de tres coordenadas donde cada coordenada es cada maximo
+            local_max_acc =  [np.max(np.abs(X[:, :, 0])), np.max(np.abs(X[:, :, 1])), np.max(np.abs(X[:, :, 2]))]
+
+            ## <<local_max_gyro>> va a contener el elemento de mayor valor absoluto presente en cada matriz de coeficientes de wavelet de los giroscopios
+            ## Esto implica que <<local_max_gyro>> me va a quedar un vector de tres coordenadas donde cada coordenada es cada maximo
             local_max_gyro = [np.max(np.abs(X[:, :, 3])),np.max(np.abs(X[:, :, 4])),np.max(np.abs(X[:, :, 5]))]
+
+            ## <<local_min_acc>> va a contener el elemento de menor valor absoluto presente en cada matriz de coeficientes de wavelet de las aceleraciones
+            ## Esto implica que <<local_min_acc>> me va a quedar un vector de tres coordenadas donde cada coordenada es cada minimo
             local_min_acc =  [np.min(np.abs(X[:, :, 0])),np.min(np.abs(X[:, :, 1])),np.min(np.abs(X[:, :, 2]))]            
-            local_min_gyro = [np.min(np.abs(X[:, :, 3])),np.min(np.abs(X[:, :, 4])),np.min(np.abs(X[:, :, 5]))]
-            local_mean = [np.mean(np.abs(X[:, :, 0])),np.mean(np.abs(X[:, :, 1])),np.mean(np.abs(X[:, :, 2]))]  
-            local_std = [np.std(np.abs(X[:, :, 0])),np.std(np.abs(X[:, :, 1])),np.std(np.abs(X[:, :, 2]))]            
+
+            ## <<local_min_gyro>> va a contener el elemento de menor valor absoluto presente en cada matriz de coeficientes de wavelet de los giroscopios
+            ## Esto implica que <<local_min_gyro>> me va a quedar un vector de tres coordenadas donde cada coordenada es cada minimo
+            local_min_gyro = [np.min(np.abs(X[:, :, 3])),np.min(np.abs(X[:, :, 4])),np.min(np.abs(X[:, :, 5]))]         
+
+            ## Itero para cada una de las 3 coordenadas de los vectores anteriores
+            ## Tengo 3 coordenadas porque tengo 3 canales de aceleración y 3 canales de giroscopios
+            ## El propósito de ésto es actualizar los máximos y minimos valores de coeficientes globales en caso de que se vayan actualizando
+            ## Con "coeficientes globales" me refiero a los coeficientes de TODOS los escalogramas de un mismo paciente
+            ## Con "coeficientes locales" me refiero a los coeficientes del escalograma actual en la iteracion
             for i in range(3):
+
+                ## En caso de que la i-ésima aceleración maxima del escalograma actual supere al valor global, lo actualizo
                 if local_max_acc[i] > global_max_acc[i]:
                     global_max_acc[i] = local_max_acc[i]
+                
+                ## En caso de que el i-esimo valor de giroscopio maximo del escalograma actual supere al valor global, lo actualizo
                 if local_max_gyro[i] > global_max_gyro[i]:
                     global_max_gyro[i] = local_max_gyro[i]
+                
+                ## En caso de que la i-ésima aceleración minima del escalograma actual sea inferior al valor global, lo actualizo
                 if local_min_acc[i] < global_min_acc[i]:
                     global_min_acc[i] = local_min_acc[i]
+                
+                ## En caso de que el i-esimo valor de giroscopio minimo del escalograma actual sea inferior al valor global, lo actualizo
                 if local_min_gyro[i] < global_min_gyro[i]:
                     global_min_gyro[i] = local_min_gyro[i]
 
@@ -170,10 +208,10 @@ def create_or_augment_scalograms(scalogram_path, output_path, escalado, patients
                 
                 ## X va a ser el tensor tridimensional que tenga el escalograma correspondiente al índice dado por <<file_index>>
                 X = escalogramas[file_index]['escalograma']
-            
+
             ## Inicializo la variable y en 0
             y = 0
-                
+
             # Almaceno la ventana estática
             for i in range(base_window_size - 1):
 
@@ -191,6 +229,7 @@ def create_or_augment_scalograms(scalogram_path, output_path, escalado, patients
 
                 else:
 
+                    ## Concateno ambos escalogramas en el eje temporal (axis = 1) para formar el segmento resultante X
                     X = np.concatenate((X, escalogramas[file_index + i + 1]['escalograma']), axis = 1)
                 
             ## Sliding window over the static window
@@ -251,30 +290,42 @@ def create_or_augment_scalograms(scalogram_path, output_path, escalado, patients
 
                     ## En caso de que el escalado sea normal
                     elif escalado == "normal":
+
+                        ## Para la parte de las aceleraciones
                         if i < 3:
-                            X_prueba = np.rint(Xwin[:, :, i]/15).astype(np.int32)
-                            Xwin[:, :, i]=X_prueba 
+                            X_prueba = np.rint(Xwin[:, :, i] / 15).astype(np.int32)
+                            Xwin[:, :, i] = X_prueba
+
+                        ## Para la parte de los giroscopios
                         else:
-                            Xwin[:, :, i] = np.rint(Xwin[:, :, i]/250).astype(np.intc)
+                            Xwin[:, :, i] = np.rint(Xwin[:, :, i] / 250).astype(np.intc)
 
                 ## En caso de que no haya escalogramas
                 if escalogramas is None:
 
-                    fileOut = re.sub("\w{3}.npz", '_' + str(k).zfill(3) + '.npz', files[file_index*6])
+                    ## Escribo la extensión de la ruta de salida
+                    fileOut = re.sub("\w{3}.npz", '_' + str(k).zfill(3) + '.npz', files[file_index * 6])
+                
+                ## En caso de que sí haya escalogramas
                 else:
-                    fileOut=escalogramas[file_index]['nombre_base_segmento'] + '_' + str(k).zfill(3) + '.npz'
 
-                ## Guardado de datos preprocesados
+                    ## Escribo la extensión de la ruta de salida
+                    fileOut = escalogramas[file_index]['nombre_base_segmento'] + '_' + str(k).zfill(3) + '.npz'
+
+                ## Guardado de datos preprocesados en la ruta de salida
                 np.savez_compressed(output_path + fileOut, y = y, X = Xwin)
 
-            static_windows_slides +=1
-            actual_position = (base_window_size-1) * (static_windows_slides+1)*movil_window_secs
+            ## Aumento en una unidad el contador que me da la posición de la ventana donde estoy
+            static_windows_slides += 1
+
+            ## Actualizo la posición actual
+            actual_position = (base_window_size - 1) * (static_windows_slides + 1) * movil_window_secs
 
         ## En caso de que la posición actual sea igual a la cantidad de segundos de la muestra
         if actual_position == total_sample_seconds:
 
             # Index of the first file for the static windows
-            file_index = (base_window_size-1)*static_windows_slides
+            file_index = (base_window_size-1) * static_windows_slides
             if escalogramas is None:
                 indexes = np.arange(file_index*6, ((file_index+1)*6))
                 arch = [np.load(scalogram_path + files[ind]) for ind in indexes]

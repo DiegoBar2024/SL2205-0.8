@@ -11,7 +11,7 @@ class DataGeneratorAuto(keras.utils.Sequence):
     Generates data for Keras.
     Be careful. Check if the n_samples is greater than zero before use the output in Keras models.
     '''
-    def __init__(self,  activities=[], list_IDs=[], data_dir='./', batch_size = 4, dim = (128,600,6), numClases = 2, shuffle = True, long_sample = long_sample):
+    def __init__(self,  activities = [], list_IDs = [], data_dir = './', batch_size = 4, dim = (128, 600, 6), numClases = 2, shuffle = True, long_sample = long_sample):
         '''Initialization'''
 
         ## En caso de que la muestra sea larga, inicializo el atributo <<character>> con el valor 'L'
@@ -121,12 +121,13 @@ class DataGeneratorAuto(keras.utils.Sequence):
         ## A modo de ejemplo, teniendo n_samples = 12 y batch_size = 4 ésta función me retorna 3, que es la cantidad de batches llenos que puedo armar con mis 12 segmentos
         return int(np.ceil(self.n_samples / self.batch_size))
 
-
     def __getitem__(self, index):
         '''Generate one batch of data'''
         # Generate indexes of the batch
         # Si es el ultimo batch, que sea del tamano que los datos permiten.
         if self.n_samples > 0:
+
+            ## <<batch_s>> va a tener el tamaño del batch que voy a usar
             batch_s = self.batch_size
             if (index < self.n_batches-1) :
                 indexes = self.indexes[index * self.batch_size:(index+1) * self.batch_size]
@@ -180,7 +181,7 @@ class DataGeneratorAuto(keras.utils.Sequence):
                 file = self.__get_file(id_folder, file_index)
                 dirIn = self.character + str(pat_id)
                 # Leo el archivo
-                fullPath=self.data_dir+'/'+dirIn+'/'+file
+                fullPath=self.data_dir + '/'+dirIn+'/'+file
                 
                 try:
 
