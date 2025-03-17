@@ -7,8 +7,6 @@ from Muestreo import *
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
-## Especifico la ruta del fichero .txt a abrir
-
 ## Especifico identificador numérico para la persona
 id_persona = 1
 

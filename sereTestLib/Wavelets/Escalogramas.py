@@ -1,7 +1,7 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
 import sys
-import tftb
+import os
 from Escalado import *
 from scipy.signal import *
 import numpy as np
@@ -15,7 +15,7 @@ from SegmentacionM1 import *
 ## Escalas de las wavelets a utilizar
 ## Se recuerda que la frecuencia me queda f = f_muestreo / escala
 ## Ésto me implica que a escalas más pequeñas tengo frecuencias más grandes
-escalas = np.arange(10, 200, 1)
+escalas = np.arange(10, 20, 1)
 
 ## Creo una variable la cual almacene el ancho de banda de la wavelet
 ancho_banda = 1.5
@@ -30,11 +30,11 @@ wavelet = 'cmor{}-1'.format(ancho_banda)
 ## Construyo el directorio en donde se van a guardar los escalogramas
 directorio_escalogramas = 'C:/Yo/Tesis/sereData/sereData/Dataset/wavelet_cmor/train/S{}/'.format(id_persona)
 
-## Construyo el directorio en donde se van a guardar los datos preprocesados
-directorio_preprocesados = 'C:/Yo/Tesis/sereData/sereData/Dataset/preprocessed_data/train/S{}/'.format(id_persona)
-
 ## Creo el nombre base raíz que voy a usar para guardar los escalogramas
 nombre_base_segmento = "3S{}s".format(id_persona)
+
+## Especifico el directorio de la muestra
+directorio_muestra = "/S%s/" % (id_persona)
 
 ## ------------------------------------------- SEGMENTACIÓN --------------------------------------------
 
@@ -150,20 +150,14 @@ for i in range (1, len(pasos) - (cantidad_pasos - 1)):
     ## Me queda definir <<directorio_scalogramas>> y <<nombre_base_segmento>>
     archivo_salida = '%s%s' % (directorio_escalogramas, "{}{}".format(nombre_base_segmento, str(i - 1)))
 
-    ## Especifico el nombre de archivo de salida de los datos preprocesados
-    archivo_preprocesado = '%s%s' % (directorio_preprocesados, "{}{}".format(nombre_base_segmento, i - 1))
-
     ## Hago el guardado de los escalogramas
     for j, dato in zip(range(6), ['ACx', 'ACy', 'ACz', 'GYx', 'GYy', 'GYz']):
 
         ## Hago el guardado de los escalogramas de cada canal
         np.savez_compressed(archivo_salida + str(dato) + '.npz', y = 0, X = matriz_escalogramas[i][j,:,:])
 
-        ## Hago el guardado de los escalogramas preprocesados de cada canal
-        np.savez_compressed(archivo_preprocesado + "_00" + str(j) + '.npz', y = 0, X = matriz_escalogramas[i][j,:,:])
-
     ## Agrego el escalograma y su nombre base como un diccionario a la lista de escalogramas
-    escalogramas_segmentos.append({'escalograma': matriz_escalogramas, 'nombre_base_segmento': nombre_base_segmento})
+    escalogramas_segmentos.append({'escalograma': matriz_escalogramas[i], 'nombre_base_segmento': nombre_base_segmento})
 
     # ## Graficación del escalograma en el i-ésimo segmento (anterposterior)
     # data = np.abs(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])
@@ -184,15 +178,3 @@ for i in range (1, len(pasos) - (cantidad_pasos - 1)):
     # plt.plot(acel[:,2][pasos[i]['IC'][0] : pasos[i + (cantidad_pasos - 1)]['IC'][1]])
     # plt.plot(acc_ap_remuestreo)
     # plt.show()
-
-## ------------------------------------------- AUGMENTADO ----------------------------------------------
-
-## El parámetro <<directorio_scalogramas_train>> va a tener la ruta donde están los escalogramas que voy a usar para procesar
-## Para el caso de MI COMPUTADORA <<directorio_scalogramas_train>> = 'C:\Yo\Tesis\sereData\sereData\Dataset\wavelet_cmor\train'
-## El parámetro <<dir_preprocessed_data_train>> me va a almacenar los escalogramas de salida luego del preprocesado
-## Para el caso de MI COMPUTADORA <<dir_preprocessed_data_train>> = 'C:\Yo\Tesis\sereData\sereData\Dataset\preprocessed_data\train'
-## El parámetro <<directorio_muestra>> me va a contener la carpeta correspondiente al paciente analizado y es el que se arma en las líneas de arriba
-## Por ejemplo, si se está analizando una muestra corta (<<long_sample>> = False) del paciente de ID 215 (<<sample_ID>> = 215)
-## El parámetro <<act_ae>> es una lista que contiene las actividades que yo quiero procesar. Se importa del fichero <<parameters.py>> y tiene como valor <<act_ae>> = ['Caminando']
-## LA SALIDA DE ESTA FUNCIÓN ES LA QUE ENTRA AL MÓDULO DE INTELIGENCIA ARTIFICIAL    
-Escalado(directorio_scalogramas_train + directorio_muestra, dir_preprocessed_data_train + directorio_muestra, static_window_secs = static_window_secs, actividades = act_ae, movil_window_secs = window_secs, overlap_secs = overlap_secs, fs = fs, escalado = escalado)

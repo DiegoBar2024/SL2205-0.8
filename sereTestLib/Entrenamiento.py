@@ -117,6 +117,7 @@ def Entrenamiento(entrenar_ae = True, preprocesar = False):
         modelo_artifact = run.use_artifact(autoencoder_name + ':best')
     except:
         modelo_artifact = run.use_artifact(autoencoder_name + ':latest')
+
     modelo_dir = modelo_artifact.download(model_path_ae)
     run.finish()
 
