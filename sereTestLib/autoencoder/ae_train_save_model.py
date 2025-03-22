@@ -284,4 +284,3 @@ def ae_load_model(modelo_dir):
     
     ## Retorno el modelo del autoencoder
     return(modelo_autoencoder)
-

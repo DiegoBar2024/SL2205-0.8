@@ -2,6 +2,7 @@
 
 import sys
 import os
+import pywt
 from Escalado import *
 from scipy.signal import *
 import numpy as np
@@ -15,7 +16,7 @@ from SegmentacionM1 import *
 ## Escalas de las wavelets a utilizar
 ## Se recuerda que la frecuencia me queda f = f_muestreo / escala
 ## Ésto me implica que a escalas más pequeñas tengo frecuencias más grandes
-escalas = np.arange(10, 20, 1)
+escalas = np.arange(8, 136, 1)
 
 ## Creo una variable la cual almacene el ancho de banda de la wavelet
 ancho_banda = 1.5
@@ -49,7 +50,14 @@ matriz_segmentada = np.zeros(len(pasos), dtype = object)
 extensiones_pasos = []
 
 ## Especifico la cantidad de pasos que quiero representar en mis escalogramas
-cantidad_pasos = 3
+cantidad_pasos = 4
+
+## Especifico el tiempo máximo de paso en segundos que voy a usar para hacer el remuestreo del eje temporal
+tiempo_maximo_paso = 1
+
+## Especifico la dimensión temporal objetivo a la que voy a interpolar (remuestreo)
+## Ésta cantidad está calculada con parámetros que NO DEPENDEN DEL PACIENTE, lo cual es lo que se pretende
+dimension_temporal = cantidad_pasos * int(tiempo_maximo_paso * 200)
 
 ## Ahora itero para cada uno de los pasos que tengo segmentados
 for i in range (1, len(pasos) - (cantidad_pasos - 1)):
@@ -133,9 +141,7 @@ for i in range (1, len(pasos) - (cantidad_pasos - 1)):
                                             coef6[:,extensiones_pasos[i - 1]: coef6.shape[1] - extensiones_pasos[i - 1]]     ])
 
     ## Hago el remuestreo de la señal temporal para quue el tensor me quede de dimensión fija
-    ## En principio le digo que la cantidad objetivo de muestras se calcule como:
-    ## el producto entre la cantidad de pasos por ventana y la cantidad promedio de muestras por paso (redondeado a entero)
-    matriz_escalogramas[i] = resample(matriz_escalogramas[i], cantidad_pasos * int(muestras_paso), axis = 2)
+    matriz_escalogramas[i] = resample(matriz_escalogramas[i], dimension_temporal, axis = 2)
 
     ## Obtención del tamaño del tensor tridimensional correspondiente al i-ésimo segmento
     ## Se recuerda que  <<matriz_escalogramas[i]>> tiene la siguiente forma: (c, f, t) para un segmento individual
@@ -157,7 +163,7 @@ for i in range (1, len(pasos) - (cantidad_pasos - 1)):
         np.savez_compressed(archivo_salida + str(dato) + '.npz', y = 0, X = matriz_escalogramas[i][j,:,:])
 
     ## Agrego el escalograma y su nombre base como un diccionario a la lista de escalogramas
-    escalogramas_segmentos.append({'escalograma': matriz_escalogramas[i], 'nombre_base_segmento': nombre_base_segmento})
+    escalogramas_segmentos.append({'escalograma': np.abs(matriz_escalogramas[i]), 'nombre_base_segmento': nombre_base_segmento})
 
     # ## Graficación del escalograma en el i-ésimo segmento (anterposterior)
     # data = np.abs(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])

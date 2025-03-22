@@ -62,7 +62,7 @@ for segment in np.arange(segments):
 
     ## <<local_min_gyro>> va a contener el elemento de menor valor absoluto presente en cada matriz de coeficientes de wavelet de los giroscopios
     ## Esto implica que <<local_min_gyro>> me va a quedar un vector de tres coordenadas donde cada coordenada es cada minimo
-    local_min_gyro = [np.min(np.abs(X[3, :, :])),np.min(np.abs(X[4, :, :])),np.min(np.abs(X[5, :, :]))]         
+    local_min_gyro = [np.min(np.abs(X[3, :, :])), np.min(np.abs(X[4, :, :])), np.min(np.abs(X[5, :, :]))]         
 
     ## Itero para cada una de las 3 coordenadas de los vectores anteriores
     ## Tengo 3 coordenadas porque tengo 3 canales de aceleración y 3 canales de giroscopios
@@ -102,7 +102,7 @@ for segment in np.arange(segments):
         if i < 3:
 
             ## TRANSFORMACIÓN DE LOS ESCALOGRAMAS A INTENSIDADES DE GRIS
-            X[i, :, :] = np.rint((X[i, :, :] - global_min_acc[i]) * 256 / (global_max_acc[i]-global_min_acc[i])).astype(np.intc)
+            X[i, :, :] = np.rint((X[i, :, :] - global_min_acc[i]) * 256 / (global_max_acc[i] - global_min_acc[i])).astype(np.intc)
 
         ## En caso de que me esté refiriendo a los giroscopios
         else:
@@ -110,8 +110,8 @@ for segment in np.arange(segments):
             ## TRANSFORMACIÓN DE LOS ESCALOGRAMAS A INTENSIDADES DE GRIS
             X[i, :, :] = np.rint((X[i, :, :] - global_min_gyro[i - 3]) * 256 / (global_max_gyro[i - 3] - global_min_gyro[i - 3])).astype(np.intc)
 
-        ## Inicializo la variable y en 0 que me dice si hay patología o no
-        y = 0
+    ## Inicializo la variable y en 0 que me dice si hay patología o no
+    y = 0
 
-        ## Guardado de datos preprocesados en la ruta de salida
-        np.savez_compressed(output_path + nombre_base_segmento + '{}_00{}'.format(segment, i), y = y, X = X)
+    ## Guardado de datos preprocesados en la ruta de salida
+    np.savez_compressed(output_path + nombre_base_segmento + '{}'.format(segment), y = y, X = X)

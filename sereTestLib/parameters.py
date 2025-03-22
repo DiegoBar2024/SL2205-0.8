@@ -154,7 +154,7 @@ overlap_secs= 3
 autonormalizar = False
 step=3
 
-inDim = (height,width,depth)
+inDim = (height, width, depth)
 patience=5
 num_epochs = 100
 base_learning_rate = 0.0001
@@ -212,7 +212,7 @@ autoencoder_name = extra+'_'+act_ae[0]+'_'+str(num_epochs)+'_'+loss_name+'_'+mod
 clasificador_name= clasificador+'_'+extra
 
 
-model_path_ae = static_path + 'Modelos/'+'autoencoder/'+autoencoder_name + '/'
+model_path_ae = static_path + 'Modelos/' + 'autoencoder/'+ autoencoder_name + '/'
 model_path_clf =static_path + 'Modelos/' +'clasificador/'+ clasificador_name + '/'
 
 ################################################
