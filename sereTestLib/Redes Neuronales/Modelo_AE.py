@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from keras import backend as K
 import os
-from DataClassAuto import DataGeneratorAuto
+from GeneradorDatos import *
 import wandb
 
 ## SSIM LOSS
@@ -114,7 +114,7 @@ def ae_train_save_model(path_to_scalograms_train = dir_preprocessed_data_train, 
     ## <<dim>> va a contener una tupla de 3 elementos con la dimensión de los escalogramas de entrada
     ## <<batch_size>> va a contener el tamaño del batch (cantidad de muestras de entrenamiento) que voy a usar para entrenar
     ## <<activities>> va a ser una lista de strings donde cada cadena es la actividad que voy a analizar
-    paramsV= {'data_dir' : path_to_scalograms_val,
+    paramsV = {'data_dir' : path_to_scalograms_val,
                             'dim' : input_dimension,
                             'batch_size' : batch_size,
                             'shuffle' : False,

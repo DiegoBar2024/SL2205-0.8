@@ -1,13 +1,11 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
 import sys
-import os
 import pywt
-from Escalado import *
 from scipy.signal import *
 import numpy as np
-from matplotlib import pyplot as plt
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
 
 from SegmentacionM1 import *
 
@@ -151,16 +149,16 @@ for i in range (1, len(pasos) - (cantidad_pasos - 1)):
     (c, f, t) = matriz_escalogramas[i].shape
     print((c, f, t))
 
-    ## Especifico el proceso de guardado del escalograma en la lista escalogramas_segmentos
-    ## Genero el nombre del archivo de salida
-    ## Me queda definir <<directorio_scalogramas>> y <<nombre_base_segmento>>
-    archivo_salida = '%s%s' % (directorio_escalogramas, "{}{}".format(nombre_base_segmento, str(i - 1)))
+    # ## Especifico el proceso de guardado del escalograma en la lista escalogramas_segmentos
+    # ## Genero el nombre del archivo de salida
+    # ## Me queda definir <<directorio_scalogramas>> y <<nombre_base_segmento>>
+    # archivo_salida = '%s%s' % (directorio_escalogramas, "{}{}".format(nombre_base_segmento, str(i - 1)))
 
-    ## Hago el guardado de los escalogramas
-    for j, dato in zip(range(6), ['ACx', 'ACy', 'ACz', 'GYx', 'GYy', 'GYz']):
+    # ## Hago el guardado de los escalogramas
+    # for j, dato in zip(range(6), ['ACx', 'ACy', 'ACz', 'GYx', 'GYy', 'GYz']):
 
-        ## Hago el guardado de los escalogramas de cada canal
-        np.savez_compressed(archivo_salida + str(dato) + '.npz', y = 0, X = matriz_escalogramas[i][j,:,:])
+    #     ## Hago el guardado de los escalogramas de cada canal
+    #     np.savez_compressed(archivo_salida + str(dato) + '.npz', y = 0, X = matriz_escalogramas[i][j,:,:])
 
     ## Agrego el escalograma y su nombre base como un diccionario a la lista de escalogramas
     escalogramas_segmentos.append({'escalograma': np.abs(matriz_escalogramas[i]), 'nombre_base_segmento': nombre_base_segmento})

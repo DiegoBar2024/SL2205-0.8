@@ -8,7 +8,7 @@ from Muestreo import *
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
 ## Creo una variable que me indique si se están leyendo los datos de Serelabs o los propios
-lectura_datos_propios = True
+lectura_datos_propios = False
 
 ## En caso de que esté leyendo datos propios, le doy el procesamiento correspondiente
 if lectura_datos_propios:

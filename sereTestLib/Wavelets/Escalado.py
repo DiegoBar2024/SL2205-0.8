@@ -1,7 +1,6 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
 import sys
-from Escalado import *
 from scipy.signal import *
 import numpy as np
 import os
@@ -12,11 +11,11 @@ from Escalogramas import *
 ## --------------------------------------------- ESCALADO ----------------------------------------------
 
 ## Especifico la ruta de salida de los archivos
-output_path =  'C:/Yo/Tesis/sereData/sereData/Dataset/preprocessed_data/train' + directorio_muestra
+ruta_guardado =  'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/train' + directorio_muestra
 
 ## En caso de que el directorio no exista, lo creo
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
+if not os.path.exists(ruta_guardado):
+    os.makedirs(ruta_guardado)
 
 ## Especifico la cantidad de segmentos que tengo
 segments = np.shape(escalogramas_segmentos)[0]
@@ -114,4 +113,4 @@ for segment in np.arange(segments):
     y = 0
 
     ## Guardado de datos preprocesados en la ruta de salida
-    np.savez_compressed(output_path + nombre_base_segmento + '{}'.format(segment), y = y, X = X)
+    np.savez_compressed(ruta_guardado + nombre_base_segmento + '{}'.format(segment), y = y, X = X)

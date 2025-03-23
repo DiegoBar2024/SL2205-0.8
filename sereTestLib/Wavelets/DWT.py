@@ -13,7 +13,7 @@ T = 1.0 / 200
 x = np.linspace(0.0, N * T, N, endpoint = False)
 
 ## Función
-y = 20 * np.cos(20 * 2.0 * np.pi * x) + 20 * np.cos(2.25 * 2.0 * np.pi * x) + 20 * np.cos(75 * 2.0 * np.pi * x)
+y = 2 * np.cos(20 * 2.0 * np.pi * x) + 2 * np.cos(2.25 * 2.0 * np.pi * x) + 20 * np.cos(75 * 2.0 * np.pi * x)
 
 ## ENERGÍA DE LA SEÑAL EN EL DOMINIO DEL TIEMPO
 ## Creo una variable donde guardo la energía calculada
@@ -25,12 +25,16 @@ for muestra in y:
     ## Actualizo el valor de la energía sumando el cuadrado de la muestra
     energia_señal += np.abs(muestra) ** 2
 
+print("Energia en el tiempo: {}".format(energia_señal))
+
 ## ENERGÍA DE LA SEÑAL EN EL DOMINIO DE LA FRECUENCIA
 ## Calculo el espectro en el semieje derecho de la señal y
 espectro = fftpack.rfft(y)
 
 ## Calculo la energía total de la señal usando la formula de Parseval en frecuencia
 energia_fourier = (espectro[0] ** 2 + 2 * np.sum(espectro[1:] ** 2)) / N
+
+print("Energia en frecuencia: {}".format(energia_fourier))
 
 ## TRANSFORMADA DISCRETA DE WAVELET
 ## Conjunto de wavelets discretas disponibles
@@ -71,6 +75,8 @@ for wavelet in wavelets_discretas:
 
         ## Calculo el módulo al cuadrado de dicho coeficiente de detalle
         energia += np.abs(coef) ** 2
+
+print("Energía DWT: {}".format(energia))
 
 ## Descomposición multinivel usando DWT
 coefs = pywt.wavedec(data = y, wavelet = 'db20', mode = 'periodization', level = 10)

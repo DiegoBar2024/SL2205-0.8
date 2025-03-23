@@ -154,7 +154,7 @@ overlap_secs= 3
 autonormalizar = False
 step=3
 
-inDim = (height, width, depth)
+# inDim = (height, width, depth)
 patience=5
 num_epochs = 100
 base_learning_rate = 0.0001
@@ -292,3 +292,21 @@ filenameAI = 'C:/Yo/Tesis/sereData/sereData/Modelos/Actividad/regLin_Activo_Inac
 filenameSP = 'C:/Yo/Tesis/sereData/sereData/Modelos/Actividad/regLin_sentadoParado.sav'
 filenameCE = 'C:/Yo/Tesis/sereData/sereData/Modelos/Actividad/regLin_caminandoEscalera.sav'
 dir_etiquetas=  'C:/Yo/Tesis/sereData/sereData/Etiquetas/'
+
+## Rutas en donde van a estar los escalogramas finales que van a entrar a la red neuronal
+dir_escalogramas_nuevo_train = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/train'
+dir_escalogramas_nuevo_test = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/test'
+
+## DIMENSIÓN TEMPORAL A LA QUE SE VA A REMUESTREAR
+## Especifico la cantidad de pasos que quiero representar en mis escalogramas
+cantidad_pasos = 4
+
+## Especifico el tiempo máximo de paso en segundos que voy a usar para hacer el remuestreo del eje temporal
+tiempo_maximo_paso = 1
+
+## Especifico la dimensión temporal objetivo a la que voy a interpolar (remuestreo)
+## Ésta cantidad está calculada con parámetros que NO DEPENDEN DEL PACIENTE, lo cual es lo que se pretende
+dimension_temporal = cantidad_pasos * int(tiempo_maximo_paso * 200)
+
+## Especifico las dimensiones temporales del tensor tridimensional de entrada al autoencoder
+inDim = (6, 128, dimension_temporal)

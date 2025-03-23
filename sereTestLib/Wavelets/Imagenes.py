@@ -14,10 +14,14 @@ from LecturaDatos import id_persona
 
 ## La idea es poder guardar todos los escalogramas generados como imágenes con extensión .png en una carpeta aparte
 ## Especifico la ruta de donde voy a leer los escalogramas
-ruta_lectura = "C:/Yo/Tesis/sereData/sereData/Dataset/preprocessed_data/train/S{}/".format(id_persona)
+ruta_lectura = "C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/train/S{}/".format(id_persona)
 
 ## Especifico la ruta de donde voy a guardar los escalogramas
 ruta_guardado = "C:/Yo/Tesis/sereData/sereData/Escalogramas/S{}/".format(id_persona)
+
+## En caso de que el directorio no exista, lo creo
+if not os.path.exists(ruta_guardado):
+    os.makedirs(ruta_guardado)
 
 ## Obtengo todos los archivos presentes en la ruta anterior
 ## Recuerdo que cada uno de los archivos se corresponde con un escalograma (tensor tridimensional)

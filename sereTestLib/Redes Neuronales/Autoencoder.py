@@ -12,7 +12,6 @@ import wandb
 import keras
 from Modelo_AE import *
 from Etiquetado import *
-from Escalado import *
 
 ## ------------------------------------- SEPARACIÓN DE MUESTRAS ----------------------------------------
 
@@ -37,7 +36,7 @@ run = wandb.init(project = "Autoencoder", reinit = True, config = config, job_ty
 keras.backend.clear_session()
 
 ## Hago el llamado a la función del entrenamiento del autoencoder
-ae_train_save_model(dir_preprocessed_data_train, dir_preprocessed_data_test, model_path_ae, (6, 128, dimension_temporal), train, val_test, num_epochs, act_ae, batch_size, debug = True)
+ae_train_save_model(dir_escalogramas_nuevo_train, dir_escalogramas_nuevo_test, model_path_ae, inDim, train, val_test, num_epochs, act_ae, batch_size, debug = True)
 
 ## Terminación del autoencoder
 trained_model_artifact = wandb.Artifact(autoencoder_name, type = "model")
