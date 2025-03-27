@@ -17,6 +17,8 @@ import os
 from GeneradorDatos import *
 import wandb
 
+from skimage.metrics import structural_similarity as ssim
+
 ## SSIM LOSS
 def ssim_loss(y_true, y_pred):
     loss = tf.reduce_mean(1-tf.image.ssim(y_true, y_pred,max_val=255))
@@ -30,16 +32,17 @@ def ms_ssim(y_true, y_pred):
 
     return loss
 
-## SSIM METRIC LOSS
+## SSIM METRIC
 def ssim_metric(y_true, y_pred):
-    
+
     ## Calculo la función de error correspondiente
-    loss = tf.reduce_mean(tf.image.ssim(y_true, y_pred,max_val=255))
+    # loss = tf.reduce_mean(tf.image.ssim(y_true, y_pred, max_val = 255))
+    loss = ssim(y_pred, y_true, channel_axis = 1, data_range = 255)
 
     return loss
 
 ## Función que genera el modelo del autoencoder y lo entrena según los parámetros de entrada
-def ae_train_save_model(path_to_scalograms_train = dir_preprocessed_data_train, path_to_scalograms_val = dir_preprocessed_data_test , model_path = model_path_ae, input_dimension = inDim, list_of_samples_number_train = [], 
+def ae_train_save_model(path_to_scalograms_train = dir_escalogramas_nuevo_ind_train, path_to_scalograms_val = dir_escalogramas_nuevo_ind_test , model_path = model_path_ae, input_dimension = inDim, list_of_samples_number_train = [], 
                         list_of_samples_number_validation = [], number_epochs = num_epochs, activities = act_ae, batch_size = batch_size, latent_dimension = latent_dimension, debug = False):
     """
         Function that generates the autoencoder model base on training datagroup. Validates it and saves it.
@@ -120,21 +123,17 @@ def ae_train_save_model(path_to_scalograms_train = dir_preprocessed_data_train, 
                             'shuffle' : False,
                             'activities' : activities}
 
-    ## Generación de datos de entrenamiento
+    ## Generación de datos de entrenamiento (va a ser un objeto de la clase DataGeneratorAuto)
     ## Le paso como argumento los parámetros de entrenamiento
     training_generator = DataGeneratorAuto(list_IDs = list_of_samples_number_train, **paramsT)
     
-    ## Generación de datos de validación
+    ## Generación de datos de validación (va a ser un objeto de la clase DataGeneratorAuto)
     ## Le paso como argumento los parámetros de validación
     validation_generator = DataGeneratorAuto(list_IDs = list_of_samples_number_validation, **paramsV)
 
-    # ## Hago la incialización de WandB
-    # wandb.init(project = "Autoencoder", mode = 'disabled')
+    ## Hago la incialización de la sesión de WandB
+    wandb.init(project = "Autoencoder", mode = 'disabled')
 
-    # #print(len(training_generator[0][0][ 0,0, 0, :]))
-    # #callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=2)
-    # callbacks=[wandb.keras.WandbCallback(save_model=False),tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience, verbose=2)]
-    
     # Entrenamiento del modelo de autoencoder especificando todos los parámetros correspondientes
     history = autoencoder.fit(x = training_generator,
                     validation_data = validation_generator,
@@ -153,7 +152,7 @@ def ae_train_save_model(path_to_scalograms_train = dir_preprocessed_data_train, 
 ## <<dim_input>> me da las dimensiones de la entrada del autoencoder. Por defecto tengo dim_input = (128, 600, 6) lo cual quiere decir que mi entrada es un tensor tridimensional de 128 x 600 y profundidad 6. Es decir un tensor de dimensiones 128 x 600 x 6
 ## <<filters>> es una tupla cuyos elementos son la cantidad de filtros que tienen las distintas capas del encoder. El decoder tendrá los mismos filtros pero en orden inverso
 ## <<latentDim>> me va a dar la dimensión del espacio latente, es decir me va a dar la representación comprimida de la entrada como un vector de 256 elementos o 256 características
-def ae_model_builder(dim_input = (128, 600, 6), filters = (32, 16, 8), latentDim = 256):
+def ae_model_builder(dim_input = inDim, filters = (32, 16, 8), latentDim = 256):
     """
     Function that builds the autoencoder model
     Parameters:
@@ -193,13 +192,13 @@ def ae_model_builder(dim_input = (128, 600, 6), filters = (32, 16, 8), latentDim
         ## El parámetro <<activation>> me especifica el tipo de función de activación no lineal que se le aplica al bloque de salida. Algo importante es que la aplicación de la función de activación no lineal NO ME CAMBIA LAS DIMENSIONES DE LA SALIDA DE LA CAPA.
         ## El parámetro <<padding>> me da la opción de hacer inserción de ceros en la entrada para conservar las dimensiones ESPACIALES (no profundidad!) de la salida.
         ##    Entonces al colocar <<padding='same'>> yo estoy diciendo que las dimensiones espaciales del tensor tridimensional de salida son IGUALES A LAS DE LA ENTRADA, SIN EMBARGO LA PROFUNDIDAD DEL TENSOR TRIDIMENSIONAL DE SALIDA VA A SER IGUAL AL NÚMERO DE FEATURE MAPS QUE TENGA ESA CAPA (o sea al numero de filtros)
-        x = layers.Conv2D(filters = f, kernel_size = (3, 3), strides = 1, activation = "elu", padding = 'same')(x)
+        x = layers.Conv2D(filters = f, kernel_size = (3, 3), strides = 1, activation = "elu", padding = 'same', data_format = 'channels_first')(x)
 
         ## Se define una CAPA POOLING
         ## El parámetro <<pool_size=(2,2)>> me va a dar la VENTANA sobre la cual se va a deslizar la ventana que tomará el máximo (por defecto se asume striding unitario)
         ## Algo importante es que la capa pooling SÍ ME VA A CAMBIAR LAS DIMENSIONES ESPACIALES DEL TENSOR TRIDIMENSIONAL DE ENTRADA, PERO NO ME CAMBIA LA PROFUNDIDAD (el número de feature maps sigue siendo el mismo a la salida que a la entrada)
         ## Esencialmente lo que estoy haciendo acá es COMPRIMIR el tensor tridimensional de entrada a lo largo de sus dimensiones espaciales quedandome con el máximo al deslizar una ventana de 2 x 2
-        x = layers.MaxPooling2D(pool_size=(2, 2), padding='same')(x)
+        x = layers.MaxPooling2D(pool_size=(2, 2), padding = 'same', data_format = 'channels_first')(x)
 
     ## En <<volumeSize>> almaceno la CANTIDAD DE ELEMENTOS que tiene el tensor tridimensional x
     volumeSize = int_shape(x)
@@ -208,14 +207,14 @@ def ae_model_builder(dim_input = (128, 600, 6), filters = (32, 16, 8), latentDim
     x = layers.Flatten()(x)
 
     ## Se crea una dense layer la cual tenga una cantidad <<latentDim>> de neuronas la cual vendría a ser la versión comprimida de x
-    latent = layers.Dense(latentDim, name='Dense_encoder')(x)
+    latent = layers.Dense(latentDim, name = 'Dense_encoder')(x)
 
     ## DECODER
     ## Creo un decoder el cual va a aceptar la salida del encoder como sus entradas
     ## De éste modo lo que voy a hacer es armar el INVERSO del encoder
 
     ## Primero creo una dense layer la cual tenga una cantidad de neuronas igual al numero de elementos de x antes de comprimirlo a las 256 características
-    x = layers.Dense(np.prod(volumeSize[1:]), name='Dense_decoder')(latent)
+    x = layers.Dense(np.prod(volumeSize[1:]), name = 'Dense_decoder')(latent)
 
     ## Modifico la forma de x para convertirlo en un tensor tridimensional con las mismas dimensiones que antes
     x = layers.Reshape((volumeSize[1], volumeSize[2], volumeSize[3]))(x)
@@ -226,14 +225,14 @@ def ae_model_builder(dim_input = (128, 600, 6), filters = (32, 16, 8), latentDim
         ## Se define el inverso de la capa CONVOLUCIONAL
         ## En lugar de aplicar una convolución como en el encoder, aquí se aplica la operación inversa a la convolución siendo ésta la convolución con el kernel transpuesto
         ## El resto de los parámetros son los mismos que los definidos en la correspondiente capa convolucional
-        x = layers.Conv2DTranspose(filters = f, kernel_size = (3, 3), strides = 1, activation = "elu", padding = 'same')(x)
+        x = layers.Conv2DTranspose(filters = f, kernel_size = (3, 3), strides = 1, activation = "elu", padding = 'same', data_format = 'channels_first')(x)
         
         ## Se define la operación inversa al submuestreo realizado en la capa POOLING del encoder
         ## Se usa la función UpSampling2D para duplicar las dimensiones espaciales del tensor tridimensional de entrada, aunque la profundidad dependerá del número de feature maps que tenga
-        x = layers.UpSampling2D((2, 2))(x)
+        x = layers.UpSampling2D((2, 2), data_format = 'channels_first')(x)
 
     ## Se aplica una única convolución con la transpuesta para volver a obtener la profundidad original
-    x = layers.Conv2DTranspose(depth, (3, 3), padding="same", kernel_initializer = init)(x)
+    x = layers.Conv2DTranspose(depth, (3, 3), padding = "same", kernel_initializer = init, data_format = 'channels_first')(x)
 
     ## Especifico función de activación lineal
     decoded = layers.Activation("linear")(x)
@@ -251,7 +250,7 @@ def ae_model_builder(dim_input = (128, 600, 6), filters = (32, 16, 8), latentDim
     else:
 
         ## Hago la compilación del modelo
-        model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate = base_learning_rate), loss = loss_name, metrics = [ssim_metric])
+        model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate = base_learning_rate), loss = loss_name)
     
     ## Retorno el modelo de autoencoder resultante
     return model
@@ -280,7 +279,7 @@ def ae_load_model(modelo_dir):
     
     ## En caso que tenga otra función de costo
     else:
-        modelo_autoencoder = keras.models.load_model(modelo_dir + autoencoder_name +'.h5', custom_objects = {"ssim_metric": ssim_metric})
+        modelo_autoencoder = keras.models.load_model(modelo_dir + autoencoder_name +'.h5', custom_objects = {"ssim_metric": ssim_metric, 'mse' : 'mse'})
     
     ## Retorno el modelo del autoencoder
     return(modelo_autoencoder)

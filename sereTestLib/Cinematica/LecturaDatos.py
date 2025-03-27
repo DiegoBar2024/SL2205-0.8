@@ -13,6 +13,13 @@ lectura_datos_propios = False
 ## En caso de que esté leyendo datos propios, le doy el procesamiento correspondiente
 if lectura_datos_propios:
 
+    ## --- Sistema de coordenadas usados en las medidas por los estudiantes ----------
+    ##          EJE X: MEDIOLATERAL CON EJE POSITIVO A LA IZQUIERDA
+    ##          EJE Y: VERTICAL CON EJE POSITIVO HACIA ARRIBA
+    ##          EJE Z: ANTEROPOSTERIOR CON EJE POSITIVO HACIA DELANTE
+    ## --- Los tres ejes de coordenadas deben formar una terna directa de vectores ---
+    ## -------------------------------------------------------------------------------
+
     ## Especifico identificador numérico para la persona
     id_persona = 1
 
@@ -73,8 +80,15 @@ if lectura_datos_propios:
 ## En caso de que esté leyendo datos de la empresa, le doy el procesamiento correspondiente
 else:
 
+    ## --- Sistema de coordenadas usados en las medidas por los estudiantes ----------
+    ##          EJE X: MEDIOLATERAL CON EJE POSITIVO HACIA LA DERECHA
+    ##          EJE Y: VERTICAL CON EJE POSITIVO HACIA ARRIBA
+    ##          EJE Z: ANTEROPOSTERIOR CON EJE POSITIVO HACIA ATRÁS
+    ## --- Los tres ejes de coordenadas deben formar una terna directa de vectores ---
+    ## -------------------------------------------------------------------------------
+
     ## Identificación del paciente
-    id_persona = '299'
+    id_persona = 303
 
     ## Ruta del archivo
     ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/3S{}.csv".format(id_persona, id_persona)

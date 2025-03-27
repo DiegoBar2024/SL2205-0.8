@@ -22,35 +22,6 @@ import pywt
 
 from LecturaDatos import *
 
-# ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
-
-# ## Identificación del paciente
-# numero_paciente = '299'
-
-# ## Ruta del archivo
-# ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/3S{}.csv".format(numero_paciente, numero_paciente)
-
-# ## Lectura de datos
-# data = pd.read_csv(ruta)
-
-# ## Hallo el período de muestreo de las señales
-# periodoMuestreo = PeriodoMuestreo(data)
-
-# ## Armamos una matriz donde las columnas sean las aceleraciones
-# acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(data['AC_z'])]).transpose()
-
-# ## Armamos una matriz donde las columnas sean los valores de los giros
-# gyro = np.array([np.array(data['GY_x']), np.array(data['GY_y']), np.array(data['GY_z'])]).transpose()
-
-# ## Separo el vector de tiempos del dataframe
-# tiempo = np.array(data['Time'])
-
-# ## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
-# tiempo = (tiempo - tiempo[0]) / 1000
-
-# ## Cantidad de muestras de la señal
-# cant_muestras = len(tiempo)
-
 ## ------------------------------------ DETECCIÓN CORTES EN CERO ---------------------------------------
 
 ## Obtengo los índices booleanos en donde se producen los cruces en cero de la aceleración vertical

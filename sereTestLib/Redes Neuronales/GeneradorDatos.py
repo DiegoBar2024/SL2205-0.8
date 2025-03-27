@@ -11,7 +11,7 @@ class DataGeneratorAuto(keras.utils.Sequence):
     Generates data for Keras.
     Be careful. Check if the n_samples is greater than zero before use the output in Keras models.
     '''
-    def __init__(self,  activities = [], list_IDs = [], data_dir = './', batch_size = 4, dim = (128, 600, 6), numClases = 2, shuffle = True, long_sample = long_sample):
+    def __init__(self,  activities = [], list_IDs = [], data_dir = './', batch_size = 4, dim = inDim, numClases = 2, shuffle = True, long_sample = long_sample):
         '''Initialization'''
 
         ## En caso de que la muestra sea larga, inicializo el atributo <<character>> con el valor 'L'
@@ -58,7 +58,7 @@ class DataGeneratorAuto(keras.utils.Sequence):
 
             ## Genero el valor <<id_folder>> como la concatenación de <<character>> el cual era 'S' si se trata de una muestra corta y 'L' si se trata de una muestra larga, y la ID del paciente que corresponda
             ## Por ejemplo, si tengo una muestra corta es decir <<self.character>> = 'S' y tengo un paciente de ID 223 entonces id_folder = 'S223' concatenando ambas cosas
-            id_folder = self.character + str(pat_id)
+            id_folder = self.character + str(int(pat_id))
 
             ## Llamo a <<__get_files_lists>> para que me agarre de dicho paciente aquellos ficheros .csv los cuales contengan las actividades que se quieren procesar
             files = self.__get_files_lists(id_folder)
@@ -173,7 +173,7 @@ class DataGeneratorAuto(keras.utils.Sequence):
                     j += 1
                     samples += self.IDs_len[j]
                 pat_id = self.list_IDs[j]
-                id_folder = self.character + str(pat_id)
+                id_folder = self.character + str(int(pat_id))
 
                 file_index = indexes[i] - samples + self.IDs_len[j]
 

@@ -16,7 +16,7 @@ from LecturaDatos import *
 acc_AP = acel[:,2]
 
 ## Se hace la normalización en amplitud y offset de la señal de aceleración anteroposterior
-acc_AP_norm = Normalizacion(-acel[:,2])
+acc_AP_norm = Normalizacion(- acel[:,2])
 
 ## ------------------------------------- ANÁLISIS EN FRECUENCIA ----------------------------------------
 

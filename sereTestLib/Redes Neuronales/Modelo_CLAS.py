@@ -43,28 +43,14 @@ sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/clasificador')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/autoencoder')
 from parameters import *
-from extras import clasificador_name_creation, patient_group_aelda
-from DataClassAuto import DataGeneratorAuto
-
-## <<list_ids>> es la lista de IDs de los pacientes cuyos datos voy a usar
-## Función que me calcula la potencia de los escalogramas
-def calcular_potencia(list_ids, **params):
-
-    scalograms = DataGeneratorAuto(list_IDs=list_ids, **params)
-
-    pow=np.zeros((np.shape(scalograms)[0],6))
-    #print(np.shape(pow))
-    for j in range(np.shape(scalograms)[0]):
-        for i in range (6):
-            chan=scalograms[j][0][ 0,:, :, i]
-            pow[j,i]=np.mean(chan**2)
-    return pow
+from Extras_CLAS import *
+from GeneradorDatos import *
 
 ## Función que me construye un modelo de red neuronal fully connected arbitrario (la voy a usar para el clasificador)
 ## <<n_hidden>> me da el número de hidden layers que va a tener mi modelo
 ## <<n_neurons>> me da el número de neuronas que va a tener cada hidden layer de mi modelo. Se asume en éste caso que todas las hidden layers tienen el mismo número <<n_neurons>> de neuronas 
 ## <<input_shape>> me da la forma de la entrada que va a tener la red neuronal. Por defecto (None, 256) significa que la entrada va a ser un array unidimensional de tamaño 256 (256 características)
-def build_model(n_hidden, n_neurons, input_shape = (None,256)):
+def build_model(n_hidden, n_neurons, input_shape = (None, 256)):
     
     ## Inicializo un modelo Keras Secuencial inicialmente vacío
     model = keras.models.Sequential()
@@ -155,19 +141,12 @@ def entrenamiento_clasificador(unstable_train, stable_train, unstable_validation
     ## Hago la predicción para el conjunto de entrenamiento
     unstable_predictions_train = predict_clf(clf_trained,unstable_train_intermediate, clasificador)
     stable_predictions_train = predict_clf(clf_trained,stable_train_intermediate, clasificador)
-    labels_train = np.concatenate([stable_predictions_train,unstable_predictions_train],axis=0)
+    labels_train = np.concatenate([stable_predictions_train, unstable_predictions_train], axis=0)
 
     ## Hago la predicción para el conjunto de validación
-    unstable_predictions = predict_clf(clf_trained,unstable_validate_intermediate, clasificador)
-    stable_predictions = predict_clf(clf_trained,stable_validate_intermediate, clasificador)
-    labels_validate = np.concatenate([stable_predictions,unstable_predictions],axis=0)
-
-    ## En caso de que el clasificador sea del tipo LDA, hago una impresión adicional
-    if clasificador == 'lda':
-        print_write_classifier_stats(ground_truth_train,labels_train, ground_truth_validate,labels_validate,0,0,0,0,0,clasificador,activities,extra)
-    
-    else:
-        print_write_classifier_stats(ground_truth_train, labels_train, ground_truth_validate,labels_validate,0, 0, 0, 0,0,clasificador,activities,extra)
+    unstable_predictions = predict_clf(clf_trained, unstable_validate_intermediate, clasificador)
+    stable_predictions = predict_clf(clf_trained, stable_validate_intermediate, clasificador)
+    labels_validate = np.concatenate([stable_predictions, unstable_predictions], axis=0)
 
 ## Función que lleva a cabo el entrenamiento del clasificador
 ## Como entrada debo colocarle el espacio codificado siendo éste la salida del autoencoder para cada escalograma

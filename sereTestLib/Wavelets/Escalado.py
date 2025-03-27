@@ -13,9 +13,16 @@ from Escalogramas import *
 ## Especifico la ruta de salida de los archivos
 ruta_guardado =  'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/train' + directorio_muestra
 
+## Especifico la ruta de salida de escalogramas individuales
+ruta_guardado_individual =  'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_ind_nuevo/train' + directorio_muestra
+
 ## En caso de que el directorio no exista, lo creo
 if not os.path.exists(ruta_guardado):
     os.makedirs(ruta_guardado)
+
+## En caso de que el directorio no exista, lo creo
+if not os.path.exists(ruta_guardado_individual):
+    os.makedirs(ruta_guardado_individual)
 
 ## Especifico la cantidad de segmentos que tengo
 segments = np.shape(escalogramas_segmentos)[0]
@@ -109,8 +116,11 @@ for segment in np.arange(segments):
             ## TRANSFORMACIÓN DE LOS ESCALOGRAMAS A INTENSIDADES DE GRIS
             X[i, :, :] = np.rint((X[i, :, :] - global_min_gyro[i - 3]) * 256 / (global_max_gyro[i - 3] - global_min_gyro[i - 3])).astype(np.intc)
 
-    ## Inicializo la variable y en 0 que me dice si hay patología o no
-    y = 0
+        ## Inicializo la variable y en 0 que me dice si hay patología o no
+        y = 0
+
+        ## Guardado de los escalogramas individuales
+        np.savez_compressed(ruta_guardado_individual + nombre_base_segmento + '{}_00{}'.format(segment, i), y = y, X = X[i,:,:])
 
     ## Guardado de datos preprocesados en la ruta de salida
     np.savez_compressed(ruta_guardado + nombre_base_segmento + '{}'.format(segment), y = y, X = X)

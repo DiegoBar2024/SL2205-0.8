@@ -156,7 +156,7 @@ step=3
 
 # inDim = (height, width, depth)
 patience=5
-num_epochs = 100
+num_epochs = 1
 base_learning_rate = 0.0001
 
 ####################################################
@@ -293,9 +293,13 @@ filenameSP = 'C:/Yo/Tesis/sereData/sereData/Modelos/Actividad/regLin_sentadoPara
 filenameCE = 'C:/Yo/Tesis/sereData/sereData/Modelos/Actividad/regLin_caminandoEscalera.sav'
 dir_etiquetas=  'C:/Yo/Tesis/sereData/sereData/Etiquetas/'
 
-## Rutas en donde van a estar los escalogramas finales que van a entrar a la red neuronal
+## Rutas en donde van a estar los escalogramas finales
 dir_escalogramas_nuevo_train = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/train'
 dir_escalogramas_nuevo_test = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/test'
+
+## Rutas en donde van a estar los escalogramas individuales por cada canal que van a entrar en la red neuronal
+dir_escalogramas_nuevo_ind_train = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_ind_nuevo/train'
+dir_escalogramas_nuevo_ind_test = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_ind_nuevo/test'
 
 ## DIMENSIÓN TEMPORAL A LA QUE SE VA A REMUESTREAR
 ## Especifico la cantidad de pasos que quiero representar en mis escalogramas

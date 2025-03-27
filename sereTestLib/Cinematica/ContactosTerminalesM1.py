@@ -22,35 +22,6 @@ import pywt
 
 from LecturaDatos import *
 
-# ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
-
-# ## Identificación del paciente
-# numero_paciente = '299'
-
-# ## Ruta del archivo
-# ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/3S{}.csv".format(numero_paciente, numero_paciente)
-
-# ## Lectura de datos
-# data = pd.read_csv(ruta)
-
-# ## Hallo el período de muestreo de las señales
-# periodoMuestreo = PeriodoMuestreo(data)
-
-# ## Armamos una matriz donde las columnas sean las aceleraciones
-# acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(data['AC_z'])]).transpose()
-
-# ## Armamos una matriz donde las columnas sean los valores de los giros
-# gyro = np.array([np.array(data['GY_x']), np.array(data['GY_y']), np.array(data['GY_z'])]).transpose()
-
-# ## Separo el vector de tiempos del dataframe
-# tiempo = np.array(data['Time'])
-
-# ## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
-# tiempo = (tiempo - tiempo[0]) / 1000
-
-# ## Cantidad de muestras de la señal
-# cant_muestras = len(tiempo)
-
 ## ------------------------------------- ANÁLISIS EN FRECUENCIA ----------------------------------------
 
 ## Señal de aceleración vertical (resto la gravedad que me da una buena aproximación)
@@ -64,10 +35,10 @@ filtro = signal.butter(N = 4, Wn = [0.5, 2.5], btype = 'bandpass', fs = 1 / peri
 acel_filtrada = signal.sosfiltfilt(filtro, acc_VT)
 
 ## Hago la normalizacion de la aceleración vertical filtrada
-acc_AP_norm = Normalizacion(acel_filtrada)
+acc_VT_norm = Normalizacion(acel_filtrada)
 
 ## Lo mismo con el opuesto
-acc_AP_norm_TO = Normalizacion(- acel_filtrada)
+acc_VT_norm_TO = Normalizacion(- acel_filtrada)
 
 ## Se obtiene el espectro de toda la señal completa aplicando la transformada de Fourier
 ## Ya que es una señal real se cumple la simetría conjugada
@@ -105,13 +76,13 @@ muestras_paso = tiempo_paso_frecuencia / periodoMuestreo
 umbral = 0.2
 
 ## Hago la detección de picos para un umbral predefinido
-picos = DeteccionPicos(acc_AP_norm, umbral = umbral)
+picos = DeteccionPicos(acc_VT_norm, umbral = umbral)
 
 ## Hago la detección de picos en el opuesto para calcular los TO
-picosTO = DeteccionPicos(acc_AP_norm_TO, umbral = umbral)
+picosTO = DeteccionPicos(acc_VT_norm_TO, umbral = umbral)
 
 ## Se hace la graficación de la señal marcando los picos
-GraficacionPicos(acc_AP_norm, picos)
+GraficacionPicos(acc_VT_norm, picos)
 
 ## Me tomo un entorno de 0.3 * P hacia delante centrado en el primer pico detectado
 ## Ésto lo hago porque puede pasar en algún caso que el primer pico detectado no sea el correcto
@@ -121,7 +92,7 @@ rango = picos[0] + np.array([0, 0.3 * muestras_paso])
 picos_rango = picos[picos < 0.3 * muestras_paso + picos[0]]
 
 ## Obtengo el índice del valor correspondiente al pico máximo
-ind_pico_maximo = np.argmax(acc_AP_norm[picos_rango])
+ind_pico_maximo = np.argmax(acc_VT_norm[picos_rango])
 
 ## Como están en el mismo orden puedo indexar el pico máximo en la lista de los picos detectados en el rango
 pico_maximo_inicial = picos_rango[ind_pico_maximo]
@@ -154,7 +125,7 @@ while (rango[0] < cant_muestras):
     while True:
 
         ## Hago la segmentación de la señal de aceleración AP en éste rango. Hago la conversión de los umbrales a enteros
-        segment_rango = acc_AP_norm[int(rango[0]) : int(rango[1])]
+        segment_rango = acc_VT_norm[int(rango[0]) : int(rango[1])]
 
         ## Hago la detección de picos en éste rango de señal de aceleración AP con el umbral preconfigurado
         ## Hago la detección de picos para un umbral predefinido
@@ -216,10 +187,6 @@ for i in range (len(picos_sucesivos) - 1):
 
     ## Agrego el TO detectado a la lista de toe offs
     toe_offs_min.append(toe_off + picos_sucesivos[i])
-
-# plt.plot(acel_lowpass)
-# plt.plot(toe_offs_min, acel_lowpass[toe_offs_min], "x")
-# plt.show()
 
 ## ------------------------------- GRAFICACIÓN DE CONTACTOS TERMINALES ---------------------------------
 

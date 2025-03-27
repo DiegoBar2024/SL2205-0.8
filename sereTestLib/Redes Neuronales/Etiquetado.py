@@ -234,6 +234,7 @@ def ingesta_etiquetas(csv_path = dir_etiquetas + 'clasificaciones_antropometrico
     df.loc[x_estables_val_clf, "grupo clf"] = "val clf"
     df.loc[x_inestables_val_clf, "grupo clf"] = "val clf"
 
+    ## Traducción del dataframe Pandas al archivo .csv
     df.to_csv(csv_path)
 
     return (x_inestables_train_clf, x_estables_train_clf, x_inestables_val_clf, x_estables_val_clf, x_ae_train, x_ae_val, x_estables_ae_train, x_inestables_ae_train, x_estables_ae_val, x_inestables_ae_val)
