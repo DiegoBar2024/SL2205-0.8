@@ -130,13 +130,13 @@ def entrenamiento_clasificador(unstable_train, stable_train, unstable_validation
     train_values = np.concatenate([stable_train_intermediate, unstable_train_intermediate], axis = 0)
 
     ## Genero un vector con las etiquetas correspondientes para cada uno de los pacientes en función de su estabilidad o no para el conjunto de validación
-    ground_truth_validate = np.concatenate([np.zeros(np.shape(stable_validate_intermediate)[0]), np.ones(np.shape(unstable_validate_intermediate)[0])]) # 0=stable 1=unstable
+    ground_truth_validate = np.concatenate([np.zeros(np.shape(stable_validate_intermediate)[0]), np.ones(np.shape(unstable_validate_intermediate)[0])]) 
 
     ## <<val_values>> me va a contener las muestras que voy a usar para el entrenamiento del clasificador, según la etiqueta correspondiente
-    val_values = np.concatenate([stable_validate_intermediate,unstable_validate_intermediate],axis=0)
+    val_values = np.concatenate([stable_validate_intermediate, unstable_validate_intermediate], axis = 0)
     
     ## Obtengo el clasificador luego de realizar el entrenamiento
-    clf_trained = train_clasificador(train_values,ground_truth_train,clasificador_name +'.joblib', clasificador,val_values,ground_truth_validate )
+    clf_trained = train_clasificador(train_values, ground_truth_train, clasificador_name + '.joblib', clasificador, val_values, ground_truth_validate)
 
     ## Hago la predicción para el conjunto de entrenamiento
     unstable_predictions_train = predict_clf(clf_trained,unstable_train_intermediate, clasificador)
@@ -190,16 +190,16 @@ def train_clasificador(values, ground_truth, file_clf, clasificador, X_val = Non
     elif clasificador == 'perceptron':
 
         ## Construyo un perceptrón mediante el uso de Keras como una capa secuencial de una sola neurona
-        clf = keras.models.Sequential([keras.layers.Dense(1, activation = "sigmoid", input_shape = (None,np.shape(values)[1]))])
+        clf = keras.models.Sequential([keras.layers.Dense(1, activation = "sigmoid", input_shape = (np.shape(values)[1],))])
 
         ## Impongo un tipo de regularización del tipo Early Stopping
-        es = EarlyStopping(monitor='val_loss', patience=5, mode='min', verbose=1)
+        es = EarlyStopping(monitor = 'val_loss', patience = 5, mode = 'min', verbose = 1)
 
         ## Compilo el modelo especificando error MSE y una optimización usando SGD (Stochastic Gradient Descent)
         clf.compile(loss = "mean_squared_error", optimizer = "sgd")
 
         ## Llevo a cabo el entrenamiento del clasificador y especifico los diferentes parámetros de entrenamiento
-        clf.fit(values,ground_truth,  epochs = 100, validation_data = (X_val, y_val), callbacks = [es])
+        clf.fit(values, ground_truth, epochs = num_epochs, validation_data = (X_val, y_val), callbacks = [es])
     
     ## En caso de que el clasificador sea del tipo NN (Red Neuronal)
     elif clasificador == "NN":

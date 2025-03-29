@@ -35,7 +35,7 @@ val_test = np.concatenate((x_inestables_val_clf, x_estables_val_clf), axis = Non
 lista_pacientes_existentes = np.zeros(len(archivos_escalogramas))
 
 ## Itero para cada uno de los ficheros de escalogramas existentes
-for i in range (1, len(archivos_escalogramas)):
+for i in range (0, len(archivos_escalogramas)):
 
     ## Selecciono el identificador del paciente asociado al archivo
     id_paciente_archivo = int(archivos_escalogramas[i][1:])
@@ -55,7 +55,7 @@ val_inestables = np.intersect1d(lista_pacientes_existentes, x_inestables_val_clf
 ## Obtengo la lista de los pacientes estables para la validación del clasificador
 val_estables = np.intersect1d(lista_pacientes_existentes, x_estables_val_clf)
 
-## ---------------------------------------- ENTRENAMIENTO ----------------------------------------------
+## ----------------------------------- ENTRENAMIENTO Y VALIDACIÓN --------------------------------------
 
 ## Inicio una sesión Wandb
 run = wandb.init(project = "Autoencoder", reinit = True, job_type = "load ae")

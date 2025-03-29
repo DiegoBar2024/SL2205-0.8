@@ -3,6 +3,7 @@
 import sys
 from pypdf import *
 from PyPDF2 import *
+from fpdf import FPDF, HTMLMixin
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Wavelets')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 
@@ -10,8 +11,24 @@ from LongitudPasoM1 import *
 
 ## -------------------------------------- CREACIÓN DEL DOCUMENTO ---------------------------------------
 
-## Especifico la ruta del archivo en donde voy a guardar los resultados
-ruta_fichero = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Presentacion/Archivos"
+# Creo una clase heredada tanto de FPDF como de HTMLMixin
+class MyFPDF(FPDF, HTMLMixin):
+	pass
 
-## Especifico la terminación del fichero según el paciente en particular usando su ID (la S es de muestra corta)
-nombre_fichero = 'S{}'.format(id_paciente)
+# Creo una instancia de la clase MyFPDF
+pdf = MyFPDF()
+
+# Agrego una página al PDF
+pdf.add_page()
+
+# Abro el archivo html
+file = open("file.html", "r")
+
+# Extraigo los datos de html como una cadena
+Data = file.read()
+
+# HTMLMixin write_html method
+pdf.write_html(Data)
+
+#saving the file as a pdf
+pdf.output('Python_fpdf.pdf', 'F')

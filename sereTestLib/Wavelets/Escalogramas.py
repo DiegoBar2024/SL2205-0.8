@@ -138,9 +138,6 @@ for i in range (1, len(pasos) - (cantidad_pasos - 1)):
                                             coef5[:,extensiones_pasos[i - 1]: coef5.shape[1] - extensiones_pasos[i - 1]],
                                             coef6[:,extensiones_pasos[i - 1]: coef6.shape[1] - extensiones_pasos[i - 1]]     ])
 
-    ## Hago el remuestreo de la señal temporal para quue el tensor me quede de dimensión fija
-    matriz_escalogramas[i] = resample(matriz_escalogramas[i], dimension_temporal, axis = 2)
-
     ## Obtención del tamaño del tensor tridimensional correspondiente al i-ésimo segmento
     ## Se recuerda que  <<matriz_escalogramas[i]>> tiene la siguiente forma: (c, f, t) para un segmento individual
     ## c: Especifica la cantidad de canales que tengo (en nuestro caso 6 - 3 aceleraciones + 3 giroscopios)
@@ -148,6 +145,18 @@ for i in range (1, len(pasos) - (cantidad_pasos - 1)):
     ## t: Especifica la cantidad de instantes temporales que tengo
     (c, f, t) = matriz_escalogramas[i].shape
     print((c, f, t))
+
+    ## En caso de que haya algún error al realizar el remuestreo
+    try:
+
+        ## Hago el remuestreo de la señal temporal para quue el tensor me quede de dimensión fija
+        matriz_escalogramas[i] = resample(matriz_escalogramas[i], dimension_temporal, axis = 2)
+    
+    # No tomo en cuenta la muestra actual y continúo con la siguiente
+    except:
+
+        ## Continúo con la siguiente iteración
+        continue
 
     # ## Especifico el proceso de guardado del escalograma en la lista escalogramas_segmentos
     # ## Genero el nombre del archivo de salida

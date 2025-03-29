@@ -32,7 +32,7 @@ date = datetime.now()
 date_day = date.strftime('%Y%m%d')
 date = date.strftime('%Y%m%d_%H%M')
 extra = "StandarAum" ### Extra en el nombre del archivo: "Augmented", "StandarAum", "AumGiro", "AumGiroStd"
-clasificador='perceptron'#lda perceptron svm, NN,RF, AE_MLP hierarchical o kmeans o Transfer
+clasificador = 'perceptron'#lda perceptron svm, NN,RF, AE_MLP hierarchical o kmeans o Transfer
 loss_name= "mse"             #mse o binary_crosentropy ssim_loss
 project_wandb="SereTest-data" #WandB - Proyecto donde se descargan los datos
 
@@ -293,11 +293,11 @@ filenameSP = 'C:/Yo/Tesis/sereData/sereData/Modelos/Actividad/regLin_sentadoPara
 filenameCE = 'C:/Yo/Tesis/sereData/sereData/Modelos/Actividad/regLin_caminandoEscalera.sav'
 dir_etiquetas=  'C:/Yo/Tesis/sereData/sereData/Etiquetas/'
 
-## Rutas en donde van a estar los escalogramas finales
+## Rutas en donde van a estar los escalogramas finales que van a entrar a la red neuronal
 dir_escalogramas_nuevo_train = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/train'
 dir_escalogramas_nuevo_test = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/test'
 
-## Rutas en donde van a estar los escalogramas individuales por cada canal que van a entrar en la red neuronal
+## Rutas en donde van a estar los escalogramas individuales por cada canal
 dir_escalogramas_nuevo_ind_train = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_ind_nuevo/train'
 dir_escalogramas_nuevo_ind_test = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_ind_nuevo/test'
 

@@ -37,7 +37,7 @@ val_test = np.concatenate((x_inestables_ae_val, x_estables_ae_val), axis = None)
 lista_pacientes_existentes = np.zeros(len(archivos_escalogramas))
 
 ## Itero para cada uno de los ficheros de escalogramas existentes
-for i in range (1, len(archivos_escalogramas)):
+for i in range (0, len(archivos_escalogramas)):
 
     ## Selecciono el identificador del paciente asociado al archivo
     id_paciente_archivo = int(archivos_escalogramas[i][1:])

@@ -54,4 +54,5 @@ def patient_group_aelda(patient_list, modelo, layer_name = 'Dense_encoder', **pa
         ## Se realiza entonces la predicción del autoencoder a los datos del generador dando como resultado para cada muestra las 256 características a que correspondan a la salida
         intermediate = intermediate_layer_model.predict(generator)
 
+    ## Retorno el espacio latente del autoencoder correspondiente a las 256 características de la imagen procesada
     return intermediate

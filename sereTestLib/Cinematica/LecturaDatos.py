@@ -88,7 +88,7 @@ else:
     ## -------------------------------------------------------------------------------
 
     ## Identificación del paciente
-    id_persona = 303
+    id_persona = 188
 
     ## Ruta del archivo
     ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/3S{}.csv".format(id_persona, id_persona)
