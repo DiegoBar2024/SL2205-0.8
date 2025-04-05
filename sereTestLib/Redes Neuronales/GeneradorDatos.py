@@ -123,24 +123,34 @@ class DataGeneratorAuto(keras.utils.Sequence):
 
     def __getitem__(self, index):
         '''Generate one batch of data'''
-        # Generate indexes of the batch
+
+        # Generación de los índices del batch
         # Si es el ultimo batch, que sea del tamano que los datos permiten.
         if self.n_samples > 0:
 
             ## <<batch_s>> va a tener el tamaño del batch que voy a usar
             batch_s = self.batch_size
-            if (index < self.n_batches-1) :
-                indexes = self.indexes[index * self.batch_size:(index+1) * self.batch_size]
+
+            ## Recuerdo que self.batch_size me da la cantidad de muestras de un batch
+            ## Recuerdo que self.n_batches me da la cantidad total de escalogramas (muestras) que tengo disponibles
+            ## self.n_batches me va a decir CUANTOS BATCHES DE MUESTRAS SE USAN EN UNA EPOCH
+            if (index < self.n_batches - 1) :
+
+                ## Genero los índices de los datos correspondientes
+                indexes = self.indexes[index * self.batch_size: (index + 1) * self.batch_size]
+
             else:
-                batch_size_resto = np.mod(self.n_samples,self.batch_size)
+                batch_size_resto = np.mod(self.n_samples, self.batch_size)
                 if batch_size_resto:
                     batch_s = batch_size_resto
                     indexes = self.indexes[index * self.batch_size:index * self.batch_size + batch_size_resto]
                 else:
                     indexes = self.indexes[index * self.batch_size:(index+1) * self.batch_size]
 
-            # Generate data
-            X, y = self.__data_generation(indexes,batch_s)
+            # Generación de los datos para el entrenamiento y validación
+            X, y = self.__data_generation(indexes, batch_s)
+
+            ## Retorno los datos correspondiente
             return X, y
 
     def on_epoch_end(self):
@@ -172,695 +182,46 @@ class DataGeneratorAuto(keras.utils.Sequence):
                 while (samples <  num_sample):
                     j += 1
                     samples += self.IDs_len[j]
+
+                ## <<pat_id>> va a contener el número identificador del paciente correspodniente
                 pat_id = self.list_IDs[j]
+
+                ## <<id_folder>> va a contener el identificador de la carpeta donde se encuentran los segmentos asociado al paciente
+                ## De este modo, si <<pat_id>> = 299 y tengo una muestra corta por ejemplo, obtengo <<id_folder>> = 'S299'
                 id_folder = self.character + str(int(pat_id))
 
+                ## <<file_index>> me va a contener el índice del archivo actual
                 file_index = indexes[i] - samples + self.IDs_len[j]
 
-                ## Obtengo el archivo donde estan los escalogramas
+                ## Obtengo el archivo donde se encuentra el segmento (escalograma) individual a procesar
                 file = self.__get_file(id_folder, file_index)
-                dirIn = self.character + str(pat_id)
-                # Leo el archivo
-                fullPath=self.data_dir + '/'+dirIn+'/'+file
                 
-                try:
+                ## <<dirIn>> me va a contener información de si tengo una muestra corta o larga (S o L) y el identificador del paciente correspondiente
+                dirIn = self.character + str(int(pat_id))
 
+                # <<fullPath>> me va a contener toda la ruta del escalograma que yo voy a procesar
+                fullPath = self.data_dir + '/' + dirIn + '/' + file
+                
+                ## En caso de que exista la ruta que yo le estoy especificando
+                if os.path.exists(fullPath):
+
+                    ## Le digo que me cargue el archivo correspondiente
                     arch = np.load(fullPath)
                 
-                except:
+                ## En caso de que no exista la ruta que yo le estoy especificando
+                else:
 
+                    ## Le digo a la iteración que prosiga con la siguiente muestra
                     continue
 
-                # Store sample
+                ## <<auxX>> va a ser la variable que me contenga el escalograma tridimensional que voy a usar
                 auxX = arch['X']
-                #print("min",np.min(auxX))
-                #print("max",np.max(auxX))
+
+                ## La variable X va a ser un tensor de dimensión cuatro la cual va a contener todos los escalogramas tridimensionales asociados al batch
+                ## La forma de dicho tensor va a estar dada por (tamaño_batch, c, f, t) donde:
+                ## <<c>> es la cantidad de canales (tengo 6)
+                ## <<f>> es la cantidad de frecuencias
+                ## <<t>> es la cantidad de muestras temporales
                 X[i, : ] = auxX
+
         return X, X
-
-class DataGeneratorAuto_Tapar_canales(keras.utils.Sequence):
-    '''
-    Generates data for Keras.
-    Be careful. Check if the n_samples is greater than zero before use the output in Keras models.
-    '''
-    def __init__(self,  activities=[], list_IDs=[], data_dir='./', batch_size=4, dim=(128,600,6), numClases=2, shuffle=True,long_sample=long_sample, chan0=True, chan1=True, chan2=True, chan3=True, chan4=True, chan5=True):
-        '''Initialization'''
-        if long_sample:
-            self.character = 'L'
-        else:
-            self.character = 'S'
-        self.dim = dim
-        self.batch_size = batch_size
-        self.data_dir = data_dir
-        self.shuffle = shuffle
-        self.list_IDs = list_IDs
-        self.activities=activities
-        self.IDs_len=[]
-        self.clases=numClases
-        self.n_samples=0
-        self.chan0=chan0
-        self.chan1=chan1
-        self.chan2=chan2
-        self.chan3=chan3
-        self.chan4=chan4
-        self.chan5=chan5
-        for pat_id in self.list_IDs:
-            id_folder = self.character + str(pat_id)
-            files = self.__get_files_lists(id_folder)
-            self.IDs_len.append(np.shape(files)[0])
-        self.n_samples = sum(self.IDs_len)
-        self.n_batches = self.__len__()
-        self.on_epoch_end()
-
-    def __get_files_lists(self, id_folder):
-
-        fullD=os.path.join(self.data_dir, id_folder)
-       # print(fullD)
-        files = os.listdir(fullD)
-        #print(files)
-        actividades = [dict_actividades.get(activity) for activity in self.activities]
-        return natsorted([file for file in files if file.startswith(tuple(actividades))])
-
-    def __get_file(self,id_folder,file_index):
-        # print(id_folder)
-        files = self.__get_files_lists(id_folder)
-        return files[file_index]
-
-    def __len__(self):
-        '''Denotes the number of batches per epoch'''
-        return int(np.ceil(self.n_samples / self.batch_size))
-
-
-    def __getitem__(self, index):
-        '''Generate one batch of data'''
-        # Generate indexes of the batch
-        # Si es el ultimo batch, que sea del tamano que los datos permiten.
-        if self.n_samples > 0:
-            batch_s = self.batch_size
-            if (index < self.n_batches-1) :
-                indexes = self.indexes[index * self.batch_size:(index+1) * self.batch_size]
-            else:
-                batch_size_resto = np.mod(self.n_samples,self.batch_size)
-                if batch_size_resto:
-                    batch_s = batch_size_resto
-                    indexes = self.indexes[index * self.batch_size:index * self.batch_size + batch_size_resto]
-                else:
-                    indexes = self.indexes[index * self.batch_size:(index+1) * self.batch_size]
-            # Generate data
-            X, y = self.__data_generation(indexes,batch_s)
-            return X, y
-
-    def on_epoch_end(self):
-        '''Updates indexes after each epoch'''
-        self.indexes = np.arange(self.n_samples)
-        if self.shuffle == True:
-            np.random.shuffle(self.indexes)
-
-    def __data_generation(self, indexes, batch_s):
-        '''Generates data containing batch_size samples'''  # X : (n_samples, *dim)
-        # Initialization
-#        X = np.empty((self.batch_size, *self.dim), dtype=np.float32)
-#        files =
-        X = np.empty((batch_s, *self.dim), dtype=np.float32)
-        # Generate data
-        # print("Indexes: ",indexes)
-        for i in range(batch_s):
-            j = 0
-            samples = self.IDs_len[j]
-            if np.shape(self.indexes)[0]>i:
-                num_sample = indexes[i] + 1
-                while (samples <  num_sample):
-                    j += 1
-                    samples += self.IDs_len[j]
-                    # print('self.indexesss',self.indexes[i])
-                    # print('smaples', samples)
-                    # print('ID lens ',self.IDs_len[j])
-                pat_id = self.list_IDs[j]
-                id_folder = self.character + str(pat_id)
-                # print("i = ", i)
-                # print("j = ", j)
-                # print("Index i: ",indexes[i])
-                file_index = indexes[i] - samples + self.IDs_len[j]
-#                print("n_samples ",self.n_samples)
-#                print("samples ",samples)
-#                print("fileindex ",file_index)
-                file = self.__get_file(id_folder,file_index)
-                dirIn = self.character + str(pat_id)
-                # Leo el archivo
-                fullPath=self.data_dir+dirIn+'/'+file
-                arch = np.load(fullPath)
-                # Store sample
-                auxX = arch['X']
-
-                X[i, : ] = auxX
-                if (not self.chan0):
-                    X[: ,:, :, 0]=X[: ,:, :, 0]*0
-                if (not self.chan1):
-                    X[: ,:, :, 1]=X[: ,:, :, 1]*0
-                if (not self.chan2):
-                    X[: ,:, :, 2]=X[: ,:, :, 2]*0
-                if (not self.chan3):
-                    X[: ,:, :, 3]=X[: ,:, :, 3]*0
-                if (not self.chan4):
-                    X[: ,:, :, 4]=X[: ,:, :, 4]*0
-                if (not self.chan5):
-                    X[: ,:, :, 5]=X[: ,:, :, 5]*0
-        return X, X
-
-
-class DataGeneratorPw(keras.utils.Sequence):
-    '''
-    Generates data for Keras.
-    Be careful. Check if the n_samples is greater than zero before use the output in Keras models.
-    '''
-    def __init__(self,labels ,activities=[], list_IDs=[], data_dir='./',data_dir_pow='./', batch_size=4, dim=(128,600,6), numClases=2, shuffle=True,long_sample=long_sample):
-        '''Initialization'''
-        if long_sample:
-            self.character = 'L'
-        else:
-            self.character = 'S'
-        self.dim = dim
-        self.batch_size = batch_size
-        self.data_dir = data_dir
-        self.data_dir_pow = data_dir_pow
-        self.shuffle = shuffle
-        self.list_IDs = list_IDs
-        self.activities=activities
-        self.IDs_len=[]
-        self.clases=numClases
-        self.n_samples=0
-        self.labels=labels
-        self.label=[]
-        self.pow=[]
-        #print(self.list_IDs)
-        #print(self.labels)
-        for pat_id in self.list_IDs:
-            id_folder = self.character + str(pat_id)
-            files = self.__get_files_lists(id_folder)
-            self.IDs_len.append(np.shape(files)[0])
-        self.n_samples = sum(self.IDs_len)
-        self.n_batches = self.__len__()
-        self.on_epoch_end()
-
-    def __get_files_lists(self, id_folder, pow=False):
-        fullD=os.path.join(self.data_dir, id_folder)
-        files = os.listdir(fullD)
-        actividades = [dict_actividades.get(activity) for activity in self.activities]
-        return natsorted([file for file in files if file.startswith(tuple(actividades))])
-
-    def __get_file(self,id_folder,file_index,pow=False):
-        # print(id_folder)
-        files = self.__get_files_lists(id_folder,pow)
-        return files[file_index]
-
-    def __len__(self):
-        '''Denotes the number of batches per epoch'''
-        return int(np.ceil(self.n_samples / self.batch_size))
-
-
-    def __getitem__(self, index):
-        '''Generate one batch of data'''
-        # Generate indexes of the batch
-        # Si es el ultimo batch, que sea del tamano que los datos permiten.
-        if self.n_samples > 0:
-            batch_s = self.batch_size
-            if (index < self.n_batches-1) :
-                indexes = self.indexes[index * self.batch_size:(index+1) * self.batch_size]
-            else:
-                batch_size_resto = np.mod(self.n_samples,self.batch_size)
-                if batch_size_resto:
-                    batch_s = batch_size_resto
-                    indexes = self.indexes[index * self.batch_size:index * self.batch_size + batch_size_resto]
-                else:
-                    indexes = self.indexes[index * self.batch_size:(index+1) * self.batch_size]
-            # Generate data
-            X, y = self.__data_generation(indexes,batch_s)
-            return X, y
-
-    def on_epoch_end(self):
-        '''Updates indexes after each epoch'''
-        self.indexes = np.arange(self.n_samples)
-        if self.shuffle == True:
-            np.random.shuffle(self.indexes)
-
-    def __data_generation(self, indexes, batch_s):
-        '''Generates data containing batch_size samples'''  # X : (n_samples, *dim)
-        # Initialization
-#        X = np.empty((self.batch_size, *self.dim), dtype=np.float32)
-#        files =
-        X = np.empty((batch_s, *self.dim), dtype=np.float32)
-        #print("batches ", batch_s)
-        # Generate data
-        #labels_batch=[]
-        y = np.empty((batch_s, 1), dtype=int)
-        #print("dim ",self.dim)
-
-        for i in range(batch_s):
-            j = 0
-            #print("batch size: ",batch_s)
-
-            samples = self.IDs_len[j]
-            if np.shape(self.indexes)[0]>i:
-                num_sample = indexes[i] + 1
-                #print("num sample ",num_sample)
-
-                while (samples <  num_sample):
-                    j += 1
-                    samples += self.IDs_len[j]
-                pat_id = self.list_IDs[j]
-                if len(self.labels)>0:
-                    y[i]=self.labels[j]
-
-                id_folder = self.character + str(pat_id)
-                # print("i = ", i)
-                # print("j = ", j)
-                file_index = indexes[i] - samples + self.IDs_len[j]
-#                print("fileindex ",file_index)
-                file = self.__get_file(id_folder,file_index)
-                dirIn = self.character + str(pat_id)
-                # Leo el archivo
-                fullPath=self.data_dir+dirIn+'/'+file
-                arch = np.load(fullPath)
-                # Store sample
-                auxX = arch['X']
-
-                X[i, : ] = auxX
-
-                id_folder = self.character + str(pat_id)
-                # print("i = ", i)
-                # print("j = ", j)
-                file_index = indexes[i] - samples + self.IDs_len[j]
-#                print("fileindex ",file_index)
-                file = self.__get_file(id_folder,file_index,pow=True)
-                dirIn = self.character + str(pat_id)
-                # Leo el archivo
-                fullPath=self.data_dir+dirIn+'/'+file
-                arch = np.load(fullPath)
-                # Store sample
-                auxX = arch['X']
-                #print(auxX)
-                #print(np.shape(auxX))
-                pow=np.zeros((6))
-                for j in range (6):
-                    pow[j]=np.mean(auxX[:,:,j]**2)
-                self.label.append(y[i,][0])
-                self.pow.append(pow)
-                #print("sample id",pat_id)
-                #print("label",y[i,][0])
-        return X, y
-
-class DataGeneratorTransfer(keras.utils.Sequence):
-    '''
-    Generates data for Keras.
-    Be careful. Check if the n_samples is greater than zero before use the output in Keras models.
-    '''
-    def __init__(self,labels ,activities=[], list_IDs=[], data_dir='./',data_dir_pow='./', batch_size=4, dim=(128,600,6), numClases=2, shuffle=True,long_sample=long_sample):
-        '''Initialization'''
-        if long_sample:
-            self.character = 'L'
-        else:
-            self.character = 'S'
-        self.dim = (128,600,3)
-        self.batch_size = batch_size
-        self.data_dir = data_dir
-        self.data_dir_pow = data_dir_pow
-        self.shuffle = shuffle
-        self.list_IDs = list_IDs
-        self.activities=activities
-        self.IDs_len=[]
-        self.clases=numClases
-        self.n_samples=0
-        self.labels=labels
-        self.label=[]
-        self.pow=[]
-        #print(self.list_IDs)
-        #print(self.labels)
-        for pat_id in self.list_IDs:
-            id_folder = self.character + str(pat_id)
-            files = self.__get_files_lists(id_folder)
-            self.IDs_len.append(np.shape(files)[0])
-        self.n_samples = sum(self.IDs_len)
-        self.n_batches = self.__len__()
-        self.on_epoch_end()
-
-    def __get_files_lists(self, id_folder, pow=False):
-        #print("self.data_dir_pow", self.data_dir_pow)
-        #print("self.data_dir", self.data_dir)
-        # if pow:
-        #     fullD=os.path.join(self.data_dir_pow, id_folder)
-        #     #print(fullD)
-        # else:
-        #     fullD=os.path.join(self.data_dir, id_folder)
-        # print(self.data_dir)
-        fullD=os.path.join(self.data_dir, id_folder)
-        files = os.listdir(fullD)
-        actividades = [dict_actividades.get(activity) for activity in self.activities]
-        return natsorted([file for file in files if file.startswith(tuple(actividades))])
-
-    def __get_file(self,id_folder,file_index,pow=False):
-        # print(id_folder)
-        files = self.__get_files_lists(id_folder,pow)
-        return files[file_index]
-
-    def __len__(self):
-        '''Denotes the number of batches per epoch'''
-        return int(np.ceil(self.n_samples / self.batch_size))
-
-
-    def __getitem__(self, index):
-        '''Generate one batch of data'''
-        # Generate indexes of the batch
-        # Si es el ultimo batch, que sea del tamano que los datos permiten.
-        if self.n_samples > 0:
-            batch_s = self.batch_size
-            if (index < self.n_batches-1) :
-                indexes = self.indexes[index * self.batch_size:(index+1) * self.batch_size]
-            else:
-                batch_size_resto = np.mod(self.n_samples,self.batch_size)
-                if batch_size_resto:
-                    batch_s = batch_size_resto
-                    indexes = self.indexes[index * self.batch_size:index * self.batch_size + batch_size_resto]
-                else:
-                    indexes = self.indexes[index * self.batch_size:(index+1) * self.batch_size]
-            # Generate data
-            X, y = self.__data_generation(indexes,batch_s)
-            return X, y
-
-    def on_epoch_end(self):
-        '''Updates indexes after each epoch'''
-        self.indexes = np.arange(self.n_samples)
-        if self.shuffle == True:
-            np.random.shuffle(self.indexes)
-
-    def __data_generation(self, indexes, batch_s):
-        '''Generates data containing batch_size samples'''  # X : (n_samples, *dim)
-        # Initialization
-#        X = np.empty((self.batch_size, *self.dim), dtype=np.float32)
-#        files =
-        X = np.empty((batch_s, *self.dim), dtype=np.float32)
-        X2 = np.empty((batch_s, *self.dim), dtype=np.float32)
-        #print("batches ", batch_s)
-        # Generate data
-        #labels_batch=[]
-        y = np.empty((batch_s, 1), dtype=int)
-        #print("dim ",self.dim)
-
-        for i in range(batch_s):
-            j = 0
-            #print("batch size: ",batch_s)
-
-            samples = self.IDs_len[j]
-            if np.shape(self.indexes)[0]>i:
-                num_sample = indexes[i] + 1
-                #print("num sample ",num_sample)
-
-                while (samples <  num_sample):
-                    j += 1
-                    samples += self.IDs_len[j]
-                pat_id = self.list_IDs[j]
-                if len(self.labels)>0:
-                    y[i]=self.labels[j]
-
-                id_folder = self.character + str(pat_id)
-                # print("i = ", i)
-                # print("j = ", j)
-                file_index = indexes[i] - samples + self.IDs_len[j]
-#                print("fileindex ",file_index)
-                file = self.__get_file(id_folder,file_index)
-                dirIn = self.character + str(pat_id)
-                # Leo el archivo
-                fullPath=self.data_dir+dirIn+'/'+file
-                arch = np.load(fullPath)
-                # Store sample
-                auxX = arch['X']
-                #print(np.shape(auxX[:,:,:3]))
-
-                X[i, : ] = auxX[:,:,:3]
-                X2[i,:]=auxX[:,:,3:6]
-
-
-                id_folder = self.character + str(pat_id)
-                # print("i = ", i)
-                # print("j = ", j)
-                file_index = indexes[i] - samples + self.IDs_len[j]
-#                print("fileindex ",file_index)
-                file = self.__get_file(id_folder,file_index,pow=True)
-                dirIn = self.character + str(pat_id)
-                # Leo el archivo
-                fullPath=self.data_dir+dirIn+'/'+file
-                arch = np.load(fullPath)
-                # Store sample
-                auxX = arch['X']
-
-                X=X[: ,:, :, 0:3]
-                #print(np.shape(X))
-                #print(auxX)
-                #print(np.shape(auxX))
-                pow=np.zeros((6))
-                for j in range (6):
-                    pow[j]=np.mean(auxX[:,:,j]**2)
-                self.label.append(y[i,][0])
-                self.pow.append(pow)
-                #print("sample id",pat_id)
-                #print("label",y[i,][0])
-        return [X,X2], y
-
-class DataGeneratorSeqTime(keras.utils.Sequence):
-    '''
-    Generates data for Keras.
-    Be careful. Check if the n_samples is greater than zero before use the output in Keras models.
-    '''
-    def __init__(self,labels ,activities=[], list_IDs=[], data_dir='./',data_dir_pow='./', batch_size=4, dim=(128,600,6), numClases=2, shuffle=True,long_sample=long_sample):
-        '''Initialization'''
-        if long_sample:
-            self.character = 'L'
-        else:
-            self.character = 'S'
-        self.dim = (secuencia,6)
-        self.batch_size = batch_size
-        self.data_dir = data_dir
-        self.data_dir_pow = data_dir_pow
-        self.shuffle = shuffle
-        self.list_IDs = list_IDs
-        self.activities=activities
-        self.IDs_len=[]
-        self.clases=numClases
-        self.n_samples=0
-        self.labels=labels
-        self.label=[]
-        self.pow=[]
-        self.indices=[]
-        for pat_id, lab in zip(self.list_IDs,labels):
-            id_folder = self.character + str(pat_id)
-            files = self.__get_files_lists(id_folder)
-            self.IDs_len.append(np.shape(files)[0])
-            for i in range(int(np.shape(files)[0]/largo_vector+0.5)):
-                self.indices.append((pat_id,i,lab))
-        self.n_samples = len(self.indices)
-        self.n_batches = self.__len__()
-        self.on_epoch_end()
-
-    def __get_files_lists(self, id_folder, pow=False):
-        fullD=os.path.join(self.data_dir, id_folder)
-        files = os.listdir(fullD)
-        actividades = [dict_actividades.get(activity) for activity in self.activities]
-        return natsorted([file for file in files if file.startswith(tuple(actividades))])
-
-    def __get_file(self,id_folder,file_index,pow=False):
-        # print(id_folder)
-        files = self.__get_files_lists(id_folder,pow)
-        #print(files)
-        return files[file_index]
-
-    def __len__(self):
-        '''Denotes the number of batches per epoch'''
-        return int(np.ceil(self.n_samples / self.batch_size))
-
-
-    def __getitem__(self, index):
-        '''Generate one batch of data'''
-        # Generate indexes of the batch
-        # Si es el ultimo batch, que sea del tamano que los datos permiten.
-        if self.n_samples > 0:
-            batch_s = self.batch_size
-            if (index < self.n_batches-1) :
-                indexes = self.indexes[index * self.batch_size:(index+1) * self.batch_size]
-            else:
-                batch_size_resto = np.mod(self.n_samples,self.batch_size)
-                if batch_size_resto:
-                    batch_s = batch_size_resto
-                    indexes = self.indexes[index * self.batch_size:index * self.batch_size + batch_size_resto]
-                else:
-                    indexes = self.indexes[index * self.batch_size:(index+1) * self.batch_size]
-            # Generate data
-            X, y = self.__data_generation(indexes,batch_s)
-            return X, y
-    def on_epoch_end(self):
-        '''Updates indexes after each epoch'''
-        self.indexes = np.arange(self.n_samples)
-        if self.shuffle == True:
-            np.random.shuffle(self.indexes)
-
-    def __data_generation(self, indexes, batch_s):
-        '''Generates data containing batch_size samples'''  # X : (n_samples, *dim)
-        # Initialization
-#        X = np.empty((self.batch_size, *self.dim), dtype=np.float32)
-#        files =
-        X = np.empty((batch_s, *self.dim), dtype=np.float32)
-        #print("batches ", batch_s)
-        # Generate data
-        #labels_batch=[]
-        y = np.empty((batch_s, 1), dtype=int)
-        #print("dim ",self.dim)
-        for i in range(batch_s):
-
-            #print("batch size: ",batch_s)
-            if np.shape(self.indexes)[0]>i:
-                pat_id = self.indices[indexes[i]][0]
-                segmento=self.indices[indexes[i]][1]
-                if len(self.labels)>0:
-                    y[i]=self.indices[indexes[i]][2]
-                id_folder = self.character + str(pat_id)
-                #print(self.IDs_len[indexes[i]])
-                auxX=np.zeros((1400,6))
-
-                for k in range (segmento*largo_vector,(segmento+1)*largo_vector ):
-
-                    try:
-                        file = self.__get_file(id_folder,k)
-                        dirIn = self.character + str(pat_id)
-                        # Leo el archivo
-                        fullPath=self.data_dir+dirIn+'/'+file
-                        arch=pd.read_csv(fullPath)
-                        arch.drop("Time", inplace=True, axis=1)
-                        auxX=np.vstack((auxX,arch.to_numpy()))
-                        if  np.any(np.isnan(auxX)):
-                            print(pat_id)
-                            print(fullPath)
-                           # print(auxX)
-                    except:
-                        auxX=np.vstack((auxX,np.zeros((1400,6))))
-
-                X[i, : ]=auxX[1400:]
-                if  np.any(np.isnan(auxX)):
-                    print(pat_id)
-                    print(auxX)
-                #print(len(X[i,:]))
-        return X, y
-class DataGeneratorSeqAE(keras.utils.Sequence):
-    '''
-    Generates data for Keras.
-    Be careful. Check if the n_samples is greater than zero before use the output in Keras models.
-    '''
-    def __init__(self,labels ,activities=[], list_IDs=[], data_dir='./',data_dir_pow='./', batch_size=4, dim=(128,600,6), numClases=2, shuffle=True,long_sample=long_sample):
-        '''Initialization'''
-        if long_sample:
-            self.character = 'L'
-        else:
-            self.character = 'S'
-        self.dim = (largo_vector,) + dim
-        self.tamaño=dim
-        self.batch_size = batch_size
-        self.data_dir = data_dir
-        self.data_dir_pow = data_dir_pow
-        self.shuffle = shuffle
-        self.list_IDs = list_IDs
-        self.activities=activities
-        self.IDs_len=[]
-        self.clases=numClases
-        self.n_samples=0
-        self.labels=labels
-        self.label=[]
-        self.pow=[]
-        self.contador=0
-        self.indices=[]
-        for pat_id, lab in zip(self.list_IDs,labels):
-            id_folder = self.character+ str(pat_id)
-            files = self.__get_files_lists(id_folder)
-            self.IDs_len.append(np.shape(files)[0])
-            #print(np.shape(files)[0])
-            for i in range(int(np.shape(files)[0]/largo_vector+0.5)):
-                self.indices.append((pat_id,i,lab))
-        #print(self.indices)
-        self.n_samples = len(self.indices)
-        self.n_batches = self.__len__()
-        self.on_epoch_end()
-
-    def __get_files_lists(self, id_folder, pow=False):
-
-        fullD=os.path.join(self.data_dir, id_folder)
-        files = os.listdir(fullD)
-        actividades = [dict_actividades.get(activity) for activity in self.activities]
-        return natsorted([file for file in files if file.startswith(tuple(actividades))])
-
-
-    def __get_file(self,id_folder,file_index,pow=False):
-        # print(id_folder)
-        files = self.__get_files_lists(id_folder,pow)
-        #print("files", files)
-        #print("file index",file_index)
-        return files[file_index]
-
-    def __len__(self):
-        '''Denotes the number of batches per epoch'''
-        return int(np.ceil(self.n_samples / self.batch_size))
-
-
-    def __getitem__(self, index):
-        '''Generate one batch of data'''
-        # Generate indexes of the batch
-        # Si es el ultimo batch, que sea del tamano que los datos permiten.
-        if self.n_samples > 0:
-            batch_s = self.batch_size
-            if (index < self.n_batches-1) :
-                indexes = self.indexes[index * self.batch_size:(index+1) * self.batch_size]
-            else:
-                batch_size_resto = np.mod(self.n_samples,self.batch_size)
-                if batch_size_resto:
-                    batch_s = batch_size_resto
-                    indexes = self.indexes[index * self.batch_size:index * self.batch_size + batch_size_resto]
-                else:
-                    indexes = self.indexes[index * self.batch_size:(index+1) * self.batch_size]
-            # Generate data
-            X, y = self.__data_generation(indexes,batch_s)
-            return X, y
-
-    def on_epoch_end(self):
-        '''Updates indexes after each epoch'''
-        self.indexes = np.arange(self.n_samples)
-        if self.shuffle == True:
-            np.random.shuffle(self.indexes)
-
-    def __data_generation(self, indexes, batch_s):
-        '''Generates data containing batch_size samples'''  # X : (n_samples, *dim)
-
-        # Initialization
-        X = np.empty((batch_s, *self.dim), dtype=np.float32)
-        y = np.empty((batch_s, 1), dtype=int)
-        for i in range(batch_s):
-            if np.shape(self.indexes)[0]>i:
-                pat_id = self.indices[indexes[i]][0]
-                segmento=self.indices[indexes[i]][1]
-                if len(self.labels)>0:
-                    y[i]=self.indices[indexes[i]][2]
-                id_folder = self.character+ str(pat_id)
-                auxX=[]
-
-                for k in range (segmento*largo_vector,(segmento+1)*largo_vector):
-                    try:
-                        file = self.__get_file(id_folder,k)
-                        dirIn = self.character + str(pat_id)
-                        fullPath=self.data_dir+dirIn+'/'+file
-                        arch = np.load(fullPath)
-                        auxX.append(arch['X'])
-                    except:
-                        auxX.append(np.zeros((self.tamaño)))
-                if  np.any(np.isnan(auxX)):
-                    print(pat_id)
-                    print(auxX)
-                #print(np.shape(X[i, : ]))
-                #print(np.shape(auxX))
-                #print(auxX[:1])
-                X[i, : ]=auxX
-
-        return X, y

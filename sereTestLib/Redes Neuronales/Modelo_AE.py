@@ -36,8 +36,8 @@ def ms_ssim(y_true, y_pred):
 def ssim_metric(y_true, y_pred):
 
     ## Calculo la función de error correspondiente
-    # loss = tf.reduce_mean(tf.image.ssim(y_true, y_pred, max_val = 255))
-    loss = ssim(y_pred, y_true, channel_axis = 1, data_range = 255)
+    loss = tf.reduce_mean(tf.image.ssim(y_true, y_pred, max_val = 255))
+    ##loss = ssim(y_pred, y_true, channel_axis = 1, data_range = 255)
 
     return loss
 
@@ -68,7 +68,7 @@ def ae_train_save_model(path_to_scalograms_train = dir_escalogramas_nuevo_ind_tr
         Defaults to False.
     """
 
-    # TODO: Recive a list of sample numbers and split it into train and validation
+    # Especifico la extensión del archivo del modelo
     model_extension = '.h5'
 
     ## En caso de que el nombre de la función de costo no sea "MS_SSIM" (por defecto está en MSE) 
@@ -271,10 +271,14 @@ def ae_load_model(modelo_dir):
 
     ## En caso de que la función de costo sea SSIM
     if loss_name == "ssim_loss":
+
+        ## Cargo el modelo del autoencoder correspondiente
         modelo_autoencoder = keras.models.load_model(modelo_dir + autoencoder_name +'.h5', custom_objects = {"ssim_loss": ssim_loss})
     
     ## En caso de que la función de costo sea MS SSIM
     elif loss_name == "ms_ssim":
+
+        ## Cargo el modelo del autoencoder correspondiente
         modelo_autoencoder = keras.models.load_model(modelo_dir + autoencoder_name +'.h5', custom_objects = {"ms_ssim": ms_ssim})
     
     ## En caso que tenga otra función de costo

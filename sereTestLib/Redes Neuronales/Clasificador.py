@@ -8,7 +8,7 @@ sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/utils')
 from parameters import *
 from Modelo_AE import *
 from entrenamiento_clasificador import entrenamiento_clasificador
-from ingesta_etiquetas import *
+from Etiquetado import *
 from Modelo_CLAS import *
 
 ## ------------------------------------- SEPARACIÓN DE MUESTRAS ----------------------------------------
@@ -57,7 +57,7 @@ val_estables = np.intersect1d(lista_pacientes_existentes, x_estables_val_clf)
 
 ## ----------------------------------- ENTRENAMIENTO Y VALIDACIÓN --------------------------------------
 
-## Inicio una sesión Wandb
+## Inicio una sesión Wandb que me permita cargar el modelo del autoencoder
 run = wandb.init(project = "Autoencoder", reinit = True, job_type = "load ae")
 
 try:
@@ -78,7 +78,7 @@ modelo_autoencoder = ae_load_model(modelo_dir)
 config = {"giro x": girox, "giro z": giroz, "Escalado": escalado, "Clasificador": clasificador, "Actividad": act_clf, "AE": autoencoder_name, "Preprocesamiento": preprocesamiento}
 
 ## Inicio una sesión <<wandb>> para el entrenamiento del clasificador
-run = wandb.init(project = "SereTest-clasificador", reinit = True, config = config, job_type = "train clf", name = clasificador_name)
+run = wandb.init(project = "Clasificador", reinit = True, config = config, job_type = "train clf", name = clasificador_name)
 
 ## Llamo a la función del entrenamiento del clasificador
 entrenamiento_clasificador(train_inestables, train_estables, val_inestables , val_estables, modelo_autoencoder, clasificador, dir_escalogramas_nuevo_train, dir_escalogramas_nuevo_test, act_clf)

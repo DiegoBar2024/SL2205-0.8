@@ -87,8 +87,14 @@ else:
     ## --- Los tres ejes de coordenadas deben formar una terna directa de vectores ---
     ## -------------------------------------------------------------------------------
 
-    ## Identificación del paciente
-    id_persona = 188
+    ## Identificación numérica del paciente
+    id_persona = 300
+
+    ## Nombre del paciente
+    nombre_persona = "Diego Barboza"
+
+    ## Fecha de nacimiento del paciente "DD/MM/YYYY"
+    nacimiento_persona = "02/04/2002"
 
     ## Ruta del archivo
     ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/3S{}.csv".format(id_persona, id_persona)

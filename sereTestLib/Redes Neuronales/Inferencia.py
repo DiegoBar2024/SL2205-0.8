@@ -7,7 +7,6 @@ sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/utils')
 from parameters import *
 from Modelo_AE import *
 import os
-from entrenamiento_clasificador import entrenamiento_clasificador
 from ingesta_etiquetas import *
 from Modelo_AE import *
 from Evaluar_AE import *
@@ -66,7 +65,7 @@ def Inferencia(sample_id, result: results = results(), plot=False):
 if __name__== '__main__':
 
     ## Especifico el identificador numérico del paciente
-    i = 105
+    i = 299
 
     ## Ejecuto la inferencia del clasificador
     result = Inferencia(i)

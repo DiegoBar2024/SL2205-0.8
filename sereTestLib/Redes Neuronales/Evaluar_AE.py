@@ -3,12 +3,12 @@ sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/clasificador')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/utils')
 from parameters import *
-from sereTestLib.clasificador.extras import patient_group_aelda, clasificador_name_creation
 from joblib import  load
 import time
 import pandas as pd
 import json
 import os
+from Extras_CLAS import *
 
 def evaluar_aelda(clasificador, autoencoder_model, id_muestra : int, result : results, clf_model_file, activities = act_clf):
     """

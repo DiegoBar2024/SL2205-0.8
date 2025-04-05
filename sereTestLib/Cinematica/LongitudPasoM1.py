@@ -125,6 +125,9 @@ for i in range (len(segmentada)):
 
 ## ----------------------------- CÁLCULO DE PARÁMETROS DE MARCHA (MÉTODO I) ----------------------------
 
+## Obtengo un vector que tenga los pasos numerados
+pasos_numerados = np.arange(0, len(pasos), 1)
+
 ## Se calcula la longitud de paso promedio
 long_paso_promedio = np.mean(long_pasos_m1)
 
@@ -147,3 +150,32 @@ print("Cadencia (pasos/s): ", frec_fund)
 
 plt.scatter(x = np.arange(start = 0, stop = len(long_pasos_m1)), y = long_pasos_m1)
 plt.show()
+
+## --------------------------------- CÁLCULO DE VELOCIDAD INSTANTÁNEA ----------------------------------
+
+## Creo un vector donde voy a almacenar las velocidades instantáneas con una resolución de un paso
+velocidades = []
+
+## Itero para cada uno de los segmentos de pasos detectados (IC a IC)
+for i in range (len(segmentada)):
+
+    ## Obtengo la velocidad instantánea como el cociente entre la longitud estimada del paso y la duración del paso
+    ## Se entiende que ésto es un estimador de la velocidad instantánea con una resolución de un paso
+    vel_instantanea = long_pasos_m1[i] / duraciones_pasos[i]
+
+    ## Agrego la velocidad instantánea asociada al i-ésimo paso a la lista de velocidades
+    velocidades.append(vel_instantanea)
+
+## --------------------------------- CÁLCULO DE FRECUENCIA INSTANTÁNEA ---------------------------------
+
+## Creo un vector donde voy a almacenar las frecuencias instantáneas de todos los pacientes
+frecuencias = []
+
+## Itero para cada uno de los segmentos de pasos detectados (IC a IC)
+for i in range (len(segmentada)):
+
+    ## Obtengo la frecuencia instantánea de la marcha como el inverso de la duración del paso
+    frec_instantanea = 1 / duraciones_pasos[i]
+
+    ## Agregeo la frecuencia instantanea a la lista de frecuencias
+    frecuencias.append(frec_instantanea)

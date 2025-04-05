@@ -45,11 +45,6 @@ for i in range (len(picos_sucesivos) - 1):
         ## Agrego el paso a la lista de pasos defectuosos
         pasos_defectuosos.append({'IC': (picos_sucesivos[i], picos_sucesivos[i + 1])})
 
-        # ## Grafica de la señal recortada en ese tramo
-        # plt.plot(acc_AP_norm[picos_sucesivos[i] : picos_sucesivos[i + 1]])
-        # plt.title("Cantidad de muestras: {}\nCantidad de muestras por paso: {}".format(picos_sucesivos[i + 1] - picos_sucesivos[i], muestras_paso))
-        # plt.show()
-
 ## Imprimo cantidad de pasos no defectuosos
 print("Cantidad de pasos no defectuosos: {}".format(len(pasos)))
 
@@ -70,9 +65,6 @@ for i in range (len(pasos_defectuosos)):
 
         ## Mi tarea acá es encontrar posibles potenciales pasos intermedios que no fueron detectados
         picos_interpolados = find_peaks(acc_AP_norm[pasos_defectuosos[i]['IC'][0] : pasos_defectuosos[i]['IC'][1]])
-
-        # ## Grafico los picos interpolados
-        # GraficacionPicos(acc_AP_norm[pasos_defectuosos[i]['IC'][0] : pasos_defectuosos[i]['IC'][1]], picos_interpolados[0])
 
 ## ----------------------------------------- DURACIÓN DE PASOS -----------------------------------------
 
