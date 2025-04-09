@@ -42,13 +42,15 @@ def ssim_metric(y_true, y_pred):
     return loss
 
 ## Función que genera el modelo del autoencoder y lo entrena según los parámetros de entrada
-def ae_train_save_model(path_to_scalograms_train = dir_escalogramas_nuevo_ind_train, path_to_scalograms_val = dir_escalogramas_nuevo_ind_test , model_path = model_path_ae, input_dimension = inDim, list_of_samples_number_train = [], 
+def ae_train_save_model(autoencoder_name, path_to_scalograms_train = dir_escalogramas_nuevo_ind_train, path_to_scalograms_val = dir_escalogramas_nuevo_ind_test , model_path = model_path_ae, input_dimension = inDim, list_of_samples_number_train = [], 
                         list_of_samples_number_validation = [], number_epochs = num_epochs, activities = act_ae, batch_size = batch_size, latent_dimension = latent_dimension, debug = False):
     """
         Function that generates the autoencoder model base on training datagroup. Validates it and saves it.
         NOTE: If more than one activity is given, are trated together
     Parameters:
     ----------
+    autoencoder_name: str
+        Autoencoder name
     path_to_scalograms_train: str
         Path to training segments
     path_to_scalograms_val: str
@@ -267,7 +269,7 @@ def int_shape(x):
         return None
 
 ## Función que me permite cargar el modelo del autoencoder
-def ae_load_model(modelo_dir):
+def ae_load_model(modelo_dir, autoencoder_name):
 
     ## En caso de que la función de costo sea SSIM
     if loss_name == "ssim_loss":
@@ -283,6 +285,8 @@ def ae_load_model(modelo_dir):
     
     ## En caso que tenga otra función de costo
     else:
+
+        ## Cargo el modelo de autoencoder correspondiente
         modelo_autoencoder = keras.models.load_model(modelo_dir + autoencoder_name +'.h5', custom_objects = {"ssim_metric": ssim_metric, 'mse' : 'mse'})
     
     ## Retorno el modelo del autoencoder

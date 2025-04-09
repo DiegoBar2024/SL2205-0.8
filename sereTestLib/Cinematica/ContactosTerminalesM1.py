@@ -161,7 +161,7 @@ while (rango[0] < cant_muestras):
 ## --------------------------- PROCESADO DE LA SEÑAL DE ACELERACIÓN VERTICAL ---------------------------
 
 ## Uso el método de los papers de Rafael C. Gonzalez
-## Filtrado FIR pasabajos de orden 30 con frecuencia de corte 12.5Hz
+## Filtrado FIR pasabajos de orden 30 con frecuencia de corte 12.5Hz (tuneado manualmente)
 ## Pruebo subir un poco la frecuencia de corte del FIR para poder detectar de mejor manera los mínimos locales donde estarían los TO
 lowpass = signal.firwin(numtaps = 30, cutoff = 12.5, pass_zero = 'lowpass', fs = 1 / periodoMuestreo)
 

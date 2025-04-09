@@ -76,7 +76,7 @@ def build_model(n_hidden, n_neurons, input_shape = (None, 256)):
 
     return model
 
-def entrenamiento_clasificador(unstable_train, stable_train, unstable_validation, stable_validation, autoencoder_model, clasificador, scalogram_path_train = dir_preprocessed_data_train, scalogram_path_val = dir_preprocessed_data_test, activities = act_clf):
+def entrenamiento_clasificador(clf_name, unstable_train, stable_train, unstable_validation, stable_validation, autoencoder_model, clasificador, scalogram_path_train = dir_preprocessed_data_train, scalogram_path_val = dir_preprocessed_data_test, activities = act_clf):
     """
     Function that creates and fits the classifier with the training set and predicts the validation set.
 
@@ -97,56 +97,62 @@ def entrenamiento_clasificador(unstable_train, stable_train, unstable_validation
                         'dim': inDim,
                         'batch_size': batch_size,
                         'shuffle': True,
-                        'activities':activities}
+                        'activities': activities}
 
     ## Parámetros de la validación del clasificador
     paramsV = {'data_dir' : scalogram_path_val,
                         'dim': inDim,
                         'batch_size': batch_size,
                         'shuffle': False,
-                        'activities':activities}
+                        'activities': activities}
 
     ## La palabra <<intermediate>> hace referencia al espacio codificado del autoencoder para cada una de las muestras
     ## Muestras de entrenamiento inestables (espacio comprimido del autoencoder)
+    ## Tiene la forma de (cantidad de muestras inestables de entrenamiento, 256)
     unstable_train_intermediate = patient_group_aelda(unstable_train, autoencoder_model, layer_name = layer_name, **paramsT)
 
     ## Muestras de entrenamiento estables (espacio comprimido del autoencoder)
+    ## Tiene la forma de (cantidad de muestras estables de entrenamiento, 256)
     stable_train_intermediate = patient_group_aelda(stable_train, autoencoder_model, layer_name = layer_name, **paramsT)
 
     ## Muestras de validación inestables (espacio comprimido del autoencoder)
+    ## Tiene la forma de (cantidad de muestras inestables de validación, 256)
     unstable_validate_intermediate = patient_group_aelda(unstable_validation, autoencoder_model, layer_name = layer_name, **paramsV)
 
     ## Muestras de validación inestables (espacio comprimido del autoencoder)
+    ## Tiene la forma de (cantidad de muestras estables de validación, 256)
     stable_validate_intermediate = patient_group_aelda(stable_validation, autoencoder_model, layer_name = layer_name, **paramsV)
 
     ## CRITERIO DE ASIGNACIÓN DE ETIQUETAS
     ## Los pacientes con la etiqueta "0" son INESTABLES
     ## Los pacientes con la etiqueta "1" son ESTABLES
 
-    ## Genero un vector con las etiquetas correspondientes para cada uno de los pacientes en función de su estabilidad o no para el conjunto de entrenamiento
+    ## Genero un vector con las etiquetas correspondientes para cada uno de los pacientes en función de su estabilidad o no para el conjunto de ENTRENAMIENTO
     ground_truth_train = np.concatenate([np.zeros(np.shape(stable_train_intermediate)[0]), np.ones(np.shape(unstable_train_intermediate)[0])]) 
 
     ## <<train_values>> me va a contener las muestras que voy a usar para el entrenamiento del clasificador, según la etiqueta correspondiente
+    ## Tiene la forma de (cantidad de muestras de entrenamiento, 256)
     train_values = np.concatenate([stable_train_intermediate, unstable_train_intermediate], axis = 0)
 
     ## Genero un vector con las etiquetas correspondientes para cada uno de los pacientes en función de su estabilidad o no para el conjunto de validación
     ground_truth_validate = np.concatenate([np.zeros(np.shape(stable_validate_intermediate)[0]), np.ones(np.shape(unstable_validate_intermediate)[0])]) 
 
     ## <<val_values>> me va a contener las muestras que voy a usar para el entrenamiento del clasificador, según la etiqueta correspondiente
+    ## Tiene la forma de (cantidad de muestras de validación, 256)
     val_values = np.concatenate([stable_validate_intermediate, unstable_validate_intermediate], axis = 0)
     
     ## Obtengo el clasificador luego de realizar el entrenamiento
-    clf_trained = train_clasificador(train_values, ground_truth_train, clasificador_name + '.joblib', clasificador, val_values, ground_truth_validate)
+    clf_trained = train_clasificador(train_values, ground_truth_train, clf_name + '.joblib', clasificador, val_values, ground_truth_validate)
 
     ## Hago la predicción para el conjunto de entrenamiento
-    unstable_predictions_train = predict_clf(clf_trained,unstable_train_intermediate, clasificador)
-    stable_predictions_train = predict_clf(clf_trained,stable_train_intermediate, clasificador)
-    labels_train = np.concatenate([stable_predictions_train, unstable_predictions_train], axis=0)
+    unstable_predictions_train = predict_clf(clf_trained, unstable_train_intermediate, clasificador)
+    stable_predictions_train = predict_clf(clf_trained, stable_train_intermediate, clasificador)
+    labels_train = np.concatenate([stable_predictions_train, unstable_predictions_train], axis = 0)
 
     ## Hago la predicción para el conjunto de validación
     unstable_predictions = predict_clf(clf_trained, unstable_validate_intermediate, clasificador)
     stable_predictions = predict_clf(clf_trained, stable_validate_intermediate, clasificador)
-    labels_validate = np.concatenate([stable_predictions, unstable_predictions], axis=0)
+    labels_validate = np.concatenate([stable_predictions, unstable_predictions], axis = 0)
 
 ## Función que lleva a cabo el entrenamiento del clasificador
 ## Como entrada debo colocarle el espacio codificado siendo éste la salida del autoencoder para cada escalograma
@@ -213,7 +219,7 @@ def train_clasificador(values, ground_truth, file_clf, clasificador, X_val = Non
         ## Llevo a cabo el entrenamiento del clasificador
         ## <<values>> es la secuencia de valores de entrada
         ## <<ground_truth>> es la secuencia de valores de salida
-        clf.fit(values,ground_truth,  epochs = 100, validation_data = (X_val, y_val), callbacks = [es])
+        clf.fit(values, ground_truth, epochs = 100, validation_data = (X_val, y_val), callbacks = [es])
 
     ## En caso de que el clasificador sea del tipo SVM
     elif clasificador == 'svm':
@@ -282,7 +288,7 @@ def train_clasificador(values, ground_truth, file_clf, clasificador, X_val = Non
     ## Retorno el clasificador entrenado
     return clf
 
-def predict_clf(clf,intermediate_layer, clasificador="None"):
+def predict_clf(clf, intermediate_layer, clasificador = "None"):
     """
     Function that recibes a lda classifier and the intermediate layer of a group of samples, and predict
     the samples classification.

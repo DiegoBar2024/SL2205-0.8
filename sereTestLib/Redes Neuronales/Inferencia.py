@@ -7,7 +7,6 @@ sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/utils')
 from parameters import *
 from Modelo_AE import *
 import os
-from ingesta_etiquetas import *
 from Modelo_AE import *
 from Evaluar_AE import *
 
@@ -27,11 +26,20 @@ def Inferencia(sample_id, result: results = results(), plot=False):
     ## Asigno como atributo del objeto resultado la característica de si tengo una muestra larga o corta
     result.long_sample = long_sample
 
-    ## Obtengo la ruta en donde se encuentra almacenado el modelo del autoencoder
-    modelo_dir = model_path_ae
+    ## Especifico la ruta de donde yo voy a cargar el modelo del autoencoder
+    ruta_ae = 'C:\\Users\\diego/Dropbox/PROJECTS/SL2205/sereData/Modelos/autoencoder/ModeloAutoencoder/'
+
+    ## Especifico la ruta de donde yo voy a guardar el modelo del clasificador
+    ruta_clf = 'C:\\Users\\diego/Dropbox/PROJECTS/SL2205/sereData/Modelos/clasificador/ModeloClasificador/'
+
+    ## Especifico el nombre del modelo del autoencoder
+    nombre_autoencoder = 'AutoencoderUCU'
+
+    ## Especifico el nombre que le voy a dar al modelo del clasificador
+    clasificador_name = 'ClasificadorUCU'
 
     ## Cargo el modelo del autoencoder especificado en la ruta anterior
-    modelo_autoencoder = ae_load_model(modelo_dir)
+    modelo_autoencoder = ae_load_model(ruta_ae, nombre_autoencoder)
 
     ## En caso de que la ruta <<results_path_day>> no exista
     if not os.path.exists(results_path_day):
@@ -49,14 +57,14 @@ def Inferencia(sample_id, result: results = results(), plot=False):
     clf_name = clasificador_name + '.joblib'
 
     ## Obtengo el nombre del autoencoder
-    result.ae_name = autoencoder_name
+    result.ae_name = nombre_autoencoder
 
     ## Obtengo el nombre del clasificador
-    result.clf_name = clf_name
+    result.clf_name = clasificador_name
 
     ## Obtengo la representación latente de 256 características asociadas a cada escalograma tridimensional
     ## Luego de hacer eso hago la inferencia correspondiente a la muestra con el clasificador entrenado
-    evaluar_aelda(clasificador, modelo_autoencoder, sample_id, result, clf_model_file = clf_name)
+    evaluar_aelda(clasificador_name, nombre_autoencoder, ruta_clf, clasificador, modelo_autoencoder, sample_id, result, clf_model_file = clf_name)
 
     ## Retorno el resultado de la inferencia como un objeto
     return result
@@ -65,7 +73,7 @@ def Inferencia(sample_id, result: results = results(), plot=False):
 if __name__== '__main__':
 
     ## Especifico el identificador numérico del paciente
-    i = 299
+    i = 256
 
     ## Ejecuto la inferencia del clasificador
     result = Inferencia(i)

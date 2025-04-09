@@ -7,7 +7,7 @@ sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/clasificador')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/utils')
 from parameters import *
 from Modelo_AE import *
-from entrenamiento_clasificador import entrenamiento_clasificador
+from Modelo_CLAS import *
 from Etiquetado import *
 from Modelo_CLAS import *
 
@@ -57,34 +57,32 @@ val_estables = np.intersect1d(lista_pacientes_existentes, x_estables_val_clf)
 
 ## ----------------------------------- ENTRENAMIENTO Y VALIDACIÓN --------------------------------------
 
-## Inicio una sesión Wandb que me permita cargar el modelo del autoencoder
-run = wandb.init(project = "Autoencoder", reinit = True, job_type = "load ae")
+## Especifico la ruta de donde yo voy a cargar el modelo del autoencoder
+ruta_ae = 'C:\\Users\\diego/Dropbox/PROJECTS/SL2205/sereData/Modelos/autoencoder/ModeloAutoencoder/'
 
-try:
-    modelo_artifact = run.use_artifact(autoencoder_name + ':best')
+## Especifico la ruta de donde yo voy a guardar el modelo del clasificador
+ruta_clf = 'C:\\Users\\diego/Dropbox/PROJECTS/SL2205/sereData/Modelos/clasificador/ModeloClasificador/'
 
-except:
-    modelo_artifact = run.use_artifact(autoencoder_name + ':latest')
+## Especifico el nombre del modelo del autoencoder
+nombre_autoencoder = 'AutoencoderUCU'
 
-## Cargo la dirección en la cual se encuentra almacenado el modelo del autoencoder
-modelo_dir = modelo_artifact.download(model_path_ae)
-
-run.finish()
+## Especifico el nombre que le voy a dar al modelo del clasificador
+clasificador_name = 'ClasificadorUCU'
 
 ## Cargo el modelo del autoencoder a partir de la dirección determinada
-modelo_autoencoder = ae_load_model(modelo_dir)
+modelo_autoencoder = ae_load_model(ruta_ae, nombre_autoencoder)
 
 ## Especifico configuración para el entrenamiento del clasificacor
-config = {"giro x": girox, "giro z": giroz, "Escalado": escalado, "Clasificador": clasificador, "Actividad": act_clf, "AE": autoencoder_name, "Preprocesamiento": preprocesamiento}
+config = {"giro x": girox, "giro z": giroz, "Escalado": escalado, "Clasificador": clasificador, "Actividad": act_clf, "AE": nombre_autoencoder, "Preprocesamiento": preprocesamiento}
 
 ## Inicio una sesión <<wandb>> para el entrenamiento del clasificador
-run = wandb.init(project = "Clasificador", reinit = True, config = config, job_type = "train clf", name = clasificador_name)
+run = wandb.init(project = "Clasificador", reinit = True, config = config, job_type = "Entrenar CLF", name = clasificador_name)
 
 ## Llamo a la función del entrenamiento del clasificador
-entrenamiento_clasificador(train_inestables, train_estables, val_inestables , val_estables, modelo_autoencoder, clasificador, dir_escalogramas_nuevo_train, dir_escalogramas_nuevo_test, act_clf)
+entrenamiento_clasificador(clasificador_name, train_inestables, train_estables, val_inestables, val_estables, modelo_autoencoder, clasificador, dir_escalogramas_nuevo_train, dir_escalogramas_nuevo_test, act_clf)
 
 ## Configuración restante de guardado en <<wandb>>
 trained_model_artifact = wandb.Artifact(clasificador_name, type = "model")
-trained_model_artifact.add_dir(model_path_clf)
+trained_model_artifact.add_dir(ruta_clf)
 run.log_artifact(trained_model_artifact)
 run.finish()

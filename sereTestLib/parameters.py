@@ -211,9 +211,8 @@ if extra == "5segs":
 autoencoder_name = extra+'_'+act_ae[0]+'_'+str(num_epochs)+'_'+loss_name+'_'+modo_ae
 clasificador_name= clasificador+'_'+extra
 
-
-model_path_ae = static_path + 'Modelos/' + 'autoencoder/'+ autoencoder_name + '/'
-model_path_clf =static_path + 'Modelos/' +'clasificador/'+ clasificador_name + '/'
+model_path_ae = static_path + 'Modelos/' + 'autoencoder/' + autoencoder_name + '/'
+model_path_clf = static_path + 'Modelos/' +'clasificador/' + clasificador_name + '/'
 
 ################################################
 #                   TRAIN
@@ -300,6 +299,9 @@ dir_escalogramas_nuevo_test = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalograma
 ## Rutas en donde van a estar los escalogramas individuales por cada canal
 dir_escalogramas_nuevo_ind_train = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_ind_nuevo/train'
 dir_escalogramas_nuevo_ind_test = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_ind_nuevo/test'
+
+## Rutas en donde se van a guardar los resultados de las inferencias
+results_path = "C:/Yo/Tesis/sereData/sereData/Inferencias"
 
 ## DIMENSIÓN TEMPORAL A LA QUE SE VA A REMUESTREAR
 ## Especifico la cantidad de pasos que quiero representar en mis escalogramas

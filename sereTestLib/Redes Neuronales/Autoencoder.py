@@ -53,20 +53,26 @@ val_test = np.intersect1d(lista_pacientes_existentes, val_test)
 
 ## ----------------------------------- ENTRENAMIENTO Y VALIDACIÓN --------------------------------------
 
+## Especifico la ruta en la cual yo voy a guardar el modelo de autoencoder
+ruta_ae = 'C:\\Users\\diego/Dropbox/PROJECTS/SL2205/sereData/Modelos/autoencoder/ModeloAutoencoder/'
+
+## Especifico el nombre que yo le voy a dar al autoencoder
+nombre_autoencoder = 'AutoencoderUCU'
+
 ## <<config>> va a ser un diccionario que tiene parámetros necesarios para configurar el autoencoder
 config = {"giro x": girox, "giro z": giroz, "Escalado": escalado, "Loss": loss_name, "Actividad": act_ae, "Preprocesamiento": preprocesamiento, "lr": base_learning_rate}
 
 ## Comienza la sesión wandb cuyo objetivo va a ser guardar los parámetros del autoencoder luego del entrenamiento
-run = wandb.init(project = "Autoencoder", reinit = True, config = config, job_type = "train ae", name = autoencoder_name)
+run = wandb.init(project = "Autoencoder", reinit = True, config = config, job_type = "Entrenar AE", name = nombre_autoencoder)
 
 ## Se hace un reset de los estados        
 keras.backend.clear_session()
 
 ## Hago el llamado a la función del entrenamiento del autoencoder
-ae_train_save_model(dir_escalogramas_nuevo_train, dir_escalogramas_nuevo_test, model_path_ae, inDim, train, val_test, num_epochs, act_ae, batch_size, debug = True)
+ae_train_save_model(nombre_autoencoder, dir_escalogramas_nuevo_train, dir_escalogramas_nuevo_test, ruta_ae, inDim, train, val_test, num_epochs, act_ae, batch_size, debug = True)
 
 ## Terminación del autoencoder
 trained_model_artifact = wandb.Artifact(autoencoder_name, type = "model")
-trained_model_artifact.add_dir(model_path_ae)
+trained_model_artifact.add_dir(ruta_ae)
 run.log_artifact(trained_model_artifact)
 wandb.run.finish()

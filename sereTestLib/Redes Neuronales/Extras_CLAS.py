@@ -5,24 +5,6 @@ from tensorflow import keras
 from GeneradorDatos import *
 # from sereTestLib.autoencoder.DataClassAuto import DataGeneratorAuto
 
-def clasificador_name_creation(activities, clasificador):
-    """
-    Function that craates the classifier model name.
-    Parameters:
-    -----------
-    activities: list
-        List of activities to train and validate the model.
-    clasificador: str
-        classification method
-    
-    Returns:
-    -------
-    classifier model name
-    """
-    basic_path = modo_ae+str(latent_dimension)+"".join(activities)+str(num_epochs)
-    clasificador_complete_name = clasificador_model_version +'_' + ae_model_version + '_' + git_version_commit +'_' + date_train +'_'+clasificador+'_'+ extra
-    return clasificador_complete_name+basic_path
-
 ## El parámetro <<patient_list>> va a ser una lista con los IDs de los pacientes cuyas muestras voy a usar para entrenar
 ## El parámetro <<modelo>> va a ser el modelo del autoencoder ya entrenado
 ## El parámetro <<layer_name>> me dice cuál es el layer del autoencoder de donde yo voy a buscar la salida
@@ -34,6 +16,7 @@ def patient_group_aelda(patient_list, modelo, layer_name = 'Dense_encoder', **pa
     If the patient doesnt have samples for the activity, returns an empty array
     """
     ## Inicializo en <<intermediate>> un vector numpy el cual esté vacío
+    ## En dicho vector voy a guardar las 256 características asociadas a un escalograma
     intermediate = np.array([])
 
     ## Generador de datos

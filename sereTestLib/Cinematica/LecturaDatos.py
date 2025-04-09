@@ -88,7 +88,7 @@ else:
     ## -------------------------------------------------------------------------------
 
     ## Identificación numérica del paciente
-    id_persona = 300
+    id_persona = 213
 
     ## Nombre del paciente
     nombre_persona = "Diego Barboza"
@@ -119,8 +119,17 @@ tiempo = (tiempo - tiempo[0]) / 1000
 ## Cantidad de muestras de la señal
 cant_muestras = len(tiempo)
 
-## Hallo el período de muestreo de las señales
-periodoMuestreo = PeriodoMuestreo(data)
+## En caso de que no haya un período de muestreo bien definido debido al vector de tiempos de la entrada
+if all([x == True for x in np.isnan(tiempo)]):
+
+    ## Asigno arbitrariamente una frecuencia de muestreo de 200Hz es decir período de muestreo de 0.005s
+    periodoMuestreo = 0.005
+
+## En caso de que el vector de tiempos contenga elementos numéricos
+else:
+
+    ## Calculo el período de muestreo en base al vector correspondiente
+    periodoMuestreo = PeriodoMuestreo(data)
 
 ## ------------------------------------------- GRAFICACIÓN ---------------------------------------------
 

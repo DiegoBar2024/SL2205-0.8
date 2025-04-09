@@ -180,57 +180,6 @@ img_buf = BytesIO()  # Create image object
 plt.savefig(img_buf, dpi = 200)  # Save the image
 pdf.image(img_buf, w = pdf.epw / 2, x = 0.55 * pdf.epw, y = 0.65 * pdf.eph)
 
-# fig = Figure(figsize = (3, 2), dpi = 300)
-# ax1 = fig.add_subplot()
-
-# ax1.plot(pasos_numerados, long_pasos_m1)
-# ax1.set_xlabel("Numero de paso")
-# ax1.set_ylabel("Longitud del paso (m)")
-
-# canvas = FigureCanvas(fig)
-# canvas.draw()
-# img = Image.fromarray(np.asarray(canvas.buffer_rgba()))
-# pdf.image(img, w = pdf.epw)
-
-# ## Gráfico de la duración de los pasos en función de cada paso
-# fig = Figure(figsize = (3, 2), dpi = 300)
-# ax1 = fig.add_subplot()
-
-# (line,) = ax1.plot(duraciones_pasos)
-# ax1.set_xlabel("Numero de paso")
-# ax1.set_ylabel("Duración del paso (s)")
-
-# canvas = FigureCanvas(fig)
-# canvas.draw()
-# img = Image.fromarray(np.asarray(canvas.buffer_rgba()))
-# pdf.image(img, w = 0.4 * pdf.epw, x = 0.6 * pdf.epw, y = 0.5 * pdf.eph)
-
-# ## Gráfico de la velocidad instantánea en función del número de pasos
-# fig = Figure(figsize = (3, 2), dpi = 300)
-# ax1 = fig.add_subplot()
-
-# (line,) = ax1.plot(velocidades)
-# ax1.set_xlabel("Numero de paso")
-# ax1.set_ylabel("Velocidad insantánea (m/s)")
-
-# canvas = FigureCanvas(fig)
-# canvas.draw()
-# img = Image.fromarray(np.asarray(canvas.buffer_rgba()))
-# pdf.image(img, w = 0.4 * pdf.epw, x = 0.1 * pdf.epw, y = 0.7 * pdf.eph)
-
-# ## Gráfico de la cadencia instantánea en función del número de pasos
-# fig = Figure(figsize = (3, 2), dpi = 300)
-# ax1 = fig.add_subplot()
-
-# (line,) = ax1.plot(frecuencias)
-# ax1.set_xlabel("Numero de paso")
-# ax1.set_ylabel("Cadencia instantánea (pasos/s)")
-
-# canvas = FigureCanvas(fig)
-# canvas.draw()
-# img = Image.fromarray(np.asarray(canvas.buffer_rgba()))
-# pdf.image(img, w = 0.4 * pdf.epw, x = 0.6 * pdf.epw, y = 0.7 * pdf.eph)
-
 # Generate the PDF
 pdf.output("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Presentacion/Reporte.pdf", 'F')
 img_buf.close()
