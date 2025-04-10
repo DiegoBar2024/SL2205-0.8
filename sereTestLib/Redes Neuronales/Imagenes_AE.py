@@ -10,15 +10,15 @@ sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 
 ## ------------------------------------ TRANSFORMACIÓN A IMÁGENES --------------------------------------
 
-## Especifico el ID de la persona la cual voy a guardar las imagenes de los escalogramas
+## Especifico el ID de la persona la cual voy a guardar las imagenes
 id_persona = 114
 
 ## La idea es poder guardar todos los escalogramas generados como imágenes con extensión .png en una carpeta aparte
 ## Especifico la ruta de donde voy a leer los escalogramas
-ruta_lectura = "C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/train/S{}/".format(id_persona)
+ruta_lectura = 'C:/Yo/Tesis/sereData/sereData/Dataset/reconstrucciones_ae/S{}/'.format(id_persona)
 
 ## Especifico la ruta de donde voy a guardar los escalogramas
-ruta_guardado = "C:/Yo/Tesis/sereData/sereData/Escalogramas/S{}/".format(id_persona)
+ruta_guardado = "C:/Yo/Tesis/sereData/sereData/Escalogramas_AE/S{}/".format(id_persona)
 
 ## En caso de que el directorio no exista, lo creo
 if not os.path.exists(ruta_guardado):
