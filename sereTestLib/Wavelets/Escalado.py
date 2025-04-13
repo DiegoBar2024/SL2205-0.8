@@ -16,12 +16,16 @@ ruta_guardado =  'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/train
 ## Especifico la ruta de salida de escalogramas individuales
 ruta_guardado_individual =  'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_ind_nuevo/train' + directorio_muestra
 
-## En caso de que el directorio no exista, lo creo
+## En caso de que el directorio no exista
 if not os.path.exists(ruta_guardado):
+
+    ## Creo el directorio correspondiente
     os.makedirs(ruta_guardado)
 
-## En caso de que el directorio no exista, lo creo
+## En caso de que el directorio no exista
 if not os.path.exists(ruta_guardado_individual):
+
+    ## Creo el directorio correspondiente
     os.makedirs(ruta_guardado_individual)
 
 ## Especifico la cantidad de segmentos que tengo

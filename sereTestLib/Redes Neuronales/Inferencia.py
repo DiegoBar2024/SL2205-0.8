@@ -36,7 +36,7 @@ def Inferencia(sample_id, result: results = results(), plot=False):
     nombre_autoencoder = 'AutoencoderUCU'
 
     ## Especifico el nombre que le voy a dar al modelo del clasificador
-    clasificador_name = 'ClasificadorUCU'
+    clasificador_name = 'ClasificadorUCU_Hierarchical'
 
     ## Cargo el modelo del autoencoder especificado en la ruta anterior
     modelo_autoencoder = ae_load_model(ruta_ae, nombre_autoencoder)
@@ -62,7 +62,10 @@ def Inferencia(sample_id, result: results = results(), plot=False):
     ## Obtengo el nombre del clasificador
     result.clf_name = clasificador_name
 
-    ## Obtengo la representación latente de 256 características asociadas a cada escalograma tridimensional
+    ## Especifico el tipo de clasificador
+    clasificador = 'hierarchical'
+
+    ## Obtengo la representación latente de las características asociadas a cada escalograma tridimensional
     ## Luego de hacer eso hago la inferencia correspondiente a la muestra con el clasificador entrenado
     evaluar_aelda(clasificador_name, nombre_autoencoder, ruta_clf, clasificador, modelo_autoencoder, sample_id, result, clf_model_file = clf_name)
 
@@ -73,7 +76,7 @@ def Inferencia(sample_id, result: results = results(), plot=False):
 if __name__== '__main__':
 
     ## Especifico el identificador numérico del paciente
-    i = 256
+    i = 122
 
     ## Ejecuto la inferencia del clasificador
     result = Inferencia(i)

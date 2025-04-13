@@ -15,13 +15,15 @@ id_persona = 114
 
 ## La idea es poder guardar todos los escalogramas generados como imágenes con extensión .png en una carpeta aparte
 ## Especifico la ruta de donde voy a leer los escalogramas
-ruta_lectura = 'C:/Yo/Tesis/sereData/sereData/Dataset/reconstrucciones_ae/S{}/'.format(id_persona)
+ruta_lectura = 'C:/Yo/Tesis/sereData/sereData/Dataset/reconstrucciones_ae/S{}_v2/'.format(id_persona)
 
 ## Especifico la ruta de donde voy a guardar los escalogramas
-ruta_guardado = "C:/Yo/Tesis/sereData/sereData/Escalogramas_AE/S{}/".format(id_persona)
+ruta_guardado = "C:/Yo/Tesis/sereData/sereData/Escalogramas_AE/S{}_v2/".format(id_persona)
 
-## En caso de que el directorio no exista, lo creo
+## En caso de que el directorio no exista
 if not os.path.exists(ruta_guardado):
+
+    ## Creo el directorio correspondiente
     os.makedirs(ruta_guardado)
 
 ## Obtengo todos los archivos presentes en la ruta anterior

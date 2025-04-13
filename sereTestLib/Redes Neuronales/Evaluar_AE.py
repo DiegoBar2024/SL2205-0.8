@@ -79,7 +79,6 @@ def classify_patient_aelda(patient_number, clf_model, modelo, clasificador, resu
             pat_predictions = clf_model.predict(pat_intermediate)
 
             ## En caso de que el clasificador usado sea un perceptron
-            ## Por defecto el clasificador utilizado por la empresa es un perceptrón, de modo que entraría acá
             if clasificador == "perceptron":
 
                 ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)

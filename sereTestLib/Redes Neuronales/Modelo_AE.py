@@ -15,7 +15,6 @@ import numpy as np
 from keras import backend as K
 import os
 from GeneradorDatos import *
-import wandb
 
 from skimage.metrics import structural_similarity as ssim
 
@@ -133,9 +132,6 @@ def ae_train_save_model(autoencoder_name, path_to_scalograms_train = dir_escalog
     ## Le paso como argumento los parámetros de validación
     validation_generator = DataGeneratorAuto(list_IDs = list_of_samples_number_validation, **paramsV)
 
-    ## Hago la incialización de la sesión de WandB
-    wandb.init(project = "Autoencoder", mode = 'disabled')
-
     # Entrenamiento del modelo de autoencoder especificando todos los parámetros correspondientes
     history = autoencoder.fit(x = training_generator,
                     validation_data = validation_generator,
@@ -146,7 +142,7 @@ def ae_train_save_model(autoencoder_name, path_to_scalograms_train = dir_escalog
     # Ésto es lo que debo usar como entrada al clasificador
     autoencoder.save(model_path + autoencoder_name + model_extension)
 
-    # Clear keras session. Free memory and reduce loop problems
+    ## Hago la limpieza de la sesión de Keras para poder reducir la memoria y problemas de bucle
     del autoencoder
     keras.backend.clear_session()
 

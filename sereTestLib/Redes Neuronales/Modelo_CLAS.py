@@ -33,7 +33,6 @@ from keras.callbacks import EarlyStopping
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 import sklearn
-import wandb
 
 ##################################
 # Librerias y parametros Sere
@@ -144,14 +143,22 @@ def entrenamiento_clasificador(clf_name, unstable_train, stable_train, unstable_
     ## Obtengo el clasificador luego de realizar el entrenamiento
     clf_trained = train_clasificador(train_values, ground_truth_train, clf_name + '.joblib', clasificador, val_values, ground_truth_validate)
 
-    ## Hago la predicción para el conjunto de entrenamiento
+    ## Hago la predicción para el conjunto de entrenamiento inestable
     unstable_predictions_train = predict_clf(clf_trained, unstable_train_intermediate, clasificador)
+
+    ## Hago la predicción para el conjunto de entrenamiento estable
     stable_predictions_train = predict_clf(clf_trained, stable_train_intermediate, clasificador)
+
+    ## Etiquetas del conjunto de entrenamiento
     labels_train = np.concatenate([stable_predictions_train, unstable_predictions_train], axis = 0)
 
-    ## Hago la predicción para el conjunto de validación
+    ## Hago la predicción para el conjunto de validación inestable
     unstable_predictions = predict_clf(clf_trained, unstable_validate_intermediate, clasificador)
+
+    ## Hago la predicción para el conjunto de validación estable
     stable_predictions = predict_clf(clf_trained, stable_validate_intermediate, clasificador)
+
+    ## Etiquetas del conjunto de validación
     labels_validate = np.concatenate([stable_predictions, unstable_predictions], axis = 0)
 
 ## Función que lleva a cabo el entrenamiento del clasificador
@@ -283,7 +290,6 @@ def train_clasificador(values, ground_truth, file_clf, clasificador, X_val = Non
         clf.fit(values, ground_truth)
 
     dump(clf, model_path_clf + file_clf)
-    #hay que ver como guardarlo para levantarlo luego
 
     ## Retorno el clasificador entrenado
     return clf
@@ -293,22 +299,31 @@ def predict_clf(clf, intermediate_layer, clasificador = "None"):
     Function that recibes a lda classifier and the intermediate layer of a group of samples, and predict
     the samples classification.
     """
-    if clasificador == "hierarchical":
-        clf_predict = clf.fit_predict(intermediate_layer)
-        plt.title("Hierarchical Clustering Dendrogram")
-        # plot the top three levels of the dendrogram
-        plot_dendrogram(clf, truncate_mode="level", p=3)
-        plt.xlabel("Number of points in node (or index of point if no parenthesis).")
-        #plt.show()
-        plt.savefig(results_path_day + "dendogram.png")
 
+    ## En caso de que tenga un clasificador jerárquico (clustering)
+    if clasificador == "hierarchical":
+
+        ## Hago la predicción de los datos en base al espacio latente
+        clf_predict = clf.fit_predict(intermediate_layer)
+
+    ## En caso de que el clasificador no sea "hierarchical"
     else:
-        clf_predict= clf.predict(intermediate_layer)
-        if clasificador=="perceptron":
-            #print(clf_predict)
-            clf_predict=clf_predict>0.5
-            #print(clf_predict)
-        if clasificador=="NN":
-            clf_predict=clf_predict>0.5
+
+        ## Determino la predicción del clasificador ante mi muestra de entrada
+        pat_predictions = clf.predict(intermediate_layer)
+
+        ## En caso de que el clasificador usado sea un perceptron
+        if clasificador == "perceptron":
+
+            ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
+            ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
+            pat_predictions = pat_predictions > 0.5
+
+        ## En caso de que el clasificador sea una red neuronal
+        if clasificador == "NN":
+
+            ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
+            ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
+            pat_predictions = pat_predictions > 0.5
 
     return clf_predict

@@ -109,66 +109,19 @@ def ingesta_etiquetas(csv_path = dir_etiquetas + 'clasificaciones_antropometrico
 
     ## SEPARACIÓN DE MUESTRAS PARA EL ENTRENAMIENTO DEL AUTOENCODER
 
-    ## i) CONJUNTO DE ENTRENAMIENTO CON MUESTRAS ESTABLES
-
-    ## Selecciono el 70% de las muestras estables restantes que me quedan en el DataFrame <<estables>> para el ENTRENAMIENTO del autoencoder. El 30% de las muestras que quedan irán para la validación del autoencoder
-    ## Usando el comando <<.sample(frac=0.7)>> yo lo que hago es seleccionar ALEATORIAMENTE un 70% de las muestras que estan en el DataFrame <<estables>>
-    estables_ae_train = estables.sample(frac = 0.7, random_state = 42)
-
-    ## Elimino del DataFrame <<estables>> aquellas muestras que separé anteriormente para el entrenamiento del autoencoder
-    estables_ae = estables.drop(estables_ae_train.index)
-
-    ## ii) CONJUNTO DE ENTRENAMIENTO CON MUESTRAS INESTABLES
-
-    ## Selecciono el 70% de las muestras inestables restantes que me quedan en el DataFrame <<inestables>> para el ENTRENAMIENTO del autoencoder. El 30% de las muestras que quedan irán para la validación del autoencoder
-    ## Usando el comando <<.sample(frac=0.7)>> yo lo que hago es seleccionar ALEATORIAMENTE un 70% de las muestras que estan en el DataFrame <<inestables>>
-    inestables_ae_train = inestables.sample(frac = 0.7, random_state = 42)
-
-    ## Elimino del DataFrame <<inestables>> aquellas muestras que separé anteriormente para el entrenamiento del autoencoder
-    inestables_ae = inestables.drop(inestables_ae_train.index)
+    ## Selecciono el 80% de las muestras estables restantes que me quedan en el DataFrame original para el ENTRENAMIENTO del autoencoder. El 20% de las muestras que quedan irán para la validación del autoencoder
+    ## Usando el comando <<.sample(frac=0.8)>> yo lo que hago es seleccionar ALEATORIAMENTE un 80% de las muestras que estan en el DataFrame
+    ## El valor de <<random_state>> se especifica para que cada muestreo que haga el autoencoder me de las mismas muestras
+    ae_train = df.sample(frac = 0.8, random_state = 42)
 
     ## SEPARACIÓN DE MUESTRAS PARA LA VALIDACIÓN DEL AUTOENCODER
 
-    ## i) CONJUNTO DE VALIDACIÓN CON MUESTRAS ESTABLES
-
-    ## Como dije antes, el resto de las muestras que quedan en <<estables>> van a ir para la validación del autoencoder
-    ## De éste modo, no tengo que hacer nada más que asignar las muestras que quedan en <<estables>> para el conjunto de validación del autoencoder
-    estables_ae_val = estables_ae
-
-    ## ii) CONJUNTO DE VALIDACIÓN CON MUESTRAS INESTABLES
-
-    ## Como dije antes, el resto de las muestras que quedan en <<inestables>> van a ir para la validación del autoencoder
-    ## De éste modo, no tengo que hacer nada más que asignar las muestras que quedan en <<inestables>> para el conjunto de validación del autoencoder
-    inestables_ae_val = inestables_ae
-
-    ## Termino de construír las muestras para el entrenamiento y validación del autoencoder
-    ## <<ae_train>> va a contener aquellos pacientes (estables e inestables) que van a usarse para ENTRENAR AL AUTOENCODER
-    ## <<ae_val>> va a contener aquellos pacientes (estables e inestables) que van a usarse para VALIDAR EL AUTOENCODER
-    ae_train = pd.concat([estables_ae_train, inestables_ae_train])
-    ae_val = pd.concat([estables_ae_val, inestables_ae_val])
+    ## El resto de las muestras no seleccionadas para el entrenamiento irán para la validación del autoencoder
+    ae_val = df.drop(ae_train.index)
 
     ## Obtengo las muestras para el entrenamiento y validación del clasificador
     clf_train = pd.concat([estables_train_clf, inestables_train_clf])
     clf_val = pd.concat([inestables_val_clf, inestables_val_clf])
-
-    ## <<x_estables_ae_train>> va a ser una lista de los <<sample_id>> de todas las MUESTRAS ESTABLES que fueron seleccionadas para el ENTRENAMIENTO del AUOTENCODER
-    ## Se hace una traducción a un vector numpy
-    x_estables_ae_train = estables_ae_train["sampleid"].to_numpy()
-
-    ## <<x_inestables_ae_train>> va a ser una lista de los <<sample_id>> de todas las MUESTRAS INESTABLES que fueron seleccionadas para el ENTRENAMIENTO del AUTOENCODER
-    ## Se hace una traducción a un vector numpy
-    x_inestables_ae_train = inestables_ae_train["sampleid"].to_numpy()
-
-    ## <<x_estables_ae_val>> va a ser una lista de los <<sample_id>> de todas las MUESTRAS ESTABLES que fueron seleccionadas para la VALIDACIÓN del AUTOENCODER
-    ## Se hace una traducción a un vector numpy
-    x_estables_ae_val = estables_ae_val["sampleid"].to_numpy()
-
-    ## REVISAR: ALGO ESTÁ RARO ACÁ Y ES QUE EN EL SEGUNDO MIEMBRO ESTÁN TOMANDO <<inestables_ae_train>> CUANDO EN REALIDAD DEBERÍA SER <<inestables_ae_val>>
-    ##          ÉSTO HACE QUE LO QUE ESTÉ GUARDADO EN LA VARIABLE <<x_inestables_ae_val>> VA A SER LO MISMO QUE <<x_inestables_ae_train>> Y NO ESTOY SEGURO QUE DEBA SER ASÍ
-    ## <<x_inestables_ae_val>> va a ser una lista de los <<sample_id>> de todas las MUESTRAS INESTABLES que fueron seleccionadas para la validación del AUTOENCODER
-    ## Lo dejo comentado por las dudas pero lo corrijo en la línea siguiente
-    ## x_inestables_ae_val = inestables_ae_train["sampleid"].to_numpy()
-    x_inestables_ae_val = inestables_ae_val["sampleid"].to_numpy()
 
     ## <<x_ae_train>> va a ser un numpy array que contenga la lista de IDs de TODOS los pacientes que van a ser usados para ENTRENAR el AUTOENCODER
     x_ae_train = ae_train["sampleid"].to_numpy()
@@ -200,4 +153,4 @@ def ingesta_etiquetas(csv_path = dir_etiquetas + 'clasificaciones_antropometrico
     print("Cantidad de muestras para el entrenamiento del clasificador: ", len(x_clf_train))
     print("Cantidad de muestras para la validación del clasificador: ", len(x_clf_val))
 
-    return (x_inestables_train_clf, x_estables_train_clf, x_inestables_val_clf, x_estables_val_clf, x_ae_train, x_ae_val, x_estables_ae_train, x_inestables_ae_train, x_estables_ae_val, x_inestables_ae_val)
+    return (x_inestables_train_clf, x_estables_train_clf, x_inestables_val_clf, x_estables_val_clf, x_ae_train, x_ae_val)

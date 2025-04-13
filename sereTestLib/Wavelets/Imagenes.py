@@ -20,8 +20,10 @@ ruta_lectura = "C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/train/S
 ## Especifico la ruta de donde voy a guardar los escalogramas
 ruta_guardado = "C:/Yo/Tesis/sereData/sereData/Escalogramas/S{}/".format(id_persona)
 
-## En caso de que el directorio no exista, lo creo
+## En caso de que el directorio no exista
 if not os.path.exists(ruta_guardado):
+
+    ## Creo el directorio correspondiente
     os.makedirs(ruta_guardado)
 
 ## Obtengo todos los archivos presentes en la ruta anterior
