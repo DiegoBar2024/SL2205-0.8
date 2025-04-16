@@ -8,7 +8,9 @@ sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 
 from SegmentacionM1 import *
 
-## ---------------------------------------- CÁLCULO DE ENERGÍA -----------------------------------------
+## ---------------------------------------- CÁLCULO DE ENERGÍA TOTAL -----------------------------------
+
+## ------------------------------------ CÁLCULO DE ENERGÍA POR SEGMENTO --------------------------------
 
 ## Creo una matriz donde se van a guardar los segmentos de las señales de acelerómetros y giroscopios según los pasos detectados
 ## La indexación de <<matriz_segmentada>> en [Dimension1, Dimension2, Dimension3] se indica del siguiente modo:
@@ -56,7 +58,7 @@ for i in range (1, cantidad_segmentos):
             energia_tiempo += np.abs(muestra) ** 2
         
         ## ---- MÉTODO 2: ENERGÍA DE LA SEÑAL EN EL DOMINIO DE LA FRECUENCIA ----
-        ## Calculo el espectro en el semieje derecho de la señal y
+        ## Calculo el espectro en el semieje derecho de la señal
         espectro = fftpack.rfft(matriz[canal,:])
 
         ## Calculo la energía total de la señal usando la formula de Parseval en frecuencia
@@ -72,12 +74,14 @@ for i in range (1, cantidad_segmentos):
 
 ## --------------------------------------- CÁLCULO DE ESTADÍSTICAS -------------------------------------
 
+## Inicializo una variable en donde especifico que quiero hacer un guardado de los datos estadísticos
+hacer_guaradado = False
+
 ## Creo una matriz que me guarde los estadísticos de energía asociados a cada canal
 ## Las columnas y las filas de la matriz tienen el siguiente significado:
 ##  FILAS: La i-ésima fila de la matriz va a hacer referencia al i-ésimo canal
-##  COLUMNAS: La primera columna es la energía media, la segunda columna es la mediana, la tercera columna la desviación estándar,
-##            la cuarta columna es la energía total
-matriz_estadisticos_canales = np.zeros((6, 4))
+##  COLUMNAS: La primera columna es la energía media, la segunda columna es la mediana, la tercera columna la desviación estándar
+matriz_estadisticos_canales = np.zeros((6, 3))
 
 ## Itero en cada uno de los canales que tengo
 for canal in range (matriz_energias_canales.shape[0]):

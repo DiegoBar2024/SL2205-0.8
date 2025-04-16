@@ -88,7 +88,7 @@ else:
     ## -------------------------------------------------------------------------------
 
     ## Identificación numérica del paciente
-    id_persona = 213
+    id_persona = 299
 
     ## Nombre del paciente
     nombre_persona = "Diego Barboza"

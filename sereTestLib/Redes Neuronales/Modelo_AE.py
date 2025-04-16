@@ -36,7 +36,8 @@ def ssim_metric(y_true, y_pred):
 
     ## Calculo la función de error correspondiente
     loss = tf.reduce_mean(tf.image.ssim(y_true, y_pred, max_val = 255))
-    ##loss = ssim(y_pred, y_true, channel_axis = 1, data_range = 255)
+    
+    loss = ssim(y_pred, y_true, channel_axis = 1, data_range = 255)
 
     return loss
 
