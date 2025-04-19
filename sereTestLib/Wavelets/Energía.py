@@ -4,11 +4,50 @@ import sys
 from scipy.signal import *
 import numpy as np
 from scipy import fftpack
+import json
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 
 from SegmentacionM1 import *
 
-## ---------------------------------------- CÁLCULO DE ENERGÍA TOTAL -----------------------------------
+## --------------------------------------- CÁLCULO DE ENERGÍA TOTAL ------------------------------------
+
+## Obtengo la energía total correspondiente a la señal de aceleración en el eje x
+energia_ac_x = np.sum(np.square(acel[:,0]))
+
+## Obtengo la energía total correspondiente a la señal de aceleración en el eje y
+energia_ac_y = np.sum(np.square(acel[:,1]))
+
+## Obtengo la energía total correspondiente a la señal de aceleración en el eje z
+energia_ac_z = np.sum(np.square(acel[:,2]))
+
+## Obtengo la energía total correspondiente a la señal de giroscopio en el eje x
+energia_gy_x = np.sum(np.square(gyro[:,0]))
+
+## Obtengo la energía total correspondiente a la señal de giroscopio en el eje y
+energia_gy_y = np.sum(np.square(gyro[:,1]))
+
+## Obtengo la energía total correspondiente a la señal de giroscopio en el eje z
+energia_gy_z = np.sum(np.square(gyro[:,2]))
+
+## Asocio el número identificador del paciente con una tupla conteniendo las energías totales de su registro de marcha
+energias_totales = {id_persona : (energia_ac_x, energia_ac_y, energia_ac_z, energia_gy_x, energia_gy_y, energia_gy_z)}
+
+## ------------------------------------- ESCRITURA EN BASE DE DATOS ------------------------------------
+
+## Hago la lectura del archivo JSON de energías previamente existente
+with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Wavelets/energias.json", 'r') as openfile:
+
+    # Cargo el diccionario el cual va a ser un objeto JSON
+    dicc_energias = json.load(openfile)
+
+## Agrego en el diccionario los datos de energías del paciente actual
+dicc_energias[id_persona] = energias_totales[id_persona]
+
+## Especifico la ruta del archivo JSON sobre la cual voy a reescribir el diccionario de energías
+with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Wavelets/energias.json", "w") as outfile:
+
+    ## Escribo el diccionario actualizado
+    json.dump(dicc_energias, outfile)
 
 ## ------------------------------------ CÁLCULO DE ENERGÍA POR SEGMENTO --------------------------------
 

@@ -16,6 +16,12 @@ x = np.linspace(0.0, N * T, N, endpoint = False)
 y = 2 * np.cos(20 * 2.0 * np.pi * x) + 2 * np.cos(2.25 * 2.0 * np.pi * x) + 20 * np.cos(75 * 2.0 * np.pi * x)
 
 ## ENERGÍA DE LA SEÑAL EN EL DOMINIO DEL TIEMPO
+
+## Método rápido
+energia_señal_rapido = np.sum(np.square(y))
+
+print("Energía de la señal con metodo rapido: {}".format(energia_señal_rapido))
+
 ## Creo una variable donde guardo la energía calculada
 energia_señal = 0
 
