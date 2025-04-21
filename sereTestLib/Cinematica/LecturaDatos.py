@@ -24,12 +24,12 @@ if lectura_datos_propios:
     id_persona = 1
 
     ## Pruebas estandarizadas de 50cm por paso
-    # ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session5_Rodrigo_1_952D/505_Session5_Shimmer_952D_Calibrated_PC_Rodrigo_1_952D.txt"
+    ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session5_Rodrigo_1_952D/505_Session5_Shimmer_952D_Calibrated_PC_Rodrigo_1_952D.txt"
     # ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session3_Sabrina_1_952D/505_Session3_Shimmer_952D_Calibrated_PC_Sabrina_1_952D.txt"
 
     ## Pruebas sin estandarizar (marcha libre)
     # ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session4_Sabrina_2_952D/505_Session4_Shimmer_952D_Calibrated_PC_Sabrina 2_952D.txt"
-    ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session6_Rodrigo_2_952D/505_Session6_Shimmer_952D_Calibrated_PC.txt"
+    # ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session6_Rodrigo_2_952D/505_Session6_Shimmer_952D_Calibrated_PC.txt"
 
     ## Abro el fichero correspondiente
     fichero = open(ruta, "r")
@@ -88,7 +88,7 @@ else:
     ## -------------------------------------------------------------------------------
 
     ## Identificación numérica del paciente
-    id_persona = 308
+    id_persona = 287
 
     ## Nombre del paciente
     nombre_persona = "Diego Barboza"
@@ -105,7 +105,7 @@ else:
 ## ----------------------------------------- PREPROCESAMIENTO ------------------------------------------
 
 ## Armamos una matriz donde las columnas sean las aceleraciones
-acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(-data['AC_z'])]).transpose()
+acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(data['AC_z'])]).transpose()
 
 ## Armamos una matriz donde las columnas sean los valores de los giros
 gyro = np.array([np.array(data['GY_x']), np.array(data['GY_y']), np.array(data['GY_z'])]).transpose()
