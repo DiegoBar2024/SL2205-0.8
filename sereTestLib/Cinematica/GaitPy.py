@@ -8,12 +8,28 @@ from scipy import signal
 from harm_analysis import *
 from control import *
 from LecturaDatos import *
+from LecturaDatosPacientes import *
 
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/gaitpy/gaitpy')
 from gait import *
 
+## ---------------------------------------- LECTURA DE DATOS -------------------------------------------
+
+## Especifico el identificador del paciente para el cual voy a realizar la lectura de los datos
+id_persona = 270
+
+## Obtengo los datos leídos en el directorio correspondiente
+data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona = LecturaDatos(id_persona)
+
+## --------------------------------------- DATOS DEL PACIENTE ------------------------------------------
+
+## De todo el dataframe de pacientes me quedo únicamente con aquel paciente con el que estoy trabajando actualmente
+## Debido al filtrado que se realiza previamente, ésto no producirá error ya que el paciente se encuentra en la base de datos
+datos_paciente = pacientes[pacientes['sampleid'] == id_persona]
+
 ## -------------------------------------- PARÁMETROS DE MARCHA -----------------------------------------
 
+## En esta parte se calculan los parámetros de marcha mediante el uso del algoritmo implementado previamente en GaitPy
 ## Expreso el vector de tiempos tomando como t = 0 el instante inicial de la sesión
 ## Se recuerda que los tiempos en dicho vector se encuentran expresados en milisegundos
 tiempos = np.array(data['Time']) - data['Time'][0]
@@ -43,15 +59,3 @@ lista_features = features.columns
 #           'single_limb_support_asymmetry', 'stance', 'stance_asymmetry', 'swing',
 #           'swing_asymmetry', 'step_length', 'step_length_asymmetry',
 #           'stride_length', 'stride_length_asymmetry', 'gait_speed']
-
-## Obtengo un dataframe con los contactos iniciales (expresadas en milisegundos de sesión)
-features_ICs = features['IC']
-
-## Obtengo un dataframe aislando las cadencias (medida en pasos/minuto)
-features_cadencia = features['cadence']
-
-## Obtengo un dataframe aislando las longitudes de paso (medida en metros)
-features_pasos = features['step_length']
-
-## Obtengo un vector con los contactos iniciales expresados en términos de muestras
-ICs_muestras = features_ICs / (1000 * periodoMuestreo)

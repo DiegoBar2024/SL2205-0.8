@@ -22,6 +22,14 @@ import pywt
 
 from LecturaDatos import *
 
+## ---------------------------------------- LECTURA DE DATOS -------------------------------------------
+
+## Especifico el identificador del paciente para el cual voy a realizar la lectura de los datos
+id_persona = 299
+
+## Obtengo los datos leídos en el directorio correspondiente
+data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona = LecturaDatos(id_persona)
+
 ## ------------------------------------ DETECCIÓN CORTES EN CERO ---------------------------------------
 
 ## Obtengo los índices booleanos en donde se producen los cruces en cero de la aceleración vertical

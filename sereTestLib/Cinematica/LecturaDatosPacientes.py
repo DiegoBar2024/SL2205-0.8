@@ -16,7 +16,7 @@ datos_pacientes = pd.read_csv(ruta_pacientes)
 ## Obtengo una lista de todos los IDs de los pacientes para los cuales yo tengo información
 ids_existentes_info = np.array(datos_pacientes['sampleid'])
 
-## --------------------------------------- EXISTENCIA DE DATOS ------------------------------------------
+## ---------------------------------------- EXISTENCIA DE DATOS ----------------------------------------
 
 ## La idea de ésto es poder filtrar todos aquellos pacientes cuyo dataset sea existente
 ## Especifico la ruta en la cual tengo el dataset de todos los pacientes
@@ -37,7 +37,7 @@ for file in files:
 ## Hago la transformación a un vector de tipo numpy
 ids_existentes_db = np.array(ids_existentes_db)
 
-## ----------------------------------------- CRUCE DE DATOS ------------------------------------------
+## ------------------------------------- CRUCE Y SELECCIÓN DE DATOS ------------------------------------
 
 ## Hago la intersección entre los IDs de los pacientes para los cuales hay datos en el dataset 
 ## y de los cuales tengo información

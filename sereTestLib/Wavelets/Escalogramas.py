@@ -7,13 +7,13 @@ import numpy as np
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
 
-from SegmentacionM1 import *
+from SegmentacionGaitPy import *
 
 ## --------------------------------------------- PARÁMETROS --------------------------------------------
 
 ## Escalas de las wavelets a utilizar
-## Se recuerda que la frecuencia me queda f = f_muestreo / escala
-## Ésto me implica que a escalas más pequeñas tengo frecuencias más grandes
+## Se recuerda que la pseudo - frecuencia me queda f = f_muestreo / escala
+## Ésto me implica que a escalas más pequeñas tengo frecuencias más grandes y viceversa
 escalas = np.arange(8, 136, 1)
 
 ## Creo una variable la cual almacene el ancho de banda de la wavelet
@@ -25,9 +25,6 @@ ancho_banda = 1.5
 wavelet = 'cmor{}-1'.format(ancho_banda)
 
 ## ------------------------------------- DIRECTORIOS Y NOMBRES BASE ------------------------------------
-
-## Construyo el directorio en donde se van a guardar los escalogramas
-directorio_escalogramas = 'C:/Yo/Tesis/sereData/sereData/Dataset/wavelet_cmor/train/S{}/'.format(id_persona)
 
 ## Creo el nombre base raíz que voy a usar para guardar los escalogramas
 nombre_base_segmento = "3S{}s".format(id_persona)
@@ -144,7 +141,6 @@ for i in range (1, len(pasos) - (cantidad_pasos - 1)):
     ## f: Especifica la cantidad de valores de frecuencias que tengo
     ## t: Especifica la cantidad de instantes temporales que tengo
     (c, f, t) = matriz_escalogramas[i].shape
-    print((c, f, t))
 
     ## En caso de que haya algún error al realizar el remuestreo
     try:
@@ -158,36 +154,5 @@ for i in range (1, len(pasos) - (cantidad_pasos - 1)):
         ## Continúo con la siguiente iteración
         continue
 
-    # ## Especifico el proceso de guardado del escalograma en la lista escalogramas_segmentos
-    # ## Genero el nombre del archivo de salida
-    # ## Me queda definir <<directorio_scalogramas>> y <<nombre_base_segmento>>
-    # archivo_salida = '%s%s' % (directorio_escalogramas, "{}{}".format(nombre_base_segmento, str(i - 1)))
-
-    # ## Hago el guardado de los escalogramas
-    # for j, dato in zip(range(6), ['ACx', 'ACy', 'ACz', 'GYx', 'GYy', 'GYz']):
-
-    #     ## Hago el guardado de los escalogramas de cada canal
-    #     np.savez_compressed(archivo_salida + str(dato) + '.npz', y = 0, X = matriz_escalogramas[i][j,:,:])
-
     ## Agrego el escalograma y su nombre base como un diccionario a la lista de escalogramas
     escalogramas_segmentos.append({'escalograma': np.abs(matriz_escalogramas[i]), 'nombre_base_segmento': nombre_base_segmento})
-
-    # ## Graficación del escalograma en el i-ésimo segmento (anterposterior)
-    # data = np.abs(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])
-    # cmap = plt.get_cmap('jet', 256)
-    # fig = plt.figure(figsize = (5,5))
-    # ax = fig.add_subplot(111)
-    # t = np.arange(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
-    # ax.pcolormesh(t, scales_freq, data, cmap=cmap, vmin=data.min(), vmax=data.max(), shading='auto')
-    # plt.xlabel("Tiempo (s)")
-    # plt.ylabel("Frecuencia (Hz)")
-    # plt.title("$|CWT(t,f)|$")
-    # plt.show()
-
-    # ## Hago remuestreo de la señal de aceleración anteroposterior
-    # acc_ap_remuestreo = resample(acel[:,2][pasos[i]['IC'][0] : pasos[i + (cantidad_pasos - 1)]['IC'][1]], cantidad_pasos * int(muestras_paso))
-
-    # ## Graficación de la señal en el tiempo (anteroposterior) comparando con la señal remuestreada
-    # plt.plot(acel[:,2][pasos[i]['IC'][0] : pasos[i + (cantidad_pasos - 1)]['IC'][1]])
-    # plt.plot(acc_ap_remuestreo)
-    # plt.show()

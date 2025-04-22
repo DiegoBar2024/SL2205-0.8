@@ -10,6 +10,14 @@ from harm_analysis import *
 from control import *
 from LecturaDatos import *
 
+## ---------------------------------------- LECTURA DE DATOS -------------------------------------------
+
+## Especifico el identificador del paciente para el cual voy a realizar la lectura de los datos
+id_persona = 299
+
+## Obtengo los datos leídos en el directorio correspondiente
+data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona = LecturaDatos(id_persona)
+
 ## ------------------------------------------ PREPROCESADO ---------------------------------------------
 
 ## Señal de aceleración anteroposterior

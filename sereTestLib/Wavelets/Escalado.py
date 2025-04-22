@@ -11,10 +11,10 @@ from Escalogramas import *
 ## --------------------------------------------- ESCALADO ----------------------------------------------
 
 ## Especifico la ruta de salida de los archivos
-ruta_guardado =  'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/train' + directorio_muestra
+ruta_guardado =  'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo_GP/train' + directorio_muestra
 
 ## Especifico la ruta de salida de escalogramas individuales
-ruta_guardado_individual =  'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_ind_nuevo/train' + directorio_muestra
+ruta_guardado_individual =  'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_ind_nuevo_GP/train' + directorio_muestra
 
 ## En caso de que el directorio no exista
 if not os.path.exists(ruta_guardado):

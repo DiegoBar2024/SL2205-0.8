@@ -22,34 +22,13 @@ import pywt
 
 from LecturaDatos import *
 
-# ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
+## ---------------------------------------- LECTURA DE DATOS -------------------------------------------
 
-# ## Identificación del paciente
-# numero_paciente = '299'
+## Especifico el identificador del paciente para el cual voy a realizar la lectura de los datos
+id_persona = 270
 
-# ## Ruta del archivo
-# ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/3S{}.csv".format(numero_paciente, numero_paciente)
-
-# ## Lectura de datos
-# data = pd.read_csv(ruta)
-
-# ## Hallo el período de muestreo de las señales
-# periodoMuestreo = PeriodoMuestreo(data)
-
-# ## Armamos una matriz donde las columnas sean las aceleraciones
-# acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(data['AC_z'])]).transpose()
-
-# ## Armamos una matriz donde las columnas sean los valores de los giros
-# gyro = np.array([np.array(data['GY_x']), np.array(data['GY_y']), np.array(data['GY_z'])]).transpose()
-
-# ## Separo el vector de tiempos del dataframe
-# tiempo = np.array(data['Time'])
-
-# ## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
-# tiempo = (tiempo - tiempo[0]) / 1000
-
-# ## Cantidad de muestras de la señal
-# cant_muestras = len(tiempo)
+## Obtengo los datos leídos en el directorio correspondiente
+data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona = LecturaDatos(id_persona)
 
 ## ------------------------------------- ANÁLISIS EN FRECUENCIA ----------------------------------------
 

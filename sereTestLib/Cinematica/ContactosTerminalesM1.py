@@ -22,6 +22,14 @@ import pywt
 
 from LecturaDatos import *
 
+## ---------------------------------------- LECTURA DE DATOS -------------------------------------------
+
+## Especifico el identificador del paciente para el cual voy a realizar la lectura de los datos
+id_persona = 270
+
+## Obtengo los datos leídos en el directorio correspondiente
+data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona = LecturaDatos(id_persona)
+
 ## ------------------------------------- ANÁLISIS EN FRECUENCIA ----------------------------------------
 
 ## Señal de aceleración vertical (resto la gravedad que me da una buena aproximación)
