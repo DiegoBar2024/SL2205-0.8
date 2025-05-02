@@ -1,6 +1,6 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
-from sereTestLib.Cinematica.SegmentacionM1 import *
+from sereTestLib.Cinematica.Segmentacion import *
 import emd
 
 ## ------------------------------------- INTEGRACIÓN ACELERACIÓN ---------------------------------------

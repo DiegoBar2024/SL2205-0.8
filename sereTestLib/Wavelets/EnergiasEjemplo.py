@@ -13,7 +13,7 @@ T = 1.0 / 200
 x = np.linspace(0.0, N * T, N, endpoint = False)
 
 ## Función
-y = 2 * np.cos(20 * 2.0 * np.pi * x) + 2 * np.cos(2.25 * 2.0 * np.pi * x) + 20 * np.cos(75 * 2.0 * np.pi * x)
+y = 20 * np.cos(20 * 2.0 * np.pi * x) + 40 * np.cos(2.25 * 2.0 * np.pi * x) + 20 * np.cos(75 * 2.0 * np.pi * x)
 
 ## ENERGÍA DE LA SEÑAL EN EL DOMINIO DEL TIEMPO
 
@@ -84,6 +84,13 @@ for wavelet in wavelets_discretas:
 
 print("Energía DWT: {}".format(energia))
 
+## Reconstruyo la señal con los approximation coefficients
+inverso_dwt = pywt.idwt(cA, np.zeros(len(cA)), wavelet)
+
+plt.plot(y)
+plt.plot(inverso_dwt)
+plt.show()
+
 ## Descomposición multinivel usando DWT
 coefs = pywt.wavedec(data = y, wavelet = 'db20', mode = 'periodization', level = 10)
 
@@ -124,14 +131,14 @@ energias = []
 for banda in subbandas[::-1]:
 
     ## Agrego el rango a la lista de energía
-    rangos.append("{} - {}".format(banda[0][0], banda[0][1]))
+    rangos.append("{} - {}".format(round(banda[0][0], 3), round(banda[0][1], 3)))
 
     ## Agrego la energia relativa a la lista de energias
     energias.append(banda[1] / energia_multinivel)
 
 ## Hago el gráfico de barras correspondiente
 plt.bar(np.array(rangos), np.array(energias))
-plt.xticks(rotation = 20)
+plt.xticks(rotation = 10)
 plt.xlabel("Frecuencias (Hz)")
 plt.ylabel("Energía Relativa")
 plt.show()

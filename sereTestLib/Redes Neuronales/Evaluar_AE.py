@@ -28,8 +28,12 @@ def evaluar_aelda(nombre_clasificador, nombre_autoencoder, ruta_clasificador, cl
         List of activities.
     
     """
+
+    ## Especifico la ruta donde se encuentran los escalogramas
+    ruta_escalogramas = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo_gp'
+
     ## Especifico los parámetros de la inferencia
-    paramsV = {'data_dir' : dir_escalogramas_nuevo_test,
+    paramsV = {'data_dir' : ruta_escalogramas,
                         'dim': inDim,
                         'batch_size': batch_size,
                         'shuffle': False,
@@ -72,6 +76,12 @@ def classify_patient_aelda(patient_number, clf_model, modelo, clasificador, resu
             ## Determino la predicción del clasificador ante mi muestra de entrada
             pat_predictions = clf_model.fit_predict(pat_intermediate)
 
+        ## En caso de que tenga un clasificador kmeans (clustering)
+        elif clasificador == "kmeans":
+
+            ## Hago la predicción de los datos en base al espacio latente
+            pat_predictions = clf_model.predict(pat_intermediate)
+
         ## En caso de que el clasificador no sea "hierarchical"
         else:
 
@@ -84,9 +94,23 @@ def classify_patient_aelda(patient_number, clf_model, modelo, clasificador, resu
                 ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
                 ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
                 pat_predictions = pat_predictions > 0.5
+            
+        ## En caso de que el clasificador usado sea un LDA
+        if clasificador == "lda":
+
+            ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
+            ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
+            pat_predictions = pat_predictions > 0.5    
 
             ## En caso de que el clasificador sea una red neuronal
             if clasificador == "NN":
+
+                ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
+                ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
+                pat_predictions = pat_predictions > 0.5
+
+            ## En caso de que el clasificador usado sea un SVM
+            if clasificador == "svm":
 
                 ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
                 ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
@@ -117,7 +141,7 @@ def write_patient_info(nombre_clasificador, nombre_autoencoder, pat_number, acti
     ruta_results = results_path + "/S" + str(pat_number) + "/"
 
     ## Especifico la ruta completa del archivo de texto para el cual se almacenarán los resultados de la inferencia del paciente
-    ruta_inferencia = ruta_results + "Resultados" + ".txt"
+    ruta_inferencia = ruta_results + "Resultados_" + nombre_clasificador + ".txt"
 
     ## En caso de que la ruta correspondiente al paciente no exista
     if not os.path.exists(ruta_results):

@@ -1,6 +1,6 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
-from SegmentacionM1 import *
+from sereTestLib.Cinematica.Segmentacion import *
 import pandas as pd
 import os
 

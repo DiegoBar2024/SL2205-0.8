@@ -73,23 +73,10 @@ def ae_train_save_model(autoencoder_name, path_to_scalograms_train = dir_escalog
     # Especifico la extensión del archivo del modelo
     model_extension = '.h5'
 
-    ## En caso de que el nombre de la función de costo no sea "MS_SSIM" (por defecto está en MSE) 
-    if loss_name != 'ms_ssim':
-
-        ## Construyo el modelo de autoencoder correspondiente
-        ## <<dim_input>> contiene las dimensiones del tensor de entrada al autoencoder (largo, ancho, profundidad)
-        ## <<latentDim>> contiene las dimensiones del espacio codificado del autoencoder (en principio 256)
-        autoencoder = ae_model_builder(dim_input = input_dimension, latentDim = latent_dimension)
-    
-    ## En caso de que la función de costo sea "MS_SSIM" ejecuto lo siguiente
-    else:
-
-        basic_path = modo_ae + str(latent_dimension) + "".join(act_ae) + str(num_epochs)
-        autoencoder = keras.models.load_model(model_path + autoencoder_name+'.h5')
-
-        #autoencoder=keras.models.load_model(model_path + autoencoder_name, custom_objects={"ssim_loss":ssim_loss})
-        autoencoder.trainable = True
-        autoencoder.compile(optimizer = tf.keras.optimizers.Adam(lr= 0.0001), loss = ms_ssim)
+    ## Construyo el modelo de autoencoder correspondiente
+    ## <<dim_input>> contiene las dimensiones del tensor de entrada al autoencoder (largo, ancho, profundidad)
+    ## <<latentDim>> contiene las dimensiones del espacio codificado del autoencoder (en principio 256)
+    autoencoder = ae_model_builder(dim_input = input_dimension, latentDim = latent_dimension)
 
     ## En caso de que la bandera <<debug>> se encuentre seteada en True
     if debug:

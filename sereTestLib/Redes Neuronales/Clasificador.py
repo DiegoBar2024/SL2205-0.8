@@ -12,14 +12,14 @@ from Modelo_CLAS import *
 
 ## ------------------------------------- SEPARACIÓN DE MUESTRAS ----------------------------------------
 
-## Especifico la ruta donde se encuentran los archivos
-ruta_escalogramas =  'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/train/'
+## Especifico la ruta donde van a estar los escalogramas de entrenamiento
+ruta_escalogramas = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo_gp'
 
 ## Obtengo una lista de todos los archivos presentes en la ruta donde se encuentran los escalogramas nuevos
-archivos_escalogramas = [archivo for archivo in os.listdir(ruta_escalogramas)]
+archivos_escalogramas = [archivo for archivo in os.listdir(ruta_escalogramas + '/')]
 
 ## Importación de etiquetas (provenientes del fichero de ingesta_etiquetas())
-(x_inestables_train_clf, x_estables_train_clf, x_inestables_val_clf, x_estables_val_clf, x_ae_train, x_ae_val, x_estables_ae_train, x_inestables_ae_train, x_estables_ae_val, x_inestables_ae_val) = ingesta_etiquetas() 
+(x_inestables_train_clf, x_estables_train_clf, x_inestables_val_clf, x_estables_val_clf, x_ae_train, x_ae_val) = ingesta_etiquetas() 
 
 ## <<train>> va a tener el conjunto de IDs de pacientes que se van a usar para el entrenamiento
 train = np.concatenate((x_inestables_train_clf, x_estables_train_clf), axis = None)
@@ -57,22 +57,22 @@ val_estables = np.intersect1d(lista_pacientes_existentes, x_estables_val_clf)
 ## ----------------------------------- ENTRENAMIENTO Y VALIDACIÓN --------------------------------------
 
 ## Especifico la ruta de donde yo voy a cargar el modelo del autoencoder
-ruta_ae = 'C:\\Users\\diego/Dropbox/PROJECTS/SL2205/sereData/Modelos/autoencoder/ModeloAutoencoder/'
+ruta_ae = 'C:/Yo/Tesis/sereData/sereData/Modelos/autoencoder/ModeloAutoencoder/'
 
 ## Especifico la ruta de donde yo voy a guardar el modelo del clasificador
-ruta_clf = 'C:\\Users\\diego/Dropbox/PROJECTS/SL2205/sereData/Modelos/clasificador/ModeloClasificador/'
+ruta_clf = 'C:/Yo/Tesis/sereData/sereData/Modelos/clasificador/ModeloClasificador/'
 
 ## Especifico el nombre del modelo del autoencoder
-nombre_autoencoder = 'AutoencoderUCU'
-
-## Especifico el nombre que le voy a dar al modelo del clasificador
-clasificador_name = 'ClasificadorUCU_Hierarchical'
+nombre_autoencoder = 'AutoencoderUCU_gp'
 
 ## Especifico el tipo de clasificador que voy a entrenar
-clasificador = 'hierarchical'
+clasificador = 'lda'
+
+## Especifico el nombre que le voy a dar al modelo del clasificador
+clasificador_name = 'ClasificadorUCU_{}'.format(clasificador)
 
 ## Cargo el modelo del autoencoder a partir de la dirección determinada
 modelo_autoencoder = ae_load_model(ruta_ae, nombre_autoencoder)
 
 ## Llamo a la función del entrenamiento del clasificador
-entrenamiento_clasificador(clasificador_name, train_inestables, train_estables, val_inestables, val_estables, modelo_autoencoder, clasificador, dir_escalogramas_nuevo_train, dir_escalogramas_nuevo_test, act_clf)
+entrenamiento_clasificador(clasificador_name, train_inestables, train_estables, val_inestables, val_estables, modelo_autoencoder, clasificador, ruta_escalogramas, act_clf)

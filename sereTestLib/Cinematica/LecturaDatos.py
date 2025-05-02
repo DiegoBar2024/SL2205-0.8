@@ -1,16 +1,12 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
 import pandas as pd
-from matplotlib import pyplot as plt
 import numpy as np
 from Muestreo import *
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
 def LecturaDatos(id_persona, lectura_datos_propios = False):
-
-    ## Creo una variable que me indique si se están leyendo los datos de Serelabs o los propios
-    lectura_datos_propios = False
 
     ## En caso de que esté leyendo datos propios, le doy el procesamiento correspondiente
     if lectura_datos_propios:
@@ -22,16 +18,29 @@ def LecturaDatos(id_persona, lectura_datos_propios = False):
         ## --- Los tres ejes de coordenadas deben formar una terna directa de vectores ---
         ## -------------------------------------------------------------------------------
 
-        ## Especifico identificador numérico para la persona
-        id_persona = 1
+        ## Nombre del paciente
+        nombre_persona = "Diego Barboza"
 
+        ## Fecha de nacimiento del paciente "DD/MM/YYYY"
+        nacimiento_persona = "02/04/2002"
+
+        ## SENSOR 952D
         ## Pruebas estandarizadas de 50cm por paso
-        ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session5_Rodrigo_1_952D/505_Session5_Shimmer_952D_Calibrated_PC_Rodrigo_1_952D.txt"
-        # ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session3_Sabrina_1_952D/505_Session3_Shimmer_952D_Calibrated_PC_Sabrina_1_952D.txt"
+        # ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session5_Rodrigo_1_952D/505_Session5_Shimmer_952D_Calibrated_PC_Rodrigo_1_952D.txt"
+        ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session3_Sabrina_1_952D/505_Session3_Shimmer_952D_Calibrated_PC_Sabrina_1_952D.txt"
 
         ## Pruebas sin estandarizar (marcha libre)
         # ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session4_Sabrina_2_952D/505_Session4_Shimmer_952D_Calibrated_PC_Sabrina 2_952D.txt"
         # ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session6_Rodrigo_2_952D/505_Session6_Shimmer_952D_Calibrated_PC.txt"
+
+        ## SENSOR B5B6
+        ## Pruebas estandarizadas de 50cm por paso
+        #ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-12-12_18.43.36_DefaultTrial_PC_Session3_Sabrina_1_B5B6/DefaultTrial_Session3_Shimmer_B5B6_Calibrated_PC_Sabrina_1_B5B6.txt"
+        #ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-12-12_18.43.36_DefaultTrial_PC_Session5_Rodrigo_1_B5B6/DefaultTrial_Session5_Shimmer_B5B6_Calibrated_PC_Rodrigo_1_B5B6.txt"
+
+        ## Pruebas sin estandarizar (marcha libre)
+        #ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-12-12_18.43.36_DefaultTrial_PC_Session4_Sabrina_2_B5B6/DefaultTrial_Session4_Shimmer_B5B6_Calibrated_PC_Sabrina_2_B5B6.txt"
+        #ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-12-12_18.43.36_DefaultTrial_PC_Session6_Rodrigo_2_B5B6/DefaultTrial_Session6_Shimmer_B5B6_Calibrated_PC_Rodrigo_2_B5B6.txt"
 
         ## Abro el fichero correspondiente
         fichero = open(ruta, "r")
@@ -131,4 +140,4 @@ def LecturaDatos(id_persona, lectura_datos_propios = False):
         periodoMuestreo = PeriodoMuestreo(data)
     
     ## Retorno los resultados al realizar la lectura correspondiente
-    return data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona
+    return data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona, tiempo

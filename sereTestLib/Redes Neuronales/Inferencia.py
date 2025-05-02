@@ -27,16 +27,13 @@ def Inferencia(sample_id, result: results = results(), plot=False):
     result.long_sample = long_sample
 
     ## Especifico la ruta de donde yo voy a cargar el modelo del autoencoder
-    ruta_ae = 'C:\\Users\\diego/Dropbox/PROJECTS/SL2205/sereData/Modelos/autoencoder/ModeloAutoencoder/'
+    ruta_ae = 'C:/Yo/Tesis/sereData/sereData/Modelos/autoencoder/ModeloAutoencoder/'
 
     ## Especifico la ruta de donde yo voy a guardar el modelo del clasificador
-    ruta_clf = 'C:\\Users\\diego/Dropbox/PROJECTS/SL2205/sereData/Modelos/clasificador/ModeloClasificador/'
+    ruta_clf = 'C:/Yo/Tesis/sereData/sereData/Modelos/clasificador/ModeloClasificador/'
 
     ## Especifico el nombre del modelo del autoencoder
-    nombre_autoencoder = 'AutoencoderUCU'
-
-    ## Especifico el nombre que le voy a dar al modelo del clasificador
-    clasificador_name = 'ClasificadorUCU_Hierarchical'
+    nombre_autoencoder = 'AutoencoderUCU_gp'
 
     ## Cargo el modelo del autoencoder especificado en la ruta anterior
     modelo_autoencoder = ae_load_model(ruta_ae, nombre_autoencoder)
@@ -52,18 +49,21 @@ def Inferencia(sample_id, result: results = results(), plot=False):
 
         # Creo el directorio de salida de datos
         os.makedirs(results_path)
-    
-    ## Obtengo el nombre del clasificador con su correspondiente extensión .joblib
-    clf_name = clasificador_name + '.joblib'
 
     ## Obtengo el nombre del autoencoder
     result.ae_name = nombre_autoencoder
 
+    ## Especifico el tipo de clasificador
+    clasificador = "lda"
+
+    ## Especifico el nombre del clasificador
+    clasificador_name = 'ClasificadorUCU_lda'
+
+    ## Obtengo el nombre del clasificador con su correspondiente extensión .joblib
+    clf_name = clasificador_name + '.joblib'
+
     ## Obtengo el nombre del clasificador
     result.clf_name = clasificador_name
-
-    ## Especifico el tipo de clasificador
-    clasificador = 'hierarchical'
 
     ## Obtengo la representación latente de las características asociadas a cada escalograma tridimensional
     ## Luego de hacer eso hago la inferencia correspondiente a la muestra con el clasificador entrenado
@@ -76,7 +76,7 @@ def Inferencia(sample_id, result: results = results(), plot=False):
 if __name__== '__main__':
 
     ## Especifico el identificador numérico del paciente
-    i = 122
+    i = 103
 
     ## Ejecuto la inferencia del clasificador
     result = Inferencia(i)

@@ -17,17 +17,20 @@ from PIL import Image as im
 ## Obtengo el identificador del paciente para el cual voy a tener las muestras comprimidas
 id_persona = 114
 
-## Especifico la ruta de donde voy a leer los escalogramas
-ruta_escalogramas = "C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/test/S{}/".format(id_persona)
+## Especifico la ruta donde están los escalogramas
+ruta_escalogramas = "C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo_gp"
+
+## Especifico la ruta de donde voy a leer los escalogramas del paciente
+ruta_escalogramas_paciente = "C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo_gp/S{}/".format(id_persona)
 
 ## Especifico la ruta en la cual yo voy a guardar el modelo de autoencoder
-ruta_ae = 'C:\\Users\\diego/Dropbox/PROJECTS/SL2205/sereData/Modelos/autoencoder/ModeloAutoencoder/'
+ruta_ae = 'C:/Yo/Tesis/sereData/sereData/Modelos/autoencoder/ModeloAutoencoder/'
 
 ## Especifico el nombre del autoencoder
-nombre_autoencoder = 'AutoencoderUCU_v2'
+nombre_autoencoder = 'AutoencoderUCU_gp'
 
 ## Especifico la ruta en la cual yo voy a guardar las muestras reconstruidas
-ruta_reconstruidas = 'C:/Yo/Tesis/sereData/sereData/Dataset/reconstrucciones_ae/S114/'
+ruta_reconstruidas = 'C:/Yo/Tesis/sereData/sereData/Dataset/reconstrucciones_ae_gp/S{}/'.format(id_persona)
 
 ## Cargo el modelo entrenado del autoencoder
 modelo_autoencoder = ae_load_model(ruta_ae, nombre_autoencoder)
@@ -39,16 +42,16 @@ if not os.path.exists(ruta_reconstruidas):
     os.makedirs(ruta_reconstruidas)
 
 ## Recuerdo que cada uno de los archivos se corresponde con un escalograma (tensor tridimensional)
-archivos = [archivo for archivo in os.listdir(ruta_escalogramas) if archivo.endswith("npz")]
+archivos = [archivo for archivo in os.listdir(ruta_escalogramas_paciente) if archivo.endswith("npz")]
 
 ## ------------------------------------ RECONSTRUCCIÓN Y GUARDADO  -------------------------------------
 
 ## Inicializo una variable booleana diciendo si quiero hacer guardado o no
-hacer_guardado = False
+hacer_guardado = True
 
 ## Parámetros del autoencoder
 ## IMPORTANTE EL HECHO DE QUE LOS SEGMENTOS NO ESTÉN DESORDENADOS
-params = {'data_dir' :  dir_escalogramas_nuevo_test,
+params = {'data_dir' :  ruta_escalogramas,
                         'dim' : inDim,
                         'batch_size' : batch_size,
                         'shuffle' : False,
@@ -79,7 +82,7 @@ indicadores_ssim = []
 for i in range (img_reconstruida.shape[0]):
 
     ## Abro el archivo con la extensión .npz donde se encuentra el escalograma
-    escalograma_original = np.load(ruta_escalogramas + archivos[i])['X']
+    escalograma_original = np.load(ruta_escalogramas_paciente + archivos[i])['X']
 
     ## Obtengo el escalograma asociado al segmento actual
     escalograma_reconstruido = img_reconstruida[i,:,:,:]

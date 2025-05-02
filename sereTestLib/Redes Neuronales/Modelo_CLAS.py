@@ -75,7 +75,7 @@ def build_model(n_hidden, n_neurons, input_shape = (None, 256)):
 
     return model
 
-def entrenamiento_clasificador(clf_name, unstable_train, stable_train, unstable_validation, stable_validation, autoencoder_model, clasificador, scalogram_path_train = dir_preprocessed_data_train, scalogram_path_val = dir_preprocessed_data_test, activities = act_clf):
+def entrenamiento_clasificador(clf_name, unstable_train, stable_train, unstable_validation, stable_validation, autoencoder_model, clasificador, scalogram_path, activities = act_clf):
     """
     Function that creates and fits the classifier with the training set and predicts the validation set.
 
@@ -92,14 +92,14 @@ def entrenamiento_clasificador(clf_name, unstable_train, stable_train, unstable_
     """
 
     ## Parámetros del entrenamiento del clasificador
-    paramsT = {'data_dir' : scalogram_path_train,
+    paramsT = {'data_dir' : scalogram_path,
                         'dim': inDim,
                         'batch_size': batch_size,
                         'shuffle': True,
                         'activities': activities}
 
     ## Parámetros de la validación del clasificador
-    paramsV = {'data_dir' : scalogram_path_val,
+    paramsV = {'data_dir' : scalogram_path,
                         'dim': inDim,
                         'batch_size': batch_size,
                         'shuffle': False,
@@ -123,8 +123,8 @@ def entrenamiento_clasificador(clf_name, unstable_train, stable_train, unstable_
     stable_validate_intermediate = patient_group_aelda(stable_validation, autoencoder_model, layer_name = layer_name, **paramsV)
 
     ## CRITERIO DE ASIGNACIÓN DE ETIQUETAS
-    ## Los pacientes con la etiqueta "0" son INESTABLES
-    ## Los pacientes con la etiqueta "1" son ESTABLES
+    ## Los pacientes con la etiqueta "0" son ESTABLES
+    ## Los pacientes con la etiqueta "1" son INESTABLES
 
     ## Genero un vector con las etiquetas correspondientes para cada uno de los pacientes en función de su estabilidad o no para el conjunto de ENTRENAMIENTO
     ground_truth_train = np.concatenate([np.zeros(np.shape(stable_train_intermediate)[0]), np.ones(np.shape(unstable_train_intermediate)[0])]) 
@@ -184,8 +184,10 @@ def train_clasificador(values, ground_truth, file_clf, clasificador, X_val = Non
         Trained classifier
     """
     
-    # En caso de que no exista, se crea el directorio de salida de datos
+    # En caso de que no exista
     if not os.path.exists(model_path_clf):
+
+        ## Se crea el directorio de salida de datos
         os.makedirs(model_path_clf)
 
     ## En caso de que el clasificador sea del tipo LDA
@@ -226,7 +228,7 @@ def train_clasificador(values, ground_truth, file_clf, clasificador, X_val = Non
         ## Llevo a cabo el entrenamiento del clasificador
         ## <<values>> es la secuencia de valores de entrada
         ## <<ground_truth>> es la secuencia de valores de salida
-        clf.fit(values, ground_truth, epochs = 100, validation_data = (X_val, y_val), callbacks = [es])
+        clf.fit(values, ground_truth, epochs = num_epochs, validation_data = (X_val, y_val), callbacks = [es])
 
     ## En caso de que el clasificador sea del tipo SVM
     elif clasificador == 'svm':
@@ -261,22 +263,6 @@ def train_clasificador(values, ground_truth, file_clf, clasificador, X_val = Non
         ## <<values>> es la secuencia de valores de entrada
         ## <<ground_truth>> es la secuencia de valores de salida
         clf.fit(values, ground_truth)
-
-    ## En caso de que el clasificador sea del tipo VOTING
-    ## En éste caso defino varios clasificadores y comparo el desempeño para cada uno de ellos
-    elif clasificador == "voting":
-
-        ## Defino el clasificador LDA (Linear Discriminant Analysis)
-        clf1 = LinearDiscriminantAnalysis()
-
-        ## Especifico los parámetros del clasificador SVM (Support Vector Machine)
-        clf2 = SVC(C = 1, gamma = 1, kernel = 'rbf', probability = True)
-
-        ## Especifico los parámetros del clasificador RF (Random Forest)
-        clf3 = RandomForestClassifier(n_estimators = 100, min_samples_split = 10, max_depth = 5)
-
-        clf = VotingClassifier(estimators=[('lda', clf1), ('svc', clf2),("rf",clf3)], voting='hard')
-        clf.fit(values, ground_truth)
     
     ## En caso de que el clasificador sea del tipo RF (Random Forest)
     elif clasificador == 'RF':
@@ -304,7 +290,13 @@ def predict_clf(clf, intermediate_layer, clasificador = "None"):
     if clasificador == "hierarchical":
 
         ## Hago la predicción de los datos en base al espacio latente
-        clf_predict = clf.fit_predict(intermediate_layer)
+        pat_predictions = clf.fit_predict(intermediate_layer)
+    
+    ## En caso de que tenga un clasificador kmeans (clustering)
+    if clasificador == "kmeans":
+
+        ## Hago la predicción de los datos en base al espacio latente
+        pat_predictions = clf.predict(intermediate_layer)
 
     ## En caso de que el clasificador no sea "hierarchical"
     else:
@@ -326,4 +318,18 @@ def predict_clf(clf, intermediate_layer, clasificador = "None"):
             ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
             pat_predictions = pat_predictions > 0.5
 
-    return clf_predict
+        ## En caso de que el clasificador usado sea un LDA
+        if clasificador == "lda":
+
+            ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
+            ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
+            pat_predictions = pat_predictions > 0.5
+            
+        ## En caso de que el clasificador usado sea un SVM
+        if clasificador == "svm":
+
+            ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
+            ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
+            pat_predictions = pat_predictions > 0.5
+
+    return pat_predictions
