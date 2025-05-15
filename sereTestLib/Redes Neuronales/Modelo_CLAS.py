@@ -127,7 +127,8 @@ def entrenamiento_clasificador(clf_name, unstable_train, stable_train, unstable_
     ## Los pacientes con la etiqueta "1" son INESTABLES
 
     ## Genero un vector con las etiquetas correspondientes para cada uno de los pacientes en función de su estabilidad o no para el conjunto de ENTRENAMIENTO
-    ground_truth_train = np.concatenate([np.zeros(np.shape(stable_train_intermediate)[0]), np.ones(np.shape(unstable_train_intermediate)[0])]) 
+    ground_truth_train = np.concatenate([np.zeros(np.shape(stable_train_intermediate)[0]), np.ones(np.shape(unstable_train_intermediate)[0])])
+    # ground_truth_train = np.concatenate([- np.ones(np.shape(stable_train_intermediate)[0]), np.ones(np.shape(unstable_train_intermediate)[0])]) 
 
     ## <<train_values>> me va a contener las muestras que voy a usar para el entrenamiento del clasificador, según la etiqueta correspondiente
     ## Tiene la forma de (cantidad de muestras de entrenamiento, 256)
@@ -135,6 +136,7 @@ def entrenamiento_clasificador(clf_name, unstable_train, stable_train, unstable_
 
     ## Genero un vector con las etiquetas correspondientes para cada uno de los pacientes en función de su estabilidad o no para el conjunto de validación
     ground_truth_validate = np.concatenate([np.zeros(np.shape(stable_validate_intermediate)[0]), np.ones(np.shape(unstable_validate_intermediate)[0])]) 
+    # ground_truth_validate = np.concatenate([- np.ones(np.shape(stable_validate_intermediate)[0]), np.ones(np.shape(unstable_validate_intermediate)[0])]) 
 
     ## <<val_values>> me va a contener las muestras que voy a usar para el entrenamiento del clasificador, según la etiqueta correspondiente
     ## Tiene la forma de (cantidad de muestras de validación, 256)

@@ -4,6 +4,7 @@ import sys
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/clasificador')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/utils')
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Redes Neuronales')
 from parameters import *
 from Modelo_AE import *
 import os
@@ -29,13 +30,13 @@ def Inferencia(sample_id, result: results = results(), plot=False):
     result.long_sample = long_sample
 
     ## Especifico la ruta de donde yo voy a cargar el modelo del autoencoder
-    ruta_ae = 'C:/Yo/Tesis/sereData/sereData/Modelos/autoencoder/ModeloAutoencoder/'
+    ruta_ae = 'C:/Yo/Tesis/sereData/sereData/Modelos/autoencoder/Augmented_Caminando_100_mse_dense_base_classificator/'
 
     ## Especifico la ruta de donde yo voy a guardar el modelo del clasificador
-    ruta_clf = 'C:/Yo/Tesis/sereData/sereData/Modelos/clasificador/ModeloClasificador/'
+    ruta_clf = 'C:/Yo/Tesis/sereData/sereData/Modelos/clasificador/lda_Augmented/'
 
     ## Especifico el nombre del modelo del autoencoder
-    nombre_autoencoder = 'AutoencoderUCU_gp'
+    nombre_autoencoder = 'Augmented_Caminando_100_mse_dense_base_classificator'
 
     ## Cargo el modelo del autoencoder especificado en la ruta anterior
     modelo_autoencoder = ae_load_model(ruta_ae, nombre_autoencoder)
@@ -59,7 +60,7 @@ def Inferencia(sample_id, result: results = results(), plot=False):
     clasificador = "lda"
 
     ## Especifico el nombre del clasificador
-    clasificador_name = 'ClasificadorUCU_lda'
+    clasificador_name = 'lda_Augmented'
 
     ## Obtengo el nombre del clasificador con su correspondiente extensión .joblib
     clf_name = clasificador_name + '.joblib'
