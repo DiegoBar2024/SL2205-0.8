@@ -192,6 +192,12 @@ if __name__== '__main__':
     ## Especifico la actividad que estoy analizando
     actividad = 'Escalera'
 
+    ## Defino la cantidad de muestras de la ventana que voy a tomar
+    muestras_ventana = 200
+
+    ## Defino la cantidad de muestras de solapamiento entre ventanas
+    muestras_solapamiento = 100
+
     ## En caso de que quiera generar y guardar la base de datos
     if guardar:
 
@@ -235,7 +241,7 @@ if __name__== '__main__':
                     periodoMuestreo = PeriodoMuestreo(data)
 
                 ## Hago el cálculo del vector de SMA para dicha persona
-                vector_SMA = DeteccionActividades(acel, tiempo, 200, 100, periodoMuestreo, cant_muestras)
+                vector_SMA = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras)
 
                 ## Hago la lectura del archivo JSON previamente existente
                 with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), 'r') as openfile:
@@ -246,7 +252,7 @@ if __name__== '__main__':
                 ## Agrego en el diccionario los datos de SMAs el vector correspondiente al paciente actual
                 vectores_SMAs[str(id_persona)] = vector_SMA
 
-                ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir el diccionario de energías
+                ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
                 with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), "w") as outfile:
 
                     ## Escribo el diccionario actualizado
@@ -324,6 +330,47 @@ if __name__== '__main__':
         ## Defino el diccionario con los correspondientes valores de SMA para cada actividad para luego hacer el boxplot
         valores_SMA = {'Parado': valores_SMA_parado, 'Sentado': valores_SMA_sentado, 'Caminando': valores_SMA_caminando, 'Escaleras': valores_SMA_escaleras}
 
-        ## Hago el boxplot comparando éstos dos métodos
+        ## Hago el boxplot comparando los valores de SMA para las actividades consideradas
         plt.boxplot(valores_SMA.values(), tick_labels = valores_SMA.keys())
         plt.show()
+
+        ## Defino un vector con todos los valores de SMA correspondientes a movimiento (caminando y escaleras)
+        SMA_movimiento = valores_SMA_caminando + valores_SMA_escaleras
+
+        ## Defino un vector con todos los valores de SMA correspondientes a reposo (sentado y parado)
+        SMA_reposo = valores_SMA_sentado + valores_SMA_parado
+
+        ## Construyo un diccionario diferenciando los valores de SMA para movimiento y reposo
+        valores_SMA_actividad = {'Movimiento' : SMA_movimiento, 'Reposo' : SMA_reposo}
+
+        ## Construyo un vector de indicadores estadísticos para los valores de SMA en movimiento
+        stats_SMA_mov = [np.mean(SMA_movimiento), np.median(SMA_movimiento), np.std(SMA_movimiento)]
+
+        ## Construyo un vector de indicadores estadísticos para los valores de SMA en reposo
+        stats_SMA_rep = [np.mean(SMA_reposo), np.median(SMA_reposo), np.std(SMA_reposo)]
+
+        ## El criterio que tomo para definir el umbral de SMA es el siguiente:
+        ## Sea a = Media(SMA_movimiento) - Desv(SMA_movimiento)
+        ## Sea b = Media(SMA_reposo) + Desv(SMA_reposo)
+        ## Entonces el valor del umbral lo ajusto al punto medio de a y b para que quede margen: umbral = (a + b) / 2
+        umbral = (stats_SMA_mov[0] - stats_SMA_mov[2] + stats_SMA_rep[0] + stats_SMA_rep[2]) / 2
+
+        ## Hago el boxplot comparando los valores de SMA para las actividades de movimiento y reposo
+        plt.boxplot(valores_SMA_actividad.values(), tick_labels = valores_SMA_actividad.keys())
+        plt.axhline(y = umbral, color = 'r', linestyle = '-')
+        plt.show()
+
+        ## Hago la lectura del archivo JSON previamente existente
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", 'r') as openfile:
+
+            # Cargo el valor existente del JSON
+            dicc_umbral = json.load(openfile)
+        
+        ## Genero el diccionario conteniendo el valor del umbral calculado
+        dicc_umbral = {'U_{}_{}'.format(muestras_ventana, muestras_solapamiento): umbral}
+        
+        ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", "w") as outfile:
+
+            ## Escribo el diccionario actualizado
+            json.dump(dicc_umbral, outfile)

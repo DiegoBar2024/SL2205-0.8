@@ -50,6 +50,8 @@ def Segmentacion(picos_sucesivos, toe_offs, muestras_paso, periodoMuestreo, acc_
 
             ## Agrego el paso a la lista de pasos defectuosos
             pasos_defectuosos.append({'IC': (picos_sucesivos[i], picos_sucesivos[i + 1])})
+    
+    print("Cantidad de pasos defectuosos: {}".format(pasos_defectuosos))
 
     ## ---------------------------------- TRATAMIENTO DE PASOS DEFECTUOSOS ---------------------------------
 
