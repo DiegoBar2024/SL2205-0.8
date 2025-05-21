@@ -20,7 +20,7 @@ ruta_ae = 'C:\\Users\\diego/Dropbox/PROJECTS/SL2205/sereData/Modelos/autoencoder
 nombre_autoencoder = 'AutoencoderUCU'
 
 ## Especifico la ruta en la cual yo voy a guardar las muestras comprimidas
-ruta_comprimidas = 'C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae/S114/'
+ruta_comprimidas = 'C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae_gp/S114/'
 
 ## En caso de que el directorio no exista
 if not os.path.exists(ruta_comprimidas):
@@ -51,4 +51,4 @@ espacio_latente = patient_group_aelda(lista_IDs, modelo_autoencoder, layer_name 
 
 ## Guardo el espacio latente como una matriz bidimensional
 ## Las filas van a ser cada una de las muestras observadas mientras que las columnas corresponden a los features (formato tidy)
-np.savez_compressed(ruta_comprimidas + 'S{}_latente'.format(id_persona), y = 0, X = espacio_latente)
+np.savez_compressed(ruta_comprimidas + 'S{}_latente'.format(114), y = 0, X = espacio_latente)

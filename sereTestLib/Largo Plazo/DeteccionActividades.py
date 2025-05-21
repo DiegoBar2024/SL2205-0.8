@@ -180,17 +180,16 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
 ## Ejecución principal del programa
 if __name__== '__main__':
 
-    ## Inicializo una bandera la cual me permita distinguir si quiero guardar o procesar
-    guardar = False
-    
+    ## Opción 1: Generar los ficheros JSON con los SMA para cada actividad
+    ## Opción 2: Calcular el valor del umbral óptimo según los valores de SMA en los archivos JSON
+    ## Opción 3: Llevar a cabo la clasificación de actividades
+    opcion = 3
+
     ## Hago la lectura de los datos generales de los pacientes
     pacientes, ids_existentes = LecturaDatosPacientes()
 
     ## Especifico el diccionario de actividades con sus identificadores
     actividades = {'Sentado':'1','Parado':'2','Caminando':'3','Escalera':'4'}
-
-    ## Especifico la actividad que estoy analizando
-    actividad = 'Escalera'
 
     ## Defino la cantidad de muestras de la ventana que voy a tomar
     muestras_ventana = 200
@@ -198,74 +197,77 @@ if __name__== '__main__':
     ## Defino la cantidad de muestras de solapamiento entre ventanas
     muestras_solapamiento = 100
 
-    ## En caso de que quiera generar y guardar la base de datos
-    if guardar:
+    ## En caso de que quiera generar y guardar la base de datos (es decir si tengo la opción 1)
+    if opcion == 1:
 
         ## Itero para cada uno de los identificadores de los pacientes
         for id_persona in ids_existentes:
+        
+            ## Itero para cada una de las cuatro actividades que tengo detectada
+            for actividad in list(actividades.keys()):
 
-            ## Coloco un bloque try en caso de que ocurra algún error de procesamiento
-            try:
+                ## Coloco un bloque try en caso de que ocurra algún error de procesamiento
+                try:
 
-                ## Ruta del archivo
-                ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/{}S{}.csv".format(id_persona, actividades[actividad], id_persona)
+                        ## Ruta del archivo
+                        ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/{}S{}.csv".format(id_persona, actividades[actividad], id_persona)
 
-                ## Selecciono las columnas deseadas
-                data = pd.read_csv(ruta)
+                        ## Selecciono las columnas deseadas
+                        data = pd.read_csv(ruta)
 
-                ## Armamos una matriz donde las columnas sean las aceleraciones
-                acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(data['AC_z'])]).transpose()
+                        ## Armamos una matriz donde las columnas sean las aceleraciones
+                        acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(data['AC_z'])]).transpose()
 
-                ## Armamos una matriz donde las columnas sean los valores de los giros
-                gyro = np.array([np.array(data['GY_x']), np.array(data['GY_y']), np.array(data['GY_z'])]).transpose()
+                        ## Armamos una matriz donde las columnas sean los valores de los giros
+                        gyro = np.array([np.array(data['GY_x']), np.array(data['GY_y']), np.array(data['GY_z'])]).transpose()
 
-                ## Separo el vector de tiempos del dataframe
-                tiempo = np.array(data['Time'])
+                        ## Separo el vector de tiempos del dataframe
+                        tiempo = np.array(data['Time'])
 
-                ## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
-                tiempo = (tiempo - tiempo[0]) / 1000
+                        ## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
+                        tiempo = (tiempo - tiempo[0]) / 1000
 
-                ## Cantidad de muestras de la señal
-                cant_muestras = len(tiempo)
+                        ## Cantidad de muestras de la señal
+                        cant_muestras = len(tiempo)
 
-                ## En caso de que no haya un período de muestreo bien definido debido al vector de tiempos de la entrada
-                if all([x == True for x in np.isnan(tiempo)]):
+                        ## En caso de que no haya un período de muestreo bien definido debido al vector de tiempos de la entrada
+                        if all([x == True for x in np.isnan(tiempo)]):
 
-                    ## Asigno arbitrariamente una frecuencia de muestreo de 200Hz es decir período de muestreo de 0.005s
-                    periodoMuestreo = 0.005
+                            ## Asigno arbitrariamente una frecuencia de muestreo de 200Hz es decir período de muestreo de 0.005s
+                            periodoMuestreo = 0.005
 
-                ## En caso de que el vector de tiempos contenga elementos numéricos
-                else:
+                        ## En caso de que el vector de tiempos contenga elementos numéricos
+                        else:
 
-                    ## Calculo el período de muestreo en base al vector correspondiente
-                    periodoMuestreo = PeriodoMuestreo(data)
+                            ## Calculo el período de muestreo en base al vector correspondiente
+                            periodoMuestreo = PeriodoMuestreo(data)
 
-                ## Hago el cálculo del vector de SMA para dicha persona
-                vector_SMA = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras)
+                        ## Hago el cálculo del vector de SMA para dicha persona
+                        vector_SMA = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras)
 
-                ## Hago la lectura del archivo JSON previamente existente
-                with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), 'r') as openfile:
+                        ## Hago la lectura del archivo JSON previamente existente
+                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), 'r') as openfile:
 
-                    # Cargo el diccionario el cual va a ser un objeto JSON
-                    vectores_SMAs = json.load(openfile)
+                            # Cargo el diccionario el cual va a ser un objeto JSON
+                            vectores_SMAs = json.load(openfile)
 
-                ## Agrego en el diccionario los datos de SMAs el vector correspondiente al paciente actual
-                vectores_SMAs[str(id_persona)] = vector_SMA
+                        ## Agrego en el diccionario los datos de SMAs el vector correspondiente al paciente actual
+                        vectores_SMAs[str(id_persona)] = vector_SMA
 
-                ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
-                with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), "w") as outfile:
+                        ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
+                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), "w") as outfile:
 
-                    ## Escribo el diccionario actualizado
-                    json.dump(vectores_SMAs, outfile)
+                            ## Escribo el diccionario actualizado
+                            json.dump(vectores_SMAs, outfile)
 
-            ## Si hay un error de procesamiento
-            except:
+                ## Si hay un error de procesamiento
+                except:
 
-                ## Que siga a la siguiente muestra
-                continue
+                    ## Que siga a la siguiente muestra
+                    continue
 
-    ## En caso de que quiera procesar el JSON dem y no guardarlo
-    else:
+    ## En caso de que quiera procesar los JSON de SMA para poder calcular el umbral de clasificación (opción 2)
+    elif opcion == 2:
 
         ## Hago la lectura del archivo JSON previamente existente
         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_Parado.json", 'r') as openfile:
@@ -367,6 +369,7 @@ if __name__== '__main__':
             dicc_umbral = json.load(openfile)
         
         ## Genero el diccionario conteniendo el valor del umbral calculado
+        ## La clave estará generada por la cantidad de muestras por ventana y la cantidad de muestras de solapamiento
         dicc_umbral = {'U_{}_{}'.format(muestras_ventana, muestras_solapamiento): umbral}
         
         ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
@@ -374,3 +377,65 @@ if __name__== '__main__':
 
             ## Escribo el diccionario actualizado
             json.dump(dicc_umbral, outfile)
+        
+    ## En caso de que quiera realizar la clasificación
+    else:
+
+        ## Hago la lectura del archivo JSON previamente existente
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", 'r') as openfile:
+
+            # Cargo el valor existente del JSON
+            dicc_umbral = json.load(openfile)
+
+        ## Especifico actividad de analisis
+        actividad = 'Parado'
+
+        ## Especifico el ID de la persona
+        id_persona = 303
+
+        ## Ruta del archivo
+        ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/{}S{}.csv".format(id_persona, actividades[actividad], id_persona)
+
+        ## Selecciono las columnas deseadas
+        data = pd.read_csv(ruta)
+
+        ## Armamos una matriz donde las columnas sean las aceleraciones
+        acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(data['AC_z'])]).transpose()
+
+        ## Armamos una matriz donde las columnas sean los valores de los giros
+        gyro = np.array([np.array(data['GY_x']), np.array(data['GY_y']), np.array(data['GY_z'])]).transpose()
+
+        ## Separo el vector de tiempos del dataframe
+        tiempo = np.array(data['Time'])
+
+        ## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
+        tiempo = (tiempo - tiempo[0]) / 1000
+
+        ## Cantidad de muestras de la señal
+        cant_muestras = len(tiempo)
+
+        ## En caso de que no haya un período de muestreo bien definido debido al vector de tiempos de la entrada
+        if all([x == True for x in np.isnan(tiempo)]):
+
+            ## Asigno arbitrariamente una frecuencia de muestreo de 200Hz es decir período de muestreo de 0.005s
+            periodoMuestreo = 0.005
+
+        ## En caso de que el vector de tiempos contenga elementos numéricos
+        else:
+
+            ## Calculo el período de muestreo en base al vector correspondiente
+            periodoMuestreo = PeriodoMuestreo(data)
+        
+        ## Hago el cálculo del vector de SMA para dicha persona
+        vector_SMA = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras)
+
+        ## Obtengo el valor del umbral para comparar
+        umbral = dicc_umbral['U_{}_{}'.format(muestras_ventana, muestras_solapamiento)]
+
+        ## Obtengo un vector con el resultado de la clasificación para el registro disponible de la actividad correspondiente
+        ## El i-ésimo valor de dicho vector va a estar dado por:
+        ## <<True>> si el i-ésimo segmento del registro se asocia con movimiento (caminar, subir/bajar escaleras)
+        ## <<False>> si el i-ésimo segmento del registro se asocia con reposo (parado, sentado)
+        clas_registro = np.array([vector_SMA]) > umbral
+
+        print(clas_registro)
