@@ -15,10 +15,10 @@ from ParametrosGaitPy import *
 ## ------------------------------------- CÁLCULO DE ESTADÍSTICAS --------------------------------------
 
 ## Especifico el identificador de la persona
-id_persona = 114
+id_persona = 256
 
 ## Lectura de los datos
-data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona, tiempo = LecturaDatos(id_persona, lectura_datos_propios = True)
+data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona, tiempo = LecturaDatos(id_persona, lectura_datos_propios = False)
 
 ## MÉTODO I: ALGORITMO PROPIO
 ## Cálculo de contactos iniciales

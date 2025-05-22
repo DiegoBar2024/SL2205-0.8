@@ -64,7 +64,7 @@ def ContactosTerminales(acel, cant_muestras, periodoMuestreo, graficar = False):
     ## -------------------------------------- DETECCIÓN PRIMER PICO ----------------------------------------
 
     ## Especifico un umbral predefinido para la detección de picos
-    umbral = 0.1
+    umbral = 0.2
 
     ## Hago la detección de picos para un umbral predefinido
     picos = DeteccionPicos(acc_VT_norm, umbral = umbral)

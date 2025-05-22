@@ -9,7 +9,7 @@ from Fourier import *
 ## ---------------------------------------- DETECCIÓN DE GIROS -----------------------------------------
 
 ## Especifico el identificador del paciente cuyos datos van a ser procesados
-id_persona = 299
+id_persona = 302
 
 ## Hago la lectura de los datos del registro de marcha del paciente
 data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona, tiempo = LecturaDatos(id_persona, lectura_datos_propios = True)
