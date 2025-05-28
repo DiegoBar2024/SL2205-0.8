@@ -8,7 +8,7 @@ from scipy.signal import find_peaks
 
 ## -------------------------------------- SEGMENTACIÓN DE MARCHA ---------------------------------------
 
-def Segmentacion(picos_sucesivos, toe_offs, muestras_paso, periodoMuestreo, acc_AP_norm):
+def Segmentacion(picos_sucesivos, toe_offs, muestras_paso, periodoMuestreo, acc_AP_norm, gyro = None):
 
     ## ----------------------------------------- CONJUNTO DE PASOS -----------------------------------------
 
@@ -50,8 +50,19 @@ def Segmentacion(picos_sucesivos, toe_offs, muestras_paso, periodoMuestreo, acc_
 
             ## Agrego el paso a la lista de pasos defectuosos
             pasos_defectuosos.append({'IC': (picos_sucesivos[i], picos_sucesivos[i + 1])})
-    
-    print("Cantidad de pasos defectuosos: {}".format(pasos_defectuosos))
+
+            # ## Grafico la velocidad angular en el eje vertical para el segmento que es considerado defectuoso
+            # plt.plot(gyro[:, 1][picos_sucesivos[i] : picos_sucesivos[i + 1]], color = 'b', label = '$w_y$')
+
+            # ## Nomenclatura de ejes. En el eje x tenemos el tiempo (s) y en el eje y la velocidad angular (rad/s)
+            # plt.xlabel("Tiempo (s)")
+            # plt.ylabel("Velocidad angular (rad/s)")
+
+            # ## Agrego la leyenda para poder identificar que curva corresponde a cada aceleración
+            # plt.legend()
+
+            # ## Despliego la gráfica
+            # plt.show()
 
     ## ---------------------------------- TRATAMIENTO DE PASOS DEFECTUOSOS ---------------------------------
 

@@ -6,7 +6,6 @@ import os
 
 ## ---------------------------------- CÁLCULO DE PARÁMETROS DE MARCHA ----------------------------------
 
-
 def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos):
 
     ## -------------------------------------- FILTRADO ACELERACIÓN -----------------------------------------
@@ -40,7 +39,7 @@ def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
     ## Integro velocidad para obtener posición
     pos_z = cumulative_trapezoid(vel_z_filtrada, tiempo, dx = periodoMuestreo, initial = 0)
 
-    ## ---------------------------------------- FILTRADO POSICIÓN ------------------------------------------
+    ## --------------------------------------- FILTRADO POSICIÓN --------------------------------------
 
     ## Con el fin de eliminar la deriva hago una etapa de filtrado pasaaltos
     ## Etapa de filtrado pasaaltos de Butterworth con frecuencia de corte 0.5Hz de orden 4
@@ -50,7 +49,7 @@ def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
     ## La cantidad de tiempo que transcurre entre dos valles debe ser igual al tiempo de paso
     pos_z_filtrada = signal.sosfiltfilt(sos, pos_z)
 
-    ## ------------------------------ SEGMENTACIÓN DE PASOS (PEAK DETECTION) -------------------------------
+    ## ------------------------------------- SEGMENTACIÓN DE PASOS -------------------------------------
 
     ## Creo una lista vacía en donde voy a guardar los pasos segmentados
     segmentada = []
@@ -64,7 +63,7 @@ def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
         ## Luego lo agrego a la señal segmentada
         segmentada.append(segmento)
 
-    ## -------------------------------- VARIACIÓN DE ALTURA CENTRO DE MASA ---------------------------------
+    ## -------------------------------- VARIACIÓN DE ALTURA CENTRO DE MASA -----------------------------
 
     ## Creo una lista donde voy a almacenar las variaciones de altura del centro de masa en cada tramo
     desp_vert_COM = []
@@ -83,7 +82,7 @@ def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
     ## Especifico la longitud de la pierna del individuo en metros
     ## Ésto debe considerarse como una entrada al sistema. Es un parámetro que puede medirse
     ## ¡IMPORTANTE: ÉSTE PARÁMETRO CAMBIA CON CADA PERSONA! SINO EL RESULTADO DA CUALQUIER COSA
-    long_pierna = 1
+    long_pierna = 1.035
 
     ## Creo una lista donde voy a almacenar la longitud de los pasos de la persona
     long_pasos_m1 = []
@@ -164,4 +163,4 @@ def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
         frecuencias.append(frec_instantanea)
     
     ## Retorno los parámetros de marcha calculados
-    return pasos_numerados, frecuencias, velocidades, long_pasos_m1
+    return pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1

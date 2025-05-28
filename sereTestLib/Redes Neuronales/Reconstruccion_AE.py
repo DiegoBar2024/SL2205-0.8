@@ -15,22 +15,22 @@ from PIL import Image as im
 ## ------------------------------------- IMPORTACIÓN DEL MODELO ----------------------------------------
 
 ## Obtengo el identificador del paciente para el cual voy a tener las muestras comprimidas
-id_persona = 114
+id_persona = 299
 
 ## Especifico la ruta donde están los escalogramas
-ruta_escalogramas = "C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo_gp"
+ruta_escalogramas = "C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo"
 
 ## Especifico la ruta de donde voy a leer los escalogramas del paciente
-ruta_escalogramas_paciente = "C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo_gp/S{}/".format(id_persona)
+ruta_escalogramas_paciente = "C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/S{}/".format(id_persona)
 
-## Especifico la ruta en la cual yo voy a guardar el modelo de autoencoder
+## Especifico la ruta de la cual yo voy a importar el modelo de autoencoder
 ruta_ae = 'C:/Yo/Tesis/sereData/sereData/Modelos/autoencoder/ModeloAutoencoder/'
 
 ## Especifico el nombre del autoencoder
-nombre_autoencoder = 'AutoencoderUCU_gp'
+nombre_autoencoder = 'AutoencoderUCU_nuevo'
 
 ## Especifico la ruta en la cual yo voy a guardar las muestras reconstruidas
-ruta_reconstruidas = 'C:/Yo/Tesis/sereData/sereData/Dataset/reconstrucciones_ae_gp/S{}/'.format(id_persona)
+ruta_reconstruidas = 'C:/Yo/Tesis/sereData/sereData/Dataset/reconstrucciones_ae/S{}/'.format(id_persona)
 
 ## Cargo el modelo entrenado del autoencoder
 modelo_autoencoder = ae_load_model(ruta_ae, nombre_autoencoder)
@@ -47,7 +47,7 @@ archivos = [archivo for archivo in os.listdir(ruta_escalogramas_paciente) if arc
 ## ------------------------------------ RECONSTRUCCIÓN Y GUARDADO  -------------------------------------
 
 ## Inicializo una variable booleana diciendo si quiero hacer guardado o no
-hacer_guardado = True
+hacer_guardado = False
 
 ## Parámetros del autoencoder
 ## IMPORTANTE EL HECHO DE QUE LOS SEGMENTOS NO ESTÉN DESORDENADOS

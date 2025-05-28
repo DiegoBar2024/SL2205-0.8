@@ -12,10 +12,10 @@ from LecturaDatosPacientes import *
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/gaitpy/gaitpy')
 from ParametrosGaitPy import *
 
-## ------------------------------------- CÁLCULO DE ESTADÍSTICAS --------------------------------------
+## ------------------------------------- CÁLCULO DE ESTADÍSTICAS ---------------------------------------
 
 ## Especifico el identificador de la persona
-id_persona = 256
+id_persona = 34
 
 ## Lectura de los datos
 data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona, tiempo = LecturaDatos(id_persona, lectura_datos_propios = False)
@@ -28,10 +28,10 @@ contactos_iniciales, muestras_paso, acc_AP_norm, frec_fund = ContactosIniciales(
 contactos_terminales = ContactosTerminales(acel, cant_muestras, periodoMuestreo, graficar = True)
 
 ## Hago la segmentación de la marcha
-pasos, duraciones_pasos = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm)
+pasos, duraciones_pasos = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro)
 
 ## Cálculo de parámetros de marcha
-pasos_numerados, frecuencias, velocidades, long_pasos_m1 = LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos)
+pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos)
 
 ## MÉTODO II: USANDO GAITPY
 ## Hago la lectura de los datos generales de los pacientes

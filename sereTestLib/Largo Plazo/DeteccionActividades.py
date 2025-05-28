@@ -345,6 +345,12 @@ if __name__== '__main__':
         ## Construyo un diccionario diferenciando los valores de SMA para movimiento y reposo
         valores_SMA_actividad = {'Movimiento' : SMA_movimiento, 'Reposo' : SMA_reposo}
 
+        ## Hago el boxplot comparando los valores de SMA para las actividades de movimiento y reposo
+        plt.boxplot(valores_SMA_actividad.values(), tick_labels = valores_SMA_actividad.keys())
+        plt.show()
+
+        ## ---------------------------------- MÉTODO I -----------------------------------------
+        ## El primer método de cálculo de umbral óptimo involucra el uso de estadísticas provenientes de la muestra
         ## Construyo un vector de indicadores estadísticos para los valores de SMA en movimiento
         stats_SMA_mov = [np.mean(SMA_movimiento), np.median(SMA_movimiento), np.std(SMA_movimiento)]
 
@@ -355,12 +361,10 @@ if __name__== '__main__':
         ## Sea a = Media(SMA_movimiento) - Desv(SMA_movimiento)
         ## Sea b = Media(SMA_reposo) + Desv(SMA_reposo)
         ## Entonces el valor del umbral lo ajusto al punto medio de a y b para que quede margen: umbral = (a + b) / 2
-        umbral = (stats_SMA_mov[0] - stats_SMA_mov[2] + stats_SMA_rep[0] + stats_SMA_rep[2]) / 2
+        umbral_m1 = (stats_SMA_mov[0] - stats_SMA_mov[2] + stats_SMA_rep[0] + stats_SMA_rep[2]) / 2
 
-        ## Hago el boxplot comparando los valores de SMA para las actividades de movimiento y reposo
-        plt.boxplot(valores_SMA_actividad.values(), tick_labels = valores_SMA_actividad.keys())
-        plt.axhline(y = umbral, color = 'r', linestyle = '-')
-        plt.show()
+        ## ---------------------------------- MÉTODO II -----------------------------------------
+        ## El segundo método de cálculo de umbral óptimo involucra el entrenamiento de un SVM con los datos etiquetados por actividad
 
         ## Hago la lectura del archivo JSON previamente existente
         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", 'r') as openfile:
@@ -437,5 +441,3 @@ if __name__== '__main__':
         ## <<True>> si el i-ésimo segmento del registro se asocia con movimiento (caminar, subir/bajar escaleras)
         ## <<False>> si el i-ésimo segmento del registro se asocia con reposo (parado, sentado)
         clas_registro = np.array([vector_SMA]) > umbral
-
-        print(clas_registro)

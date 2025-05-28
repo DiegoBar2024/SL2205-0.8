@@ -9,10 +9,10 @@ from Fourier import *
 ## ---------------------------------------- DETECCIÓN DE GIROS -----------------------------------------
 
 ## Especifico el identificador del paciente cuyos datos van a ser procesados
-id_persona = 302
+id_persona = 299
 
 ## Hago la lectura de los datos del registro de marcha del paciente
-data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona, tiempo = LecturaDatos(id_persona, lectura_datos_propios = True)
+data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona, tiempo = LecturaDatos(id_persona, lectura_datos_propios = False)
 
 ## Obtengo el valor del giroscopio en el eje x
 gyro_x = gyro[:, 0]
@@ -57,30 +57,30 @@ plt.legend()
 ## Despliego la gráfica
 plt.show()
 
-# ## Escalas de las wavelets a utilizar
-# ## Se recuerda que la pseudo - frecuencia me queda f = f_muestreo / escala
-# ## Ésto me implica que a escalas más pequeñas tengo frecuencias más grandes y viceversa
-# escalas = np.arange(8, 200, 1)
+## Escalas de las wavelets a utilizar
+## Se recuerda que la pseudo - frecuencia me queda f = f_muestreo / escala
+## Ésto me implica que a escalas más pequeñas tengo frecuencias más grandes y viceversa
+escalas = np.arange(8, 250, 1)
 
-# ## Creo una variable la cual almacene el ancho de banda de la wavelet
-# ancho_banda = 1.5
+## Creo una variable la cual almacene el ancho de banda de la wavelet
+ancho_banda = 1.5
 
-# ## Tipo de wavelet a utilizar. Wavelet de Morlet Compleja
-# ## Parámetro B (Ancho de banda): 1.5 Hz (ajustable)
-# ## Parámetro C (Frecuencia Central): 1 Hz
-# wavelet = 'cmor{}-1'.format(ancho_banda)
+## Tipo de wavelet a utilizar. Wavelet de Morlet Compleja
+## Parámetro B (Ancho de banda): 1.5 Hz (ajustable)
+## Parámetro C (Frecuencia Central): 1 Hz
+wavelet = 'cmor{}-1'.format(ancho_banda)
 
-# ## Transformada de Wavelet de la aceleración en el eje x
-# coef1, scales_freq = pywt.cwt(data = gyro_y, scales = escalas, wavelet = wavelet, sampling_period = periodoMuestreo)
+## Transformada de Wavelet de la aceleración en el eje x
+coef1, scales_freq = pywt.cwt(data = gyro_y, scales = escalas, wavelet = wavelet, sampling_period = periodoMuestreo)
 
-# ## Graficación del escalograma en el plano tiempo frecuencia
-# data = np.abs(coef1)
-# cmap = plt.get_cmap('jet', 256)
-# fig = plt.figure(figsize = (5,5))
-# ax = fig.add_subplot(111)
-# t = np.arange(coef1.shape[1]) * periodoMuestreo
-# ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
-# plt.xlabel("Tiempo (s)")
-# plt.ylabel("Frecuencia (Hz)")
-# plt.title("$|CWT_{ML}(t,f)|$")
-# plt.show()
+## Graficación del escalograma en el plano tiempo frecuencia
+data = np.abs(coef1)
+cmap = plt.get_cmap('jet', 256)
+fig = plt.figure(figsize = (5,5))
+ax = fig.add_subplot(111)
+t = np.arange(coef1.shape[1]) * periodoMuestreo
+ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
+plt.xlabel("Tiempo (s)")
+plt.ylabel("Frecuencia (Hz)")
+plt.title("$|CWT_{GY_y}(t,f)|$")
+plt.show()

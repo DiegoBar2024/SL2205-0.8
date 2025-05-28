@@ -45,10 +45,10 @@ val_test = np.intersect1d(lista_pacientes_existentes, val_test)
 ruta_ae = 'C:/Yo/Tesis/sereData/sereData/Modelos/autoencoder/ModeloAutoencoder/'
 
 ## Especifico el nombre que yo le voy a dar al autoencoder
-nombre_autoencoder = 'AutoencoderUCU_gp'
+nombre_autoencoder = 'AutoencoderUCU_nuevo'
 
 ## Especifico la ruta en la cual van a estar los escalogramas
-ruta_escalogramas = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo_gp'
+ruta_escalogramas = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo'
 
 ## Especifico la cantidad de épocas del entrenamiento del autoencoder
 num_epochs = 1

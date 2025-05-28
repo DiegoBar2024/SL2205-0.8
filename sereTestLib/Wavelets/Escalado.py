@@ -8,10 +8,10 @@ sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 
 ## --------------------------------------------- ESCALADO ----------------------------------------------
 
-def Escalado(escalogramas_segmentos, directorio_muestra, nombre_base_segmento):
+def Escalado(escalogramas_segmentos, directorio_muestra, nombre_base_segmento, ruta):
 
     ## Especifico la ruta de salida de los archivos
-    ruta_guardado =  'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo_gp' + directorio_muestra
+    ruta_guardado =  ruta + directorio_muestra
 
     ## En caso de que el directorio no exista
     if not os.path.exists(ruta_guardado):

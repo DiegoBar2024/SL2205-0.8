@@ -5,7 +5,15 @@ from scipy.signal import *
 import numpy as np
 from scipy import fftpack
 import json
+from matplotlib import pyplot as plt
+from EnergiaDWT import EnergiaDWT
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
+
+from LecturaDatos import *
+from Segmentacion import *
+from ContactosIniciales import *
+from ContactosTerminales import *
 
 ## --------------------------------------- CÁLCULO DE ENERGÍA TOTAL ------------------------------------
 
@@ -125,3 +133,53 @@ def EstadisticasEnergia(matriz_energias_canales):
     
     ## Retorno la matriz con las estadísticas de la energía de cada canal
     return matriz_estadisticos_canales
+
+## Ejecución principal del programa
+if __name__== '__main__':
+
+    ## Especifico el ID de la persona para la cual voy a procesar los datos
+    id_persona = 204
+
+    ## Hago la lectura de los datos del registro de marcha del paciente
+    data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona, tiempo = LecturaDatos(id_persona, lectura_datos_propios = False)
+
+    ## Cálculo de contactos iniciales
+    contactos_iniciales, muestras_paso, acc_AP_norm, frec_fund = ContactosIniciales(acel, cant_muestras, periodoMuestreo, graficar = False)
+
+    ## Cálculo de contactos terminales
+    contactos_terminales = ContactosTerminales(acel, cant_muestras, periodoMuestreo, graficar = False)
+
+    ## Hago la segmentación de la marcha
+    pasos, duraciones_pasos = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro)
+
+    ## Hago el cálculo de las energías totales por segmento
+    ## La i-ésima fila va a hacer referencia al i-ésimo canal (AC_x, AC_y, AC_z, GY_x, GY_y, GY_z)
+    ## La j-ésima columna va a hacer referencia al j-ésimo segmento del registro de marcha
+    matriz_energias_canales = EnergiaPorSegmento(acel, gyro, pasos)
+
+    ## Me quedo con las energías correspondientes al canal del giroscopio Y que tiene el eje vertical
+    energias_GY_y = matriz_energias_canales[4, :]
+
+    ## Obtengo un vector que tenga los pasos numerados
+    pasos_numerados = np.arange(0, len(pasos) - 1, 1)
+
+    ## Hago una gráfica de dispersión observando la energía del giroscopio Y por cada paso
+    plt.scatter(pasos_numerados, energias_GY_y)
+    plt.show()
+
+    ## Inicializo una matriz en donde me voy a guardar la energía en las subbandas de cada segmento de la señal del giroscopio Y
+    ## La i-ésima fila se va a corresponder con el i-ésimo segmento
+    ## La j-ésima columna se va a corresponder con la j-ésima subbanda
+    energias_subbandas_GY_y = np.zeros((len(pasos) - 1, 9))
+
+    ## Itero para cada uno de los segmentos
+    for i in range (1, len(pasos) - 1):
+
+        ## Aislo el segmento de la señal del giroscopio Y en el segmento correspondiente
+        gyroY_seg = gyro[:,1][(pasos[i]['IC'][0]) : (pasos[i]['IC'][1])]
+
+        ## Hago la descomposición de energía en subbandas de dicha señal del giroscopio usando DWT
+        subbanda_GY_y = EnergiaDWT(gyroY_seg, periodoMuestreo)
+
+        ## Agrego como fila la distribución de energía en la subbanda de la matriz correspondiente
+        energias_subbandas_GY_y[i, :] = subbanda_GY_y

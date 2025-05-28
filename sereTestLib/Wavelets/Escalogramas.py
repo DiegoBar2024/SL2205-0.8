@@ -160,47 +160,47 @@ def Escalogramas(id_persona, tiempo, pasos, cant_muestras, acel, gyro, periodoMu
         ## Agrego el escalograma y su nombre base como un diccionario a la lista de escalogramas
         escalogramas_segmentos.append({'escalograma': np.abs(matriz_escalogramas[i]), 'nombre_base_segmento': nombre_base_segmento})
 
-        ## Graficación del escalograma en el plano tiempo frecuencia
-        data = np.abs(coef1[:,extensiones_pasos[i]: coef1.shape[1] - extensiones_pasos[i]])
-        cmap = plt.get_cmap('jet', 256)
-        fig = plt.figure(figsize = (5,5))
-        ax = fig.add_subplot(111)
-        t = np.arange(coef1[:,extensiones_pasos[i]: coef1.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
-        ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
-        plt.xlabel("Tiempo (s)")
-        plt.ylabel("Frecuencia (Hz)")
-        plt.title("$|CWT_{ML}(t,f)|$")
-        plt.show()
+        # ## Graficación del escalograma en el plano tiempo frecuencia
+        # data = np.abs(coef1[:,extensiones_pasos[i]: coef1.shape[1] - extensiones_pasos[i]])
+        # cmap = plt.get_cmap('jet', 256)
+        # fig = plt.figure(figsize = (5,5))
+        # ax = fig.add_subplot(111)
+        # t = np.arange(coef1[:,extensiones_pasos[i]: coef1.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
+        # ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
+        # plt.xlabel("Tiempo (s)")
+        # plt.ylabel("Frecuencia (Hz)")
+        # plt.title("$|CWT_{ML}(t,f)|$")
+        # plt.show()
 
-        ## Graficación del escalograma en el plano tiempo frecuencia
-        data = np.abs(coef2[:,extensiones_pasos[i]: coef2.shape[1] - extensiones_pasos[i]])
-        cmap = plt.get_cmap('jet', 256)
-        fig = plt.figure(figsize = (5,5))
-        ax = fig.add_subplot(111)
-        t = np.arange(coef2[:,extensiones_pasos[i]: coef2.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
-        ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
-        plt.xlabel("Tiempo (s)")
-        plt.ylabel("Frecuencia (Hz)")
-        plt.title("$|CWT_{VT}(t,f)|$")
-        plt.show()
+        # ## Graficación del escalograma en el plano tiempo frecuencia
+        # data = np.abs(coef2[:,extensiones_pasos[i]: coef2.shape[1] - extensiones_pasos[i]])
+        # cmap = plt.get_cmap('jet', 256)
+        # fig = plt.figure(figsize = (5,5))
+        # ax = fig.add_subplot(111)
+        # t = np.arange(coef2[:,extensiones_pasos[i]: coef2.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
+        # ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
+        # plt.xlabel("Tiempo (s)")
+        # plt.ylabel("Frecuencia (Hz)")
+        # plt.title("$|CWT_{VT}(t,f)|$")
+        # plt.show()
 
-        ## Graficación del escalograma en el plano tiempo frecuencia
-        data = np.abs(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])
-        cmap = plt.get_cmap('jet', 256)
-        fig = plt.figure(figsize = (5,5))
-        ax = fig.add_subplot(111)
-        t = np.arange(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
-        ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
-        plt.xlabel("Tiempo (s)")
-        plt.ylabel("Frecuencia (Hz)")
-        plt.title("$|CWT_{AP}(t,f)|$")
-        plt.show()
+        # ## Graficación del escalograma en el plano tiempo frecuencia
+        # data = np.abs(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])
+        # cmap = plt.get_cmap('jet', 256)
+        # fig = plt.figure(figsize = (5,5))
+        # ax = fig.add_subplot(111)
+        # t = np.arange(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
+        # ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
+        # plt.xlabel("Tiempo (s)")
+        # plt.ylabel("Frecuencia (Hz)")
+        # plt.title("$|CWT_{AP}(t,f)|$")
+        # plt.show()
 
-        ## Graficación del escalograma en el plano tiempo frecuencia
-        plt.plot(tiempo[extensiones_pasos[i - 1]: coef3.shape[1] - extensiones_pasos[i - 1]] - tiempo[extensiones_pasos[i - 1]: coef3.shape[1] - extensiones_pasos[i - 1]][0], acel[:,2][extensiones_pasos[i - 1]: coef3.shape[1] - extensiones_pasos[i - 1]])
-        plt.xlabel("Tiempo (s)")
-        plt.ylabel("Aceleración Anteroposterior $(m/s^{2})$")
-        plt.show()
+        # ## Graficación del escalograma en el plano tiempo frecuencia
+        # plt.plot(tiempo[extensiones_pasos[i - 1]: coef3.shape[1] - extensiones_pasos[i - 1]] - tiempo[extensiones_pasos[i - 1]: coef3.shape[1] - extensiones_pasos[i - 1]][0], acel[:,2][extensiones_pasos[i - 1]: coef3.shape[1] - extensiones_pasos[i - 1]])
+        # plt.xlabel("Tiempo (s)")
+        # plt.ylabel("Aceleración Anteroposterior $(m/s^{2})$")
+        # plt.show()
 
     ## Retorno los segmentos de los escalogramas correspondientes y los nombres correspondientes al directorio donde se van a almacenar las muestras
     return escalogramas_segmentos, directorio_muestra, nombre_base_segmento

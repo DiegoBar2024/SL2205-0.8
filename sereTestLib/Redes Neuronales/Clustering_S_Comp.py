@@ -9,23 +9,14 @@ from PIL import Image as im
 from matplotlib import pyplot as plt
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 
-## -------------------------------------------- CLUSTERING ----------------------------------------------
+## ----------------------------------------- CARGADO DE DATOS -------------------------------------------
 
 ## Especifico el ID de la persona que voy a usar para el estudio
 id_persona = 256
 
 ## La idea es poder guardar todos los escalogramas generados como imágenes con extensión .png en una carpeta aparte
 ## Especifico la ruta de donde voy a leer los escalogramas
-ruta_lectura = "C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo_gp/S{}/".format(id_persona)
-
-## Especifico la ruta de donde voy a guardar los escalogramas
-ruta_guardado = "C:/Yo/Tesis/sereData/sereData/Escalogramas_gp/S{}/".format(id_persona)
-
-## En caso de que el directorio no exista
-if not os.path.exists(ruta_guardado):
-
-    ## Creo el directorio correspondiente
-    os.makedirs(ruta_guardado)
+ruta_lectura = "C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/S{}/".format(id_persona)
 
 ## Obtengo todos los archivos presentes en la ruta anterior
 ## Recuerdo que cada uno de los archivos se corresponde con un escalograma (tensor tridimensional)
@@ -49,9 +40,25 @@ for i in range (len(archivos)):
     ## Agrego el vector conteniendo el escalograma a la matriz correspondiente
     datos_entrada[i, :] = vector_escalograma
 
-## Aplico un clustering KMeans a los datos correspondientes de entrada
-kmeans = KMeans(n_clusters = 2, random_state = 0, n_init = "auto").fit(datos_entrada)
+## ------------------------------------------- CLUSTERING -------------------------------------------------
 
-## Obtengo un vector con las etiquetas correspondientes a cada clase
-## Voy a tener como resultado una etiqueta por cada punto de entrada, indicando el cluster
-etiquetas = kmeans.labels_
+## Especifico una lista con la cantidad de clusters que voy a usar durante el análisis
+clusters = np.linspace(1, 20, 20).astype(int)
+
+## Creo un vector en donde me guardo la distorsion score correspondiente al número de clusters
+distorsion_scores = []
+
+## Itero para cada una de las cantidades de clusters que tengo
+for nro_clusters in clusters:
+
+    ## Aplico un clustering KMeans a los datos correspondientes de entrada
+    kmeans = KMeans(n_clusters = nro_clusters, random_state = 0, n_init = "auto").fit(datos_entrada)
+
+    ## Obtengo el distorsion score correspondiente
+    distorsion_score = kmeans.inertia_
+
+    ## Me lo guardo en el vector
+    distorsion_scores.append(distorsion_score)
+
+plt.plot(clusters, distorsion_scores)
+plt.show()
