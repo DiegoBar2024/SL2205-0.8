@@ -12,6 +12,8 @@ from matplotlib import pyplot as plt
 from scipy import signal
 from scipy import *
 import json
+import seaborn as sns
+from scipy.stats import *
 
 ## -------------------------------------- DETECCIÓN DE ACTIVIDADES ------------------------------------------
 
@@ -183,7 +185,7 @@ if __name__== '__main__':
     ## Opción 1: Generar los ficheros JSON con los SMA para cada actividad
     ## Opción 2: Calcular el valor del umbral óptimo según los valores de SMA en los archivos JSON
     ## Opción 3: Llevar a cabo la clasificación de actividades
-    opcion = 3
+    opcion = 2
 
     ## Hago la lectura de los datos generales de los pacientes
     pacientes, ids_existentes = LecturaDatosPacientes()
@@ -349,6 +351,30 @@ if __name__== '__main__':
         plt.boxplot(valores_SMA_actividad.values(), tick_labels = valores_SMA_actividad.keys())
         plt.show()
 
+        ## Test de Hipótesis de Anderson-Darling para la comprobación de normalidad de los valores de SMA en reposo
+        anderson_reposo = anderson(SMA_reposo, dist='norm')
+
+        ## Test de Hipótesis de Anderson-Darling para la comprobación de normalidad de los valores de SMA en movimiento
+        anderson_mov = anderson(SMA_movimiento, dist='norm')
+
+        ## Test de Hipótesis para la comprobación de la igualdad de las medianas entre ambas poblaciones
+        test_medianas = kruskal(SMA_movimiento, SMA_reposo)
+
+        print(test_medianas)
+
+        ## Hago el histograma comparando los valores de SMA para las actividades de movimiento (caminando y escaleras)
+        plt.hist(SMA_movimiento)
+        plt.xlabel('Valor SMA')
+        plt.ylabel('Frecuencia absoluta')
+        plt.show()
+
+        ## Hago el histograma comparando los valores de SMA para las actividades de movimiento (sentado y parado)
+        plt.hist(SMA_reposo, bins = 10)
+        plt.xlabel('Valor SMA')
+        plt.ylabel('Frecuencia absoluta')
+        plt.gca().set_xlim((0, 100))
+        plt.show()
+
         ## ---------------------------------- MÉTODO I -----------------------------------------
         ## El primer método de cálculo de umbral óptimo involucra el uso de estadísticas provenientes de la muestra
         ## Construyo un vector de indicadores estadísticos para los valores de SMA en movimiento
@@ -361,7 +387,7 @@ if __name__== '__main__':
         ## Sea a = Media(SMA_movimiento) - Desv(SMA_movimiento)
         ## Sea b = Media(SMA_reposo) + Desv(SMA_reposo)
         ## Entonces el valor del umbral lo ajusto al punto medio de a y b para que quede margen: umbral = (a + b) / 2
-        umbral_m1 = (stats_SMA_mov[0] - stats_SMA_mov[2] + stats_SMA_rep[0] + stats_SMA_rep[2]) / 2
+        umbral = (stats_SMA_mov[0] - stats_SMA_mov[2] + stats_SMA_rep[0] + stats_SMA_rep[2]) / 2
 
         ## ---------------------------------- MÉTODO II -----------------------------------------
         ## El segundo método de cálculo de umbral óptimo involucra el entrenamiento de un SVM con los datos etiquetados por actividad

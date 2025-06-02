@@ -11,10 +11,34 @@ from sklearn.metrics import silhouette_score
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 from LecturaDatosPacientes import *
 
+## ------------------------------------- SELECCIÓN DE MUESTRAS ----------------------------------------------
+
+## Construyo una variable booleana de modo de poder filtrar aquellos pacientes que se encuentran etiquetados
+filtrar_etiquetados = True
+
+## Construyo una lista con todos aquellos pacientes denominados estables no añosos
+id_estables_no_añosos = np.array([114, 127, 128, 129, 130, 133, 213, 224, 226, 44, 294])
+
+## Construyo una lista con todos aquellos pacientes denominados estables añosos
+## En principio estos pacientes se consideran como estables pero se van a mantener por separado del análisis
+id_estables_añosos = np.array([67, 77, 111, 112, 115, 216, 229, 271, 273])
+
+## Obtengo una lista con los identificadores de todos los pacientes estables
+id_estables = np.concatenate([id_estables_añosos, id_estables_no_añosos])
+
+## Construyo una lista con aquellos pacientes denominados inestables
+id_inestables = np.array([69, 72, 90, 122, 137, 139, 142, 144, 148, 149, 158, 167, 178, 221, 223, 232, 256])
+
+## Construyo una lista con los IDs de aquellos pacientes los cuales yo sé que están etiquetados
+id_etiquetados = np.concatenate([id_estables, id_inestables])
+
 ## ----------------------------------- CARGADO DE DATOS COMPRIMIDOS ----------------------------------------------
 
 ## Hago la lectura de los datos generales de los pacientes presentes en la base de datos
 pacientes, ids_existentes = LecturaDatosPacientes()
+
+## Creo un vector donde voy a guardar las etiquetas asociadas a cada uno de los pacientes etiquetados, respetando el orden
+vector_etiquetas = []
 
 ## Genero un vector vacío para poder concatenar los vectores con todas las representaciones latentes
 comprimidos_total = np.zeros((1, 256))
@@ -36,6 +60,26 @@ for id_persona in ids_existentes:
         ## La j-ésima columna representa el j-ésimo feature
         espacio_comprimido = archivo_comprimido['X']
 
+        ## En caso de que yo quiera filtrar los pacientes etiquetados en mi muestra
+        if filtrar_etiquetados:
+
+            ## En caso de que el ID del paciente que está siendo analizado no corresponde a un paciente etiquetado, me lo salteo y no lo proceso
+            if id_persona not in id_etiquetados:
+
+                continue
+
+            ## En caso de que el paciente haya sido clasificado como estable
+            if id_persona in id_estables:
+
+                ## Concateno un vector de ceros con la cantidad de segmentos que tengo para el registro del paciente
+                vector_etiquetas = np.concatenate((np.array(vector_etiquetas), np.zeros((espacio_comprimido.shape[0])))).astype(int)
+            
+            ## En caso de que el paciente haya sido clasificado como inestable
+            else:
+
+                ## Concateno un vector de ceros con la cantidad de segmentos que tengo para el registro del paciente
+                vector_etiquetas = np.concatenate((np.array(vector_etiquetas), np.ones((espacio_comprimido.shape[0])))).astype(int)
+
         ## Concateno el espacio comprimido por filas a la matriz donde guardo los espacios latentes totales
         comprimidos_total = np.concatenate((comprimidos_total, espacio_comprimido), axis = 0)
 
@@ -48,16 +92,31 @@ for id_persona in ids_existentes:
         ## Sigo con el paciente que sigue
         continue
 
-## -------------------------------------------- CLUSTERING ----------------------------------------------
+## Selecciono únicamente aquellas muestras no nulas (elimino el dummy vector)
+comprimidos_total = comprimidos_total[1:,:]
+
+## ---------------------------- CÁLCULO DE LAS SILHOUETTE Y DISTORTION RATES ----------------------------------------------
+
+## Aplico un clustering KMeans a los datos correspondientes de entrada con un total de 2 clusters
+kmeans = KMeans(n_clusters = 2, random_state = 0, n_init = "auto").fit(comprimidos_total)
+
+## Obtengo el vector de labels luego de hacer el clustering de KMeans
+etiquetas_kmeans = kmeans.labels_
+
+## ---------------------------- CÁLCULO DE LAS SILHOUETTE Y DISTORTION RATES ----------------------------------------------
 
 ## Especifico una lista con la cantidad de clusters que voy a usar durante el análisis
-clusters = np.linspace(2, 30, 10).astype(int)
+clusters = np.linspace(2, 30, 30).astype(int)
 
-## Creo un vector en donde me guardo la distorsion score correspondiente al número de clusters
-distorsion_scores = []
+## Creo un vector en donde me guardo la inercia correspondiente al número de clusters
+inercias = []
 
 ## Creo un vector en donde me guardo el silhouette score correspondiente al número de clusters
 silhouette_scores = []
+
+## Creo un vector donde voy guardando los cocientes de errores inter-clase y intra-clase
+## Quiero obtener aquel clustering que me maximice éste indicador
+indicador_errores = []
 
 ## Itero para cada una de las cantidades de clusters que tengo
 for nro_clusters in clusters:
@@ -65,20 +124,57 @@ for nro_clusters in clusters:
     ## Aplico un clustering KMeans a los datos correspondientes de entrada
     kmeans = KMeans(n_clusters = nro_clusters, random_state = 0, n_init = "auto").fit(comprimidos_total)
 
+    ## ------------------------------ CÁLCULO DEL INTRA-CLUSTER ERROR ----------------------------------------------
+
+    ## Inicializo la variable en la cual voy a guardar el error intra-cluster (inercia)
+    error_intra_cluster = 0
+
+    ## Itero para cada uno de los puntos del dataset
+    for i in range (len(comprimidos_total)):
+
+        ## Obtengo el centroide del clúster que está asociado al i-ésimo punto
+        centroide = kmeans.cluster_centers_[kmeans.labels_[i]]
+
+        ## Calculo la distancia al cuadrado entre el i-ésimo punto y el centroide asociado (usando norma Euclideana)
+        distancia = np.linalg.norm(centroide - comprimidos_total[i]) ** 2
+
+        ## Sumo la distancia a la variable en donde guardo el error intra cluster
+        error_intra_cluster += distancia
+
+    ## ------------------------------ CÁLCULO DEL INTER-CLUSTER ERROR ----------------------------------------------
+
+    ## Inicializo una variable en la cual voy a guardar el error inter-cluster
+    error_inter_cluster = 0
+
+    ## Inicializo una variable auxiliar que me guarde las distancias entre centroides
+    distancias_centroides = np.linalg.norm(kmeans.cluster_centers_[0] - kmeans.cluster_centers_[1]) ** 2
+
+    ## Itero para cada uno de los centroides del algoritmo
+    for i in range (len(kmeans.cluster_centers_)):
+
+        ## Itero para los centroides a partir del actual (para no repetir pares)
+        for j in range (i + 1, len(kmeans.cluster_centers_)):
+
+            ## Obtengo la distancia entre los dos centroides
+            distancia = np.linalg.norm(kmeans.cluster_centers_[i] - kmeans.cluster_centers_[j]) ** 2
+
+            ## En caso de que sea menor a la distancia predefinida
+            if distancia <= distancias_centroides:
+
+                ## Actualizo el error inter cluster como la distancia entre este par de centroides
+                error_inter_cluster = distancia
+    
+    ## ----------------------------------- CÁLCULO DE INDICADORES ------------------------------------------------
+
+    ## Hago el cálculo del indicador que es el cociente entre el error inter-clase y el error intra-clase
+    ## Yo quiero maximizar el error inter-clase y minimizar al mismo tiempo el error intra-clase
+    indicador_error = error_inter_cluster / error_intra_cluster
+
+    ## Agrego el indicador a la lista
+    indicador_errores.append(indicador_error)
+
     ## Obtengo la distorsion score correspondiente al clustering realizado y lo guardo en el vector correspondiente
-    distorsion_scores.append(kmeans.inertia_)
+    inercias.append(kmeans.inertia_)
 
     ## Obtengo la silhouette score correspondiente al clustering realizado y lo guardo en el vector correspondiente
     silhouette_scores.append(silhouette_score(comprimidos_total, kmeans.labels_))
-
-## Graficación de los distorsion scores en función del número de clusters
-plt.plot(clusters, distorsion_scores)
-plt.xlabel('Cantidad de Clústers')
-plt.ylabel('Distortion Score')
-plt.show()
-
-## Graficación de los silhouette scores en función del numero de clusters
-plt.plot(clusters, silhouette_scores)
-plt.xlabel('Cantidad de Clústers')
-plt.ylabel('Silhouette Score')
-plt.show()
