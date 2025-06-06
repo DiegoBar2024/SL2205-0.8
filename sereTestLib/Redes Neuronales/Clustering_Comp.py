@@ -13,8 +13,8 @@ from LecturaDatosPacientes import *
 
 ## ------------------------------------- SELECCIÓN DE MUESTRAS ----------------------------------------------
 
-## Construyo una variable booleana de modo de poder filtrar aquellos pacientes que se encuentran etiquetados
-filtrar_etiquetados = True
+## Construyo una variable booleana de modo de poder filtrar aquellos pacientes con un criterio de preferencia
+filtrar = True
 
 ## Construyo una lista con todos aquellos pacientes denominados estables no añosos
 id_estables_no_añosos = np.array([114, 127, 128, 129, 130, 133, 213, 224, 226, 44, 294])
@@ -61,7 +61,7 @@ for id_persona in ids_existentes:
         espacio_comprimido = archivo_comprimido['X']
 
         ## En caso de que yo quiera filtrar los pacientes etiquetados en mi muestra
-        if filtrar_etiquetados:
+        if filtrar:
 
             ## En caso de que el ID del paciente que está siendo analizado no corresponde a un paciente etiquetado, me lo salteo y no lo proceso
             if id_persona not in id_etiquetados:
@@ -95,28 +95,22 @@ for id_persona in ids_existentes:
 ## Selecciono únicamente aquellas muestras no nulas (elimino el dummy vector)
 comprimidos_total = comprimidos_total[1:,:]
 
-## ---------------------------- CÁLCULO DE LAS SILHOUETTE Y DISTORTION RATES ----------------------------------------------
-
-## Aplico un clustering KMeans a los datos correspondientes de entrada con un total de 2 clusters
-kmeans = KMeans(n_clusters = 2, random_state = 0, n_init = "auto").fit(comprimidos_total)
-
-## Obtengo el vector de labels luego de hacer el clustering de KMeans
-etiquetas_kmeans = kmeans.labels_
-
-## ---------------------------- CÁLCULO DE LAS SILHOUETTE Y DISTORTION RATES ----------------------------------------------
+## ------------------------------------------- CLUSTERIZADO ----------------------------------------------
 
 ## Especifico una lista con la cantidad de clusters que voy a usar durante el análisis
-clusters = np.linspace(2, 30, 30).astype(int)
+clusters = np.linspace(2, 30, 29).astype(int)
 
 ## Creo un vector en donde me guardo la inercia correspondiente al número de clusters
 inercias = []
 
-## Creo un vector en donde me guardo el silhouette score correspondiente al número de clusters
-silhouette_scores = []
+## Creo un vector en donde me guardo la distorsión correspondiente al numero de clusters
+distorsiones = []
 
-## Creo un vector donde voy guardando los cocientes de errores inter-clase y intra-clase
-## Quiero obtener aquel clustering que me maximice éste indicador
-indicador_errores = []
+## Construyo un vector donde voy a guardar la distancia euclideana de cada punto a su respectivo centroide
+distancias_puntos = []
+
+## Construyo un vector en donde voy a guardar los silhouette scores para cada una de las distribuciones de clusters
+silhouette_scores = []
 
 ## Itero para cada una de las cantidades de clusters que tengo
 for nro_clusters in clusters:
@@ -135,11 +129,14 @@ for nro_clusters in clusters:
         ## Obtengo el centroide del clúster que está asociado al i-ésimo punto
         centroide = kmeans.cluster_centers_[kmeans.labels_[i]]
 
-        ## Calculo la distancia al cuadrado entre el i-ésimo punto y el centroide asociado (usando norma Euclideana)
-        distancia = np.linalg.norm(centroide - comprimidos_total[i]) ** 2
+        ## Calculo la distancia entre el i-ésimo punto y el centroide asociado (usando norma Euclideana)
+        distancia = np.linalg.norm(centroide - comprimidos_total[i])
 
         ## Sumo la distancia a la variable en donde guardo el error intra cluster
-        error_intra_cluster += distancia
+        error_intra_cluster += distancia ** 2
+
+        ## Agrego la distancia del punto a su centroide a la lista
+        distancias_puntos.append(distancia)
 
     ## ------------------------------ CÁLCULO DEL INTER-CLUSTER ERROR ----------------------------------------------
 
@@ -170,11 +167,33 @@ for nro_clusters in clusters:
     ## Yo quiero maximizar el error inter-clase y minimizar al mismo tiempo el error intra-clase
     indicador_error = error_inter_cluster / error_intra_cluster
 
-    ## Agrego el indicador a la lista
-    indicador_errores.append(indicador_error)
+    ## Obtengo la distorsión como el promedio de la inercia
+    distorsion = kmeans.inertia_ / comprimidos_total.shape[0]
 
-    ## Obtengo la distorsion score correspondiente al clustering realizado y lo guardo en el vector correspondiente
+    ## Obtengo la inercia correspondiente al clustering realizado y lo guardo en el vector correspondiente
     inercias.append(kmeans.inertia_)
 
-    ## Obtengo la silhouette score correspondiente al clustering realizado y lo guardo en el vector correspondiente
-    silhouette_scores.append(silhouette_score(comprimidos_total, kmeans.labels_))
+    ## Agrego la distrosión calculada a la lista de distorsiones
+    distorsiones.append(distorsion)
+
+    ## Agrego la silhouette score a la lista de indicadores
+    silhouette_scores.append(silhouette_score(comprimidos_total, kmeans.fit_predict(comprimidos_total)))
+
+## Grafico la inercia en función de la cantidad de clusters que tengo
+plt.bar(clusters, silhouette_scores)
+plt.xlabel("Numero de Clusters")
+plt.ylabel("Silhouette Score")
+plt.show()
+
+## Grafico la inercia en función de la cantidad de clusters que tengo
+plt.plot(clusters, inercias)
+plt.xlabel("Numero de Clusters")
+plt.ylabel("Inercia")
+plt.title("Elbow Method")
+plt.show()
+
+## ------------------------------------------- CLUSTERIZADO DISTANCIAS ----------------------------------------------
+
+## Hago otra etapa de clusterizado pero para las distancias
+## La idea es que al hacer clustering con K = 2 se puedan separar las muestras normales de las anormales por el criterio de distancias
+kmeans_distancias = KMeans(n_clusters = 2, random_state = 0, n_init = "auto").fit(np.array((distancias_puntos)).reshape(-1, 1))

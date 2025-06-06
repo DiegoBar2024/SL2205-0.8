@@ -277,6 +277,7 @@ def train_clasificador(values, ground_truth, file_clf, clasificador, X_val = Non
         ## <<ground_truth>> es la secuencia de valores de salida
         clf.fit(values, ground_truth)
 
+    ## Guardo el modelo entrenado en la ruta de salida
     dump(clf, model_path_clf + file_clf)
 
     ## Retorno el clasificador entrenado

@@ -14,6 +14,8 @@ from scipy import *
 import json
 import seaborn as sns
 from scipy.stats import *
+from sklearn.svm import SVC
+from joblib import dump, load
 
 ## -------------------------------------- DETECCIÓN DE ACTIVIDADES ------------------------------------------
 
@@ -185,7 +187,7 @@ if __name__== '__main__':
     ## Opción 1: Generar los ficheros JSON con los SMA para cada actividad
     ## Opción 2: Calcular el valor del umbral óptimo según los valores de SMA en los archivos JSON
     ## Opción 3: Llevar a cabo la clasificación de actividades
-    opcion = 2
+    opcion = 3
 
     ## Hago la lectura de los datos generales de los pacientes
     pacientes, ids_existentes = LecturaDatosPacientes()
@@ -360,8 +362,6 @@ if __name__== '__main__':
         ## Test de Hipótesis para la comprobación de la igualdad de las medianas entre ambas poblaciones
         test_medianas = kruskal(SMA_movimiento, SMA_reposo)
 
-        print(test_medianas)
-
         ## Hago el histograma comparando los valores de SMA para las actividades de movimiento (caminando y escaleras)
         plt.hist(SMA_movimiento)
         plt.xlabel('Valor SMA')
@@ -391,6 +391,17 @@ if __name__== '__main__':
 
         ## ---------------------------------- MÉTODO II -----------------------------------------
         ## El segundo método de cálculo de umbral óptimo involucra el entrenamiento de un SVM con los datos etiquetados por actividad
+        ## Construyo la Support Vector Machine
+        clf = SVC(C = 1, gamma = 1, kernel = 'rbf')
+
+        ## Llevo a cabo el entrenamiento del clasificador
+        ## <<values>> es la secuencia de valores de entrada
+        ## <<ground_truth>> es la secuencia de valores de salida
+        ## Se etiquetan como 0 las actividades de reposo mientras que se etiquetan como 1 las actividades de movimiento
+        clf.fit(np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))))
+
+        ## Guardo el modelo entrenado en la ruta de salida
+        dump(clf, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
 
         ## Hago la lectura del archivo JSON previamente existente
         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", 'r') as openfile:
@@ -418,10 +429,10 @@ if __name__== '__main__':
             dicc_umbral = json.load(openfile)
 
         ## Especifico actividad de analisis
-        actividad = 'Parado'
+        actividad = 'Caminando'
 
         ## Especifico el ID de la persona
-        id_persona = 303
+        id_persona = 37
 
         ## Ruta del archivo
         ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/{}S{}.csv".format(id_persona, actividades[actividad], id_persona)
@@ -459,6 +470,7 @@ if __name__== '__main__':
         ## Hago el cálculo del vector de SMA para dicha persona
         vector_SMA = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras)
 
+        ## ---------------------------------- MÉTODO I -----------------------------------------
         ## Obtengo el valor del umbral para comparar
         umbral = dicc_umbral['U_{}_{}'.format(muestras_ventana, muestras_solapamiento)]
 
@@ -467,3 +479,12 @@ if __name__== '__main__':
         ## <<True>> si el i-ésimo segmento del registro se asocia con movimiento (caminar, subir/bajar escaleras)
         ## <<False>> si el i-ésimo segmento del registro se asocia con reposo (parado, sentado)
         clas_registro = np.array([vector_SMA]) > umbral
+
+        ## ---------------------------------- MÉTODO II -----------------------------------------
+        ## Cargo el modelo del clasificador ya entrenado según la ruta del clasificador
+        clf_trained = load("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
+
+        ## Determino la predicción del clasificador ante mi muestra de entrada
+        ## Etiqueta 0: Reposo
+        ## Etiqueta 1: Movimiento
+        pat_predictions = clf_trained.predict(np.array((vector_SMA)).reshape(-1, 1))
