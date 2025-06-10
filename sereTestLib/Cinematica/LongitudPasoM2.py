@@ -7,7 +7,7 @@ import os
 
 ## ---------------------------------- CÁLCULO DE PARÁMETROS DE MARCHA ----------------------------------
 
-def LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos):
+def LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, long_pierna = 1, long_pie = 0.03):
 
     ## -------------------------------------- FILTRADO ACELERACIÓN -----------------------------------------
 
@@ -64,37 +64,17 @@ def LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
         ## Luego lo agrego a la señal segmentada
         segmentada.append(segmento)
 
-    ## ------------------------------------ PARÁMETROS DE OPTIMIZACIÓN -------------------------------------
-
-    # ## Especifico la ruta del archivo de optimizacion
-    # ruta_optim = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Archivo_optimización.csv"
-
-    # ## Compruebo que el archivo de optimización exista y que tenga al menos un elemento
-    # if os.path.isfile(ruta_optim):
-
-    #     ## Hago la lectura del dataframe donde tengo guardado el historial de parámetros optimizados
-    #     param_optimizado = pd.read_csv(ruta_optim)
-
-    #     ## Indexo la columna donde tengo guardados los registros existentes de los parámetros obtenidos
-    #     param = param_optimizado["Parametro_M2"]
-
-    # ## En caso de que el archivo de optimización no se encuentre
-    # else:
-
-    #     ## Seteo el parámetro al valor predeterminado de 0.75 (por defecto)
-    #     param = 0.75
-
     ## ----------------------------- CÁLCULO DE LA LONGITUD DEL PASO (MÉTODO II) ---------------------------
 
     ## Especifico la longitud de la pierna del individuo en metros
     ## Ésto debe considerarse como una entrada al sistema. Es un parámetro que puede medirse
     ## ¡IMPORTANTE: ÉSTE PARÁMETRO CAMBIA CON CADA PERSONA! SINO EL RESULTADO DA CUALQUIER COSA
-    long_pierna = 1.035
+    long_pierna = long_pierna
 
     ## Longitud del pie de la persona. Dato a medir y que puede variar el resultado
     ## Éste valor es necesario para estimar el desplazamiento en la fase de doble estancia
     ## Obtengo de las pruebas el valor óptimo como el promedio de los parámetros optimizados
-    long_pie = 0.28
+    long_pie = long_pie
 
     ## Creo una lista donde voy a almacenar la longitud de los pasos de la persona
     long_pasos_m2 = []
@@ -109,9 +89,6 @@ def LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
 
     ## Itero para cada uno de los segmentos de pasos detectados (IC a IC)
     for i in range (len(pasos)):
-
-        ## Hago la segmentación del paso en el tramo IC-TC
-        tramo_IC_TC = pos_z_filtrada[pasos[i]['IC'][0] : pasos[i]['TC']]
 
         ## Hago la segmentación del paso en el tramo TC-IC (donde el IC es el contacto inicial opuesto)
         tramo_TC_IC = pos_z_filtrada[pasos[i]['TC'] : pasos[i]['IC'][1]]
@@ -148,7 +125,7 @@ def LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
     print("Velocidad de marcha (m/s): ", velocidad_marcha)
     print("Cadencia (pasos/s): ", frec_fund)
 
-        ## --------------------------------- CÁLCULO DE VELOCIDAD INSTANTÁNEA ----------------------------------
+    ## --------------------------------- CÁLCULO DE VELOCIDAD INSTANTÁNEA ----------------------------------
 
     ## Creo un vector donde voy a almacenar las velocidades instantáneas con una resolución de un paso
     velocidades = []

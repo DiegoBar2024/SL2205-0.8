@@ -6,7 +6,7 @@ import os
 
 ## ---------------------------------- CÁLCULO DE PARÁMETROS DE MARCHA ----------------------------------
 
-def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos):
+def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, long_pierna = 1):
 
     ## -------------------------------------- FILTRADO ACELERACIÓN -----------------------------------------
 
@@ -82,7 +82,7 @@ def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
     ## Especifico la longitud de la pierna del individuo en metros
     ## Ésto debe considerarse como una entrada al sistema. Es un parámetro que puede medirse
     ## ¡IMPORTANTE: ÉSTE PARÁMETRO CAMBIA CON CADA PERSONA! SINO EL RESULTADO DA CUALQUIER COSA
-    long_pierna = 1.035
+    long_pierna = long_pierna
 
     ## Creo una lista donde voy a almacenar la longitud de los pasos de la persona
     long_pasos_m1 = []
@@ -94,7 +94,7 @@ def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
     ## Especifico el coeficiente multiplicativo que uso para ponderar la longitud del paso
     ## Los estudios sugieren usar un factor de corrección multiplicativo de 1.25 para la longitud del paso
     ## Obtengo de las pruebas el valor óptimo como el promedio de los parámetros optimizados
-    factor_correccion = 1
+    factor_correccion = 1.25
 
     ## Itero para cada uno de los segmentos de pasos detectados (IC a IC)
     for i in range (len(segmentada)):

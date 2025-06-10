@@ -49,7 +49,7 @@ class PDF(FPDF):
 
 ## ------------------------------------ CREACIÓN DEL DOCUMENTO -----------------------------------------
 
-def CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long_pasos, duraciones_pasos, velocidades, frecuencias, pasos_numerados):
+def CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long_pasos, duraciones_pasos, velocidades, frecuencias, pasos_numerados, ruta_guardado):
 
     TITLE = "Reporte"
     WIDTH = 210
@@ -109,7 +109,7 @@ def CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long
     # Create a new figure object
     plt.figure()
     df = pd.DataFrame(DATA, columns = COLUMNS)
-    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (0, 1))
+    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (min(long_pasos) * 0.8, max(long_pasos) * 1.2))
 
     # Converting Figure to an image:
     img_buf = BytesIO()  # Create image object
@@ -127,7 +127,7 @@ def CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long
     # Create a new figure object
     plt.figure()
     df = pd.DataFrame(DATA, columns = COLUMNS)
-    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (0, 1))
+    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (min(duraciones_pasos) * 0.8, max(duraciones_pasos) * 1.2))
 
     # Converting Figure to an image:
     img_buf = BytesIO()  # Create image object
@@ -145,7 +145,7 @@ def CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long
     # Create a new figure object
     plt.figure()
     df = pd.DataFrame(DATA, columns = COLUMNS)
-    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (0, 1.5))
+    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (min(velocidades) * 0.8, max(velocidades) * 1.2))
 
     # Converting Figure to an image:
     img_buf = BytesIO()  # Create image object
@@ -163,7 +163,7 @@ def CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long
     # Create a new figure object
     plt.figure()
     df = pd.DataFrame(DATA, columns = COLUMNS)
-    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (0, 3))
+    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (min(frecuencias) * 0.8, max(frecuencias) * 1.2))
 
     # Converting Figure to an image:
     img_buf = BytesIO()  # Create image object
@@ -171,5 +171,5 @@ def CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long
     pdf.image(img_buf, w = pdf.epw / 2, x = 0.55 * pdf.epw, y = 0.65 * pdf.eph)
 
     # Generate the PDF
-    pdf.output("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Presentacion/Reporte.pdf", 'F')
+    pdf.output(ruta_guardado, 'F')
     img_buf.close()

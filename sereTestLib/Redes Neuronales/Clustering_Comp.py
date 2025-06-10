@@ -13,8 +13,8 @@ from LecturaDatosPacientes import *
 
 ## ------------------------------------- SELECCIÓN DE MUESTRAS ----------------------------------------------
 
-## Construyo una variable booleana de modo de poder filtrar aquellos pacientes con un criterio de preferencia
-filtrar = True
+## Construyo una variable booleana de modo de poder filtrar aquellos pacientes etiquetados
+filtrar_etiquetados = False
 
 ## Construyo una lista con todos aquellos pacientes denominados estables no añosos
 id_estables_no_añosos = np.array([114, 127, 128, 129, 130, 133, 213, 224, 226, 44, 294])
@@ -43,11 +43,18 @@ vector_etiquetas = []
 ## Genero un vector vacío para poder concatenar los vectores con todas las representaciones latentes
 comprimidos_total = np.zeros((1, 256))
 
+## Inicializo un diccionario cuya clave sea el ID del paciente y el valor una tupla con la posición inicial y final de los escalogramas
+dicc_ID_pos = {}
+
 ## Itero para cada uno de los identificadores de los pacientes. Hago la generación de escalogramas para cada paciente
 for id_persona in ids_existentes:
 
     ## Creo un bloque try catch en caso de que ocurra algún error en el procesamiento
     try:
+
+        if not id_persona == 299:
+
+            continue
 
         ## Especifico la ruta de donde voy a leer los escalogramas comprimidos
         ruta_lectura = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae/S{}/".format(id_persona)
@@ -61,7 +68,7 @@ for id_persona in ids_existentes:
         espacio_comprimido = archivo_comprimido['X']
 
         ## En caso de que yo quiera filtrar los pacientes etiquetados en mi muestra
-        if filtrar:
+        if filtrar_etiquetados:
 
             ## En caso de que el ID del paciente que está siendo analizado no corresponde a un paciente etiquetado, me lo salteo y no lo proceso
             if id_persona not in id_etiquetados:
@@ -95,19 +102,16 @@ for id_persona in ids_existentes:
 ## Selecciono únicamente aquellas muestras no nulas (elimino el dummy vector)
 comprimidos_total = comprimidos_total[1:,:]
 
-## ------------------------------------------- CLUSTERIZADO ----------------------------------------------
+## ------------------------------------ CANTIDAD ÓPTIMA DE CLÚSTERS ----------------------------------------------
 
 ## Especifico una lista con la cantidad de clusters que voy a usar durante el análisis
-clusters = np.linspace(2, 30, 29).astype(int)
+clusters = np.linspace(2, 10, 9).astype(int)
 
 ## Creo un vector en donde me guardo la inercia correspondiente al número de clusters
 inercias = []
 
 ## Creo un vector en donde me guardo la distorsión correspondiente al numero de clusters
 distorsiones = []
-
-## Construyo un vector donde voy a guardar la distancia euclideana de cada punto a su respectivo centroide
-distancias_puntos = []
 
 ## Construyo un vector en donde voy a guardar los silhouette scores para cada una de las distribuciones de clusters
 silhouette_scores = []
@@ -134,9 +138,6 @@ for nro_clusters in clusters:
 
         ## Sumo la distancia a la variable en donde guardo el error intra cluster
         error_intra_cluster += distancia ** 2
-
-        ## Agrego la distancia del punto a su centroide a la lista
-        distancias_puntos.append(distancia)
 
     ## ------------------------------ CÁLCULO DEL INTER-CLUSTER ERROR ----------------------------------------------
 
@@ -179,17 +180,37 @@ for nro_clusters in clusters:
     ## Agrego la silhouette score a la lista de indicadores
     silhouette_scores.append(silhouette_score(comprimidos_total, kmeans.fit_predict(comprimidos_total)))
 
-## Grafico la inercia en función de la cantidad de clusters que tengo
+# Grafico la inercia en función de la cantidad de clusters que tengo
 plt.bar(clusters, silhouette_scores)
 plt.xlabel("Numero de Clusters")
 plt.ylabel("Silhouette Score")
 plt.show()
 
-## Grafico la inercia en función de la cantidad de clusters que tengo
-plt.plot(clusters, inercias)
-plt.xlabel("Numero de Clusters")
-plt.ylabel("Inercia")
-plt.title("Elbow Method")
+## ------------------------------------------- CLUSTERIZADO ----------------------------------------------
+
+## Obtengo la cantidad óptima de clústers observando aquel número en donde se maximice la silhouette score
+clusters_optimo = np.argmax(silhouette_scores) + 2
+
+## Aplico el clústering KMeans pasando como entrada el número óptimo de clústers determinado por el Silhouette Score
+kmeans = KMeans(n_clusters = clusters_optimo, random_state = 0, n_init = "auto").fit(comprimidos_total)
+
+## Construyo un vector donde voy a guardar la distancia euclideana de cada punto a su respectivo centroide
+distancias_puntos = []
+
+## Itero para cada uno de los puntos del dataset
+for i in range (len(comprimidos_total)):
+
+        ## Obtengo el centroide del clúster que está asociado al i-ésimo punto
+        centroide = kmeans.cluster_centers_[kmeans.labels_[i]]
+
+        ## Calculo la distancia entre el i-ésimo punto y el centroide asociado (usando norma Euclideana)
+        distancia = np.linalg.norm(centroide - comprimidos_total[i])
+
+        ## Agrego la distancia del punto a su centroide a la lista
+        distancias_puntos.append(distancia)
+
+plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos)
+plt.ylim(0, 1000)
 plt.show()
 
 ## ------------------------------------------- CLUSTERIZADO DISTANCIAS ----------------------------------------------
