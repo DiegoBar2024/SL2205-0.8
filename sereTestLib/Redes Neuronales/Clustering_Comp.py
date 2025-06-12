@@ -4,6 +4,7 @@ import sys
 from scipy.signal import *
 import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import normalize
 import os
 from PIL import Image as im 
 from matplotlib import pyplot as plt
@@ -52,7 +53,7 @@ for id_persona in ids_existentes:
     ## Creo un bloque try catch en caso de que ocurra algún error en el procesamiento
     try:
 
-        if not id_persona == 299:
+        if not id_persona == 256:
 
             continue
 
@@ -100,12 +101,19 @@ for id_persona in ids_existentes:
         continue
 
 ## Selecciono únicamente aquellas muestras no nulas (elimino el dummy vector)
+## Se obtiene entonces una matriz de datos donde:
+## La i-ésima fila representa el i-ésimo segmento
+## La j-ésima columna representa el j-ésimo feature
 comprimidos_total = comprimidos_total[1:,:]
 
 ## ------------------------------------ CANTIDAD ÓPTIMA DE CLÚSTERS ----------------------------------------------
 
+## Normalización de la matriz de datos de entrada al algoritmo de clustering
+## Hago la normalización por columna es decir por feature
+comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
+
 ## Especifico una lista con la cantidad de clusters que voy a usar durante el análisis
-clusters = np.linspace(2, 10, 9).astype(int)
+clusters = np.linspace(2, 30, 29).astype(int)
 
 ## Creo un vector en donde me guardo la inercia correspondiente al número de clusters
 inercias = []
@@ -210,7 +218,7 @@ for i in range (len(comprimidos_total)):
         distancias_puntos.append(distancia)
 
 plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos)
-plt.ylim(0, 1000)
+plt.ylim(0, max(distancias_puntos) * 1.2)
 plt.show()
 
 ## ------------------------------------------- CLUSTERIZADO DISTANCIAS ----------------------------------------------

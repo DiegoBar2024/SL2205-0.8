@@ -19,7 +19,7 @@ from joblib import dump, load
 
 ## -------------------------------------- DETECCIÓN DE ACTIVIDADES ------------------------------------------
 
-def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, plot = False):
+def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad, plot = False):
 
     ## ---------------------------------------- FILTRADO DE MEDIANA ----------------------------------------
 
@@ -129,6 +129,10 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
     ## Genero un vector para guardar los valores de SMA computados
     vector_SMA = []
 
+    ## Genero un vector donde voy a guardar los features del registro correspondiente para el paciente dado
+    ## El i-ésimo elemento de dicho vector será el vector de features asociada a la i-ésima ventana del registro
+    features = []
+
     ## Pregunto si ya terminó de recorrer todo el vector de muestras
     while ubicacion_muestra < cant_muestras:
 
@@ -165,6 +169,24 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
         ## Actualizo el valor de la ubicación de la muestra para que me guarde la posición en la que debe comenzar la siguiente ventana
         ubicacion_muestra += muestras_ventana - muestras_solapamiento
 
+        ## Hago el cálculo del valor medio para las tres aceleraciones en el segmento
+        valores_medios = [np.mean(segmento_ML), np.mean(segmento_AP), np.mean(segmento_VT)]
+
+        ## Hago el cálculo de la desviación estándar para las tres aceleraciones en el segmento
+        desv_estandar = [np.std(segmento_ML), np.std(segmento_AP), np.std(segmento_VT)]
+
+        ## Hago el cálculo de los valores máximos para las tres aceleraciones en el segmento
+        maximos = [np.max(segmento_ML), np.max(segmento_AP), np.max(segmento_VT)]
+
+        ## Hago el cálculo de los valores máximos para las tres aceleraciones en el segmento
+        minimos = [np.min(segmento_ML), np.min(segmento_AP), np.min(segmento_VT)]
+
+        ## Genero el feature vector correspondiente a la ventana
+        feature_vector = valores_medios + desv_estandar + maximos + minimos
+
+        ## Agrego el feature vector calculado al vector de features
+        features.append(feature_vector)
+
     ## --------------------------------------- GRAFICACIÓN VALORES SMA -------------------------------------
 
     ## En caso de que quiera graficar
@@ -178,16 +200,18 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
         plt.boxplot(vector_SMA)
         plt.show()
 
-    ## Retorno el vector con los valores de SMA
-    return vector_SMA
+    ## Retorno el vector con los valores de SMA y los features (que va a ser una matriz)
+    return vector_SMA, features
 
 ## Ejecución principal del programa
 if __name__== '__main__':
 
-    ## Opción 1: Generar los ficheros JSON con los SMA para cada actividad
+    ## Opción 1: Generar los ficheros JSON con los SMA y features para cada actividad
     ## Opción 2: Calcular el valor del umbral óptimo según los valores de SMA en los archivos JSON
-    ## Opción 3: Llevar a cabo la clasificación de actividades
-    opcion = 3
+    ## Opción 3: Llevar a cabo la clasificación de actividades en reposo/actividad usando SMA
+    ## Opción 4: Procesar las features extraídas de los segmentos de señal
+    ## Opción 5: Discriminación de actividades en base a las features
+    opcion = 2
 
     ## Hago la lectura de los datos generales de los pacientes
     pacientes, ids_existentes = LecturaDatosPacientes()
@@ -247,7 +271,7 @@ if __name__== '__main__':
                             periodoMuestreo = PeriodoMuestreo(data)
 
                         ## Hago el cálculo del vector de SMA para dicha persona
-                        vector_SMA = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras)
+                        vector_SMA, features = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
 
                         ## Hago la lectura del archivo JSON previamente existente
                         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), 'r') as openfile:
@@ -258,11 +282,28 @@ if __name__== '__main__':
                         ## Agrego en el diccionario los datos de SMAs el vector correspondiente al paciente actual
                         vectores_SMAs[str(id_persona)] = vector_SMA
 
+                        ## ---------------------------------- SMA ------------------------------------------
                         ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
                         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), "w") as outfile:
 
                             ## Escribo el diccionario actualizado
                             json.dump(vectores_SMAs, outfile)
+
+                        ## Hago la lectura del archivo JSON previamente existente
+                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_{}.json".format(actividad), 'r') as openfile:
+
+                            # Cargo el diccionario el cual va a ser un objeto JSON
+                            dicc_features = json.load(openfile)
+
+                        ## -------------------------------- FEATURES -----------------------------------------
+                        ## Agrego en el diccionario el vector de features calculado para el paciente actual
+                        dicc_features[str(id_persona)] = features
+
+                        ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
+                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_{}.json".format(actividad), "w") as outfile:
+
+                            ## Escribo el diccionario actualizado
+                            json.dump(dicc_features, outfile)
 
                 ## Si hay un error de procesamiento
                 except:
@@ -468,7 +509,7 @@ if __name__== '__main__':
             periodoMuestreo = PeriodoMuestreo(data)
         
         ## Hago el cálculo del vector de SMA para dicha persona
-        vector_SMA = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras)
+        vector_SMA, features = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
 
         ## ---------------------------------- MÉTODO I -----------------------------------------
         ## Obtengo el valor del umbral para comparar

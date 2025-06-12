@@ -18,12 +18,6 @@ def LecturaDatos(id_persona = None, lectura_datos_propios = False, ruta = None):
         ## --- Los tres ejes de coordenadas deben formar una terna directa de vectores ---
         ## -------------------------------------------------------------------------------
 
-        ## Nombre del paciente
-        nombre_persona = "Diego Barboza"
-
-        ## Fecha de nacimiento del paciente "DD/MM/YYYY"
-        nacimiento_persona = "02/04/2002"
-
         ## SENSOR 952D
         ## Pruebas estandarizadas de 50cm por paso
         # ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session5_Rodrigo_1_952D/505_Session5_Shimmer_952D_Calibrated_PC_Rodrigo_1_952D.txt"
@@ -34,7 +28,7 @@ def LecturaDatos(id_persona = None, lectura_datos_propios = False, ruta = None):
         # ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/2024-07-30_15.40.33_505_PC_Session6_Rodrigo_2_952D/505_Session6_Shimmer_952D_Calibrated_PC.txt"
 
         ## Sesiones con diferentes actividades
-        # ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/Actividades_Rodrigo.txt"
+        # ruta = "C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Rodrigo.txt"
         # ruta = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/Pruebas SabriRodri-20250122T214746Z-001/Actividades_Sabrina.txt"
 
         ## Abro el fichero correspondiente

@@ -2,11 +2,11 @@
 
 from Segmentacion import *
 from scipy.integrate import cumulative_trapezoid
-import os
+import json
 
 ## ---------------------------------- CÁLCULO DE PARÁMETROS DE MARCHA ----------------------------------
 
-def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, long_pierna = 1):
+def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, long_pierna = 1):
 
     ## -------------------------------------- FILTRADO ACELERACIÓN -----------------------------------------
 
@@ -77,6 +77,26 @@ def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
         ## Agrego el desplazamiento máximo del COM calculado a la lista
         desp_vert_COM.append(d_step)
 
+    ## ----------------------------- CARGADO DEL PARÁMETRO DE LONGITUD DE PASO -----------------------------
+
+    ## Hago la lectura del archivo JSON previamente existente
+    with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/OptimizacionM1.json", 'r') as openfile:
+
+        # Cargo el diccionario el cual va a ser un objeto JSON
+        dicc_optimizacion = json.load(openfile)
+    
+    ## En caso de que el paciente tenga parámetros ya optimizados
+    if str(id_persona) in list(dicc_optimizacion.keys()):
+
+        ## Obtengo la lista de parámetros optimizados asociados al ID de la persona
+        parametros = dicc_optimizacion[str(id_persona)]
+    
+    ## En caso de que el paciente no tenga parámetros correspondientes
+    else:
+
+        ## Seteo el factor de corrección a 1.25 por defecto
+        parametros = 1.25
+
     ## ----------------------------- CÁLCULO DE LA LONGITUD DEL PASO (MÉTODO I) ----------------------------
 
     ## Especifico la longitud de la pierna del individuo en metros
@@ -94,7 +114,7 @@ def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
     ## Especifico el coeficiente multiplicativo que uso para ponderar la longitud del paso
     ## Los estudios sugieren usar un factor de corrección multiplicativo de 1.25 para la longitud del paso
     ## Obtengo de las pruebas el valor óptimo como el promedio de los parámetros optimizados
-    factor_correccion = 1.25
+    factor_correccion = np.mean(parametros)
 
     ## Itero para cada uno de los segmentos de pasos detectados (IC a IC)
     for i in range (len(segmentada)):

@@ -10,6 +10,7 @@ from ContactosIniciales import *
 from ContactosTerminales import *
 from Segmentacion import *
 from LongitudPasoM1 import *
+from LongitudPasoM2 import *
 from GeneracionReporte import *
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
@@ -50,8 +51,11 @@ contactos_terminales = ContactosTerminales(acel, cant_muestras, periodoMuestreo,
 ## Hago la segmentación de la marcha
 pasos, duraciones_pasos = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro)
 
-## Cálculo de parámetros de marcha
-pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, longitud_pierna)
+## Cálculo de parámetros de marcha usando el método I
+pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, longitud_pierna)
+
+## Cálculo de parámetros de marcha usando el método II
+pasos_numerados_m2, frecuencias_m2, velocidades_m2, long_pasos_m2, coeficientes_m2 = LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, id_persona)
 
 ## --------------------------------------- GENERACIÓN DEL REPORTE -----------------------------------------
 

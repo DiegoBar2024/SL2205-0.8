@@ -20,17 +20,20 @@ from DeteccionActividades import DeteccionActividades
 
 ## ----------------------------------- INFERENCIA DE ACTIVIDADES ------------------------------------------
 
-## Hago la lectura de los datos
-data, acel, gyro, cant_muestras, periodoMuestreo, nombre_persona, nacimiento_persona, tiempo = LecturaDatos(id_persona = None, lectura_datos_propios = True)
+## Especifico la ruta en la cual se encuentra el registro a leer
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/MarchaEstandar_Rodrigo.txt'
+
+##  Hago la lectura de los datos
+data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = None, lectura_datos_propios = True, ruta = ruta_registro)
 
 ## Defino la cantidad de muestras de la ventana que voy a tomar
-muestras_ventana = 200
+muestras_ventana = 300
 
 ## Defino la cantidad de muestras de solapamiento entre ventanas
-muestras_solapamiento = 100
+muestras_solapamiento = 150
 
 ## Hago el cálculo del vector de SMA para dicha persona
-vector_SMA = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras)
+vector_SMA, features = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad = None)
 
 ## Cargo el modelo del clasificador ya entrenado según la ruta del clasificador
 clf_entrenado = load("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")

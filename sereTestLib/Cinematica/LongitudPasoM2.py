@@ -3,11 +3,11 @@
 from Segmentacion import *
 import pandas as pd
 from scipy.integrate import cumulative_trapezoid
-import os
+import json
 
 ## ---------------------------------- CÁLCULO DE PARÁMETROS DE MARCHA ----------------------------------
 
-def LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, long_pierna = 1, long_pie = 0.03):
+def LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, long_pierna = 1, long_pie = 0.03):
 
     ## -------------------------------------- FILTRADO ACELERACIÓN -----------------------------------------
 
@@ -64,6 +64,26 @@ def LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
         ## Luego lo agrego a la señal segmentada
         segmentada.append(segmento)
 
+    ## ----------------------------- CARGADO DEL PARÁMETRO DE LONGITUD DE PASO -----------------------------
+
+    ## Hago la lectura del archivo JSON previamente existente
+    with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/OptimizacionM2.json", 'r') as openfile:
+
+        # Cargo el diccionario el cual va a ser un objeto JSON
+        dicc_optimizacion = json.load(openfile)
+    
+    ## En caso de que el paciente tenga parámetros ya optimizados
+    if str(id_persona) in list(dicc_optimizacion.keys()):
+        
+        ## Obtengo la lista de parámetros optimizados asociados al ID de la persona
+        parametros = dicc_optimizacion[str(id_persona)]
+    
+    ## En caso de que el paciente no tenga parámetros correspondientes
+    else:
+
+        ## Seteo el factor de corrección a 0.75 por defecto
+        parametros = 0.75
+
     ## ----------------------------- CÁLCULO DE LA LONGITUD DEL PASO (MÉTODO II) ---------------------------
 
     ## Especifico la longitud de la pierna del individuo en metros
@@ -85,7 +105,7 @@ def LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
     ## Especifico el coeficiente multiplicativo que uso para ponderar la longitud del pie
     ## Los estudios sugieren usar un factor de corrección multiplicativo de 0.75 para la longitud del pie
     ## La idea es poder usar éste coeficiente para optimizar el modelo
-    factor_correccion_pie = 0.75
+    factor_correccion_pie = np.mean(parametros)
 
     ## Itero para cada uno de los segmentos de pasos detectados (IC a IC)
     for i in range (len(pasos)):
