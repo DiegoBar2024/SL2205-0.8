@@ -2,6 +2,7 @@
 
 import sys
 from scipy.signal import *
+import scipy.spatial
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import normalize
@@ -53,7 +54,7 @@ for id_persona in ids_existentes:
     ## Creo un bloque try catch en caso de que ocurra algún error en el procesamiento
     try:
 
-        if not id_persona == 256:
+        if not id_persona == 114:
 
             continue
 
@@ -217,12 +218,44 @@ for i in range (len(comprimidos_total)):
         ## Agrego la distancia del punto a su centroide a la lista
         distancias_puntos.append(distancia)
 
+## Graficación de las distancias de cada punto a los clusters
 plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos)
 plt.ylim(0, max(distancias_puntos) * 1.2)
 plt.show()
+
+## -------------------------------------------- TRAYECTORIA CLUSTERS ------------------------------------------------
+
+## Obtengo los centroides correspondientes a cada clúster
+centroides_clusters = kmeans.cluster_centers_
+
+## Obtengo las etiquetas asociadas a los elementos del dataset según el cluster al que pertenecen (trayectoria)
+etiquetas_cluster = kmeans.labels_
+
+# ## Graficación de la trayectoria de los puntos a través de los diferentes clusters
+# plt.scatter(np.linspace(0, len(etiquetas_cluster) - 1, len(etiquetas_cluster)), etiquetas_cluster)
+# plt.show()
 
 ## ------------------------------------------- CLUSTERIZADO DISTANCIAS ----------------------------------------------
 
 ## Hago otra etapa de clusterizado pero para las distancias
 ## La idea es que al hacer clustering con K = 2 se puedan separar las muestras normales de las anormales por el criterio de distancias
 kmeans_distancias = KMeans(n_clusters = 2, random_state = 0, n_init = "auto").fit(np.array((distancias_puntos)).reshape(-1, 1))
+
+## ------------------------------------------- K-VECINOS MÁS PRÓXIMOS ------------------------------------------------
+
+## Éste algoritmo implementa la distancia promedio entre un punto y sus K vecinos más próximos donde el valor de K es paramétrico
+## Construyo un árbol KD para hacer la búsqueda
+kdt = scipy.spatial.cKDTree(comprimidos_total)
+
+## Especifico el número K de vecinos más próximos de cada punto que voy a usar para tener en cuenta
+k = 10
+
+## Hago el cálculo de la distancia entre cada punto y sus K vecinos más proximos
+dists, neighs = kdt.query(comprimidos_total, k + 1)
+
+## Hago el cálculo del promedio de las distancias de cada punto a su K vecino más próximo
+avg_dists = np.mean(dists[:, 1:], axis = 1)
+
+## Hago la graficación de los valores de distancia promedio a los K vecinos más próximos
+plt.scatter(np.linspace(0, len(avg_dists) - 1, len(avg_dists)), avg_dists)
+plt.show()

@@ -207,10 +207,8 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
 if __name__== '__main__':
 
     ## Opción 1: Generar los ficheros JSON con los SMA y features para cada actividad
-    ## Opción 2: Calcular el valor del umbral óptimo según los valores de SMA en los archivos JSON
+    ## Opción 2: Entrenamiento de modelos que permitan discriminar actividades usando SMA y otras features
     ## Opción 3: Llevar a cabo la clasificación de actividades en reposo/actividad usando SMA
-    ## Opción 4: Procesar las features extraídas de los segmentos de señal
-    ## Opción 5: Discriminación de actividades en base a las features
     opcion = 2
 
     ## Hago la lectura de los datos generales de los pacientes
@@ -314,6 +312,7 @@ if __name__== '__main__':
     ## En caso de que quiera procesar los JSON de SMA para poder calcular el umbral de clasificación (opción 2)
     elif opcion == 2:
 
+        ## ---------------------------------- PROCESAMIENTO SMA -----------------------------------------
         ## Hago la lectura del archivo JSON previamente existente
         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_Parado.json", 'r') as openfile:
 
@@ -338,6 +337,33 @@ if __name__== '__main__':
             # Cargo el diccionario el cual va a ser un objeto JSON
             SMA_escaleras = json.load(openfile)
         
+        ## ----------------------------- PROCESAMIENTO FEATURES -----------------------------------------
+        ## Hago la lectura del archivo JSON previamente existente
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_Parado.json", 'r') as openfile:
+
+            # Cargo el diccionario el cual va a ser un objeto JSON
+            features_parado = json.load(openfile)
+        
+        ## Hago la lectura del archivo JSON previamente existente
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_Sentado.json", 'r') as openfile:
+
+            # Cargo el diccionario el cual va a ser un objeto JSON
+            features_sentado = json.load(openfile)
+        
+        ## Hago la lectura del archivo JSON previamente existente
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_Caminando.json", 'r') as openfile:
+
+            # Cargo el diccionario el cual va a ser un objeto JSON
+            features_caminando = json.load(openfile)
+        
+        ## Hago la lectura del archivo JSON previamente existente
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_Escalera.json", 'r') as openfile:
+
+            # Cargo el diccionario el cual va a ser un objeto JSON
+            features_escaleras = json.load(openfile)
+        
+        ## ----------------------- CÁLCULO DE UMBRALES Y ENTRENAMIENTO -----------------------------------------
+
         ## Creo un vector donde voy a guardar todos los valores de SMA de registros parado
         valores_SMA_parado = []
 
@@ -349,6 +375,18 @@ if __name__== '__main__':
         
         ## Creo un vector donde voy a guardar todos los valores de SMA de registros de escaleras
         valores_SMA_escaleras = []
+
+        ## Creo un vector donde voy a guardar todos los features de registros parado
+        features_SMA_parado = []
+
+        ## Creo un vector donde voy a guardar todos los features de registros sentado
+        features_SMA_sentado = []
+        
+        ## Creo un vector donde voy a guardar todos los features de registros caminando
+        features_SMA_caminando = []
+        
+        ## Creo un vector donde voy a guardar todos los features de registros de escaleras
+        features_SMA_escaleras = []
 
         ## Itero para cada una de las claves en el diccionario de SMA parado
         for id in list(SMA_parado.keys()):
@@ -403,65 +441,52 @@ if __name__== '__main__':
         ## Test de Hipótesis para la comprobación de la igualdad de las medianas entre ambas poblaciones
         test_medianas = kruskal(SMA_movimiento, SMA_reposo)
 
-        ## Hago el histograma comparando los valores de SMA para las actividades de movimiento (caminando y escaleras)
-        plt.hist(SMA_movimiento)
-        plt.xlabel('Valor SMA')
-        plt.ylabel('Frecuencia absoluta')
-        plt.show()
+        # ## ---------------------------------- MÉTODO I -----------------------------------------
+        # ## El primer método de cálculo de umbral óptimo involucra el uso de estadísticas provenientes de la muestra
+        # ## Construyo un vector de indicadores estadísticos para los valores de SMA en movimiento
+        # stats_SMA_mov = [np.mean(SMA_movimiento), np.median(SMA_movimiento), np.std(SMA_movimiento)]
 
-        ## Hago el histograma comparando los valores de SMA para las actividades de movimiento (sentado y parado)
-        plt.hist(SMA_reposo, bins = 10)
-        plt.xlabel('Valor SMA')
-        plt.ylabel('Frecuencia absoluta')
-        plt.gca().set_xlim((0, 100))
-        plt.show()
+        # ## Construyo un vector de indicadores estadísticos para los valores de SMA en reposo
+        # stats_SMA_rep = [np.mean(SMA_reposo), np.median(SMA_reposo), np.std(SMA_reposo)]
 
-        ## ---------------------------------- MÉTODO I -----------------------------------------
-        ## El primer método de cálculo de umbral óptimo involucra el uso de estadísticas provenientes de la muestra
-        ## Construyo un vector de indicadores estadísticos para los valores de SMA en movimiento
-        stats_SMA_mov = [np.mean(SMA_movimiento), np.median(SMA_movimiento), np.std(SMA_movimiento)]
+        # ## El criterio que tomo para definir el umbral de SMA es el siguiente:
+        # ## Sea a = Media(SMA_movimiento) - Desv(SMA_movimiento)
+        # ## Sea b = Media(SMA_reposo) + Desv(SMA_reposo)
+        # ## Entonces el valor del umbral lo ajusto al punto medio de a y b para que quede margen: umbral = (a + b) / 2
+        # umbral = (stats_SMA_mov[0] - stats_SMA_mov[2] + stats_SMA_rep[0] + stats_SMA_rep[2]) / 2
 
-        ## Construyo un vector de indicadores estadísticos para los valores de SMA en reposo
-        stats_SMA_rep = [np.mean(SMA_reposo), np.median(SMA_reposo), np.std(SMA_reposo)]
+        # ## ---------------------------------- MÉTODO II -----------------------------------------
+        # ## El segundo método de cálculo de umbral óptimo involucra el entrenamiento de un SVM con los datos etiquetados por actividad
+        # ## Construyo la Support Vector Machine
+        # clf = SVC(C = 1, gamma = 1, kernel = 'rbf')
 
-        ## El criterio que tomo para definir el umbral de SMA es el siguiente:
-        ## Sea a = Media(SMA_movimiento) - Desv(SMA_movimiento)
-        ## Sea b = Media(SMA_reposo) + Desv(SMA_reposo)
-        ## Entonces el valor del umbral lo ajusto al punto medio de a y b para que quede margen: umbral = (a + b) / 2
-        umbral = (stats_SMA_mov[0] - stats_SMA_mov[2] + stats_SMA_rep[0] + stats_SMA_rep[2]) / 2
+        # ## Llevo a cabo el entrenamiento del clasificador
+        # ## <<values>> es la secuencia de valores de entrada
+        # ## <<ground_truth>> es la secuencia de valores de salida
+        # ## Se etiquetan como 0 las actividades de reposo mientras que se etiquetan como 1 las actividades de movimiento
+        # clf.fit(np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))))
 
-        ## ---------------------------------- MÉTODO II -----------------------------------------
-        ## El segundo método de cálculo de umbral óptimo involucra el entrenamiento de un SVM con los datos etiquetados por actividad
-        ## Construyo la Support Vector Machine
-        clf = SVC(C = 1, gamma = 1, kernel = 'rbf')
+        # ## Guardo el modelo entrenado en la ruta de salida
+        # dump(clf, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
 
-        ## Llevo a cabo el entrenamiento del clasificador
-        ## <<values>> es la secuencia de valores de entrada
-        ## <<ground_truth>> es la secuencia de valores de salida
-        ## Se etiquetan como 0 las actividades de reposo mientras que se etiquetan como 1 las actividades de movimiento
-        clf.fit(np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))))
+        # ## Hago la lectura del archivo JSON previamente existente
+        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", 'r') as openfile:
 
-        ## Guardo el modelo entrenado en la ruta de salida
-        dump(clf, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
-
-        ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", 'r') as openfile:
-
-            # Cargo el valor existente del JSON
-            dicc_umbral = json.load(openfile)
+        #     # Cargo el valor existente del JSON
+        #     dicc_umbral = json.load(openfile)
         
-        ## Genero el diccionario conteniendo el valor del umbral calculado
-        ## La clave estará generada por la cantidad de muestras por ventana y la cantidad de muestras de solapamiento
-        dicc_umbral = {'U_{}_{}'.format(muestras_ventana, muestras_solapamiento): umbral}
+        # ## Genero el diccionario conteniendo el valor del umbral calculado
+        # ## La clave estará generada por la cantidad de muestras por ventana y la cantidad de muestras de solapamiento
+        # dicc_umbral = {'U_{}_{}'.format(muestras_ventana, muestras_solapamiento): umbral}
         
-        ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", "w") as outfile:
+        # ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
+        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", "w") as outfile:
 
-            ## Escribo el diccionario actualizado
-            json.dump(dicc_umbral, outfile)
+        #     ## Escribo el diccionario actualizado
+        #     json.dump(dicc_umbral, outfile)
         
-    ## En caso de que quiera realizar la clasificación
-    else:
+    ## En caso de que quiera realizar la clasificación actividad/reposo en base al valor del SMA
+    elif opcion == 3:
 
         ## Hago la lectura del archivo JSON previamente existente
         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", 'r') as openfile:
@@ -529,3 +554,9 @@ if __name__== '__main__':
         ## Etiqueta 0: Reposo
         ## Etiqueta 1: Movimiento
         pat_predictions = clf_trained.predict(np.array((vector_SMA)).reshape(-1, 1))
+    
+    ## En caso de que el valor de entrada no sea correcto
+    else:
+
+        ## Quiero que arroje un mensaje de error
+        print("Opción incorrecta")

@@ -27,10 +27,10 @@ ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/MarchaEstandar_Rodrigo.
 data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = None, lectura_datos_propios = True, ruta = ruta_registro)
 
 ## Defino la cantidad de muestras de la ventana que voy a tomar
-muestras_ventana = 300
+muestras_ventana = 200
 
 ## Defino la cantidad de muestras de solapamiento entre ventanas
-muestras_solapamiento = 150
+muestras_solapamiento = 100
 
 ## Hago el cálculo del vector de SMA para dicha persona
 vector_SMA, features = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad = None)
