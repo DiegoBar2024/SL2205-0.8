@@ -15,6 +15,7 @@ import json
 import seaborn as sns
 from scipy.stats import *
 from sklearn.svm import SVC
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from joblib import dump, load
 
 ## -------------------------------------- DETECCIÓN DE ACTIVIDADES ------------------------------------------
@@ -140,31 +141,49 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
         if (cant_muestras - ubicacion_muestra < muestras_ventana):
         
             ## Me quedo con el segmento de la aceleración mediolateral (componente BA)
-            segmento_ML = acc_ML_BA[ubicacion_muestra :]
+            segmento_ML_filt = acc_ML_BA[ubicacion_muestra :]
 
             ## Me quedo con el segmento de la aceleración vertical (componente BA)
-            segmento_VT = acc_VT_BA[ubicacion_muestra :]
+            segmento_VT_filt = acc_VT_BA[ubicacion_muestra :]
 
             ## Me quedo con el segmento de la aceleración anteroposterior (componente BA)
-            segmento_AP = acc_AP_BA[ubicacion_muestra :]
+            segmento_AP_filt = acc_AP_BA[ubicacion_muestra :]
+
+            ## Me quedo con el segmento de la aceleración mediolateral (componente original)
+            segmento_ML = acc_ML[ubicacion_muestra :]
+
+            ## Me quedo con el segmento de la aceleración vertical (componente original)
+            segmento_VT = acc_VT[ubicacion_muestra :]
+
+            ## Me quedo con el segmento de la aceleración anteroposterior (componente original)
+            segmento_AP = acc_AP[ubicacion_muestra :]
         
         ## En otro caso, digo que la ventana tenga el tamaño predefinido
         else:
 
             ## Me quedo con el segmento de la aceleración mediolateral (componente BA)
-            segmento_ML = acc_ML_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
+            segmento_ML_filt = acc_ML_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
 
             ## Me quedo con el segmento de la aceleración vertical (componente BA)
-            segmento_VT = acc_VT_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
+            segmento_VT_filt = acc_VT_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
 
             ## Me quedo con el segmento de la aceleración anteroposterior (componente BA)
-            segmento_AP = acc_AP_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
+            segmento_AP_filt = acc_AP_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
+
+            ## Me quedo con el segmento de la aceleración mediolateral (componente original)
+            segmento_ML = acc_ML[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
+
+            ## Me quedo con el segmento de la aceleración vertical (componente original)
+            segmento_VT = acc_VT[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
+
+            ## Me quedo con el segmento de la aceleración anteroposterior (componente original)
+            segmento_AP = acc_AP[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
 
         ## Hago el cálculo del SMA (Signal Magnitude Area) para dicha ventana siguiendo la definición
-        SMA = (np.sum(np.abs(segmento_ML)) + np.sum(np.abs(segmento_VT)) + np.sum(np.abs(segmento_AP))) / (periodoMuestreo * muestras_ventana)
+        valor_SMA = (np.sum(np.abs(segmento_ML_filt)) + np.sum(np.abs(segmento_VT_filt)) + np.sum(np.abs(segmento_AP_filt))) / (periodoMuestreo * muestras_ventana)
 
         ## Agrego el valor computado de SMA al vector correspondiente
-        vector_SMA.append(SMA)
+        vector_SMA.append(valor_SMA)
 
         ## Actualizo el valor de la ubicación de la muestra para que me guarde la posición en la que debe comenzar la siguiente ventana
         ubicacion_muestra += muestras_ventana - muestras_solapamiento
@@ -182,7 +201,7 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
         minimos = [np.min(segmento_ML), np.min(segmento_AP), np.min(segmento_VT)]
 
         ## Genero el feature vector correspondiente a la ventana
-        feature_vector = valores_medios + desv_estandar + maximos + minimos
+        feature_vector = valores_medios + desv_estandar + maximos + minimos + [valor_SMA]
 
         ## Agrego el feature vector calculado al vector de features
         features.append(feature_vector)
@@ -271,6 +290,7 @@ if __name__== '__main__':
                         ## Hago el cálculo del vector de SMA para dicha persona
                         vector_SMA, features = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
 
+                        ## ---------------------------------- SMA ------------------------------------------
                         ## Hago la lectura del archivo JSON previamente existente
                         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), 'r') as openfile:
 
@@ -280,20 +300,19 @@ if __name__== '__main__':
                         ## Agrego en el diccionario los datos de SMAs el vector correspondiente al paciente actual
                         vectores_SMAs[str(id_persona)] = vector_SMA
 
-                        ## ---------------------------------- SMA ------------------------------------------
                         ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
                         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), "w") as outfile:
 
                             ## Escribo el diccionario actualizado
                             json.dump(vectores_SMAs, outfile)
 
+                        ## -------------------------------- FEATURES -----------------------------------------
                         ## Hago la lectura del archivo JSON previamente existente
                         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_{}.json".format(actividad), 'r') as openfile:
 
                             # Cargo el diccionario el cual va a ser un objeto JSON
                             dicc_features = json.load(openfile)
 
-                        ## -------------------------------- FEATURES -----------------------------------------
                         ## Agrego en el diccionario el vector de features calculado para el paciente actual
                         dicc_features[str(id_persona)] = features
 
@@ -377,22 +396,25 @@ if __name__== '__main__':
         valores_SMA_escaleras = []
 
         ## Creo un vector donde voy a guardar todos los features de registros parado
-        features_SMA_parado = []
+        vectores_features_parado = []
 
         ## Creo un vector donde voy a guardar todos los features de registros sentado
-        features_SMA_sentado = []
+        vectores_features_sentado = []
         
         ## Creo un vector donde voy a guardar todos los features de registros caminando
-        features_SMA_caminando = []
+        vectores_features_caminando = []
         
         ## Creo un vector donde voy a guardar todos los features de registros de escaleras
-        features_SMA_escaleras = []
+        vectores_features_escaleras = []
 
         ## Itero para cada una de las claves en el diccionario de SMA parado
         for id in list(SMA_parado.keys()):
 
             ## Concateno los SMAs del registro parado a la lista actual
             valores_SMA_parado += SMA_parado[id]
+
+            ## Concateno los features del registro de parado a la lista actual
+            vectores_features_parado += features_parado[id]
         
         ## Itero para cada una de las claves en el diccionario de SMA sentado
         for id in list(SMA_sentado.keys()):
@@ -400,18 +422,27 @@ if __name__== '__main__':
             ## Concateno los SMAs del registro sentado a la lista actual
             valores_SMA_sentado += SMA_sentado[id]
 
+            ## Concateno los features del registro de sentado a la lista actual
+            vectores_features_sentado += features_sentado[id]
+
         ## Itero para cada una de las claves en el diccionario de SMA caminando
         for id in list(SMA_caminando.keys()):
 
             ## Concateno los SMAs del registro caminando a la lista actual
             valores_SMA_caminando += SMA_caminando[id]
 
+            ## Concateno los features del registro de caminando a la lista actual
+            vectores_features_caminando += features_caminando[id]
+
         ## Itero para cada una de las claves en el diccionario de SMA parado
         for id in list(SMA_escaleras.keys()):
 
             ## Concateno los SMAs del registro parado a la lista actual
             valores_SMA_escaleras += SMA_escaleras[id]
-        
+            
+            ## Concateno los features del registro de escalera a la lista actual
+            vectores_features_escaleras += features_escaleras[id]
+
         ## Defino el diccionario con los correspondientes valores de SMA para cada actividad para luego hacer el boxplot
         valores_SMA = {'Parado': valores_SMA_parado, 'Sentado': valores_SMA_sentado, 'Caminando': valores_SMA_caminando, 'Escaleras': valores_SMA_escaleras}
 
@@ -433,15 +464,16 @@ if __name__== '__main__':
         plt.show()
 
         ## Test de Hipótesis de Anderson-Darling para la comprobación de normalidad de los valores de SMA en reposo
-        anderson_reposo = anderson(SMA_reposo, dist='norm')
+        anderson_reposo = anderson(SMA_reposo, dist = 'norm')
 
         ## Test de Hipótesis de Anderson-Darling para la comprobación de normalidad de los valores de SMA en movimiento
-        anderson_mov = anderson(SMA_movimiento, dist='norm')
+        anderson_mov = anderson(SMA_movimiento, dist = 'norm')
 
         ## Test de Hipótesis para la comprobación de la igualdad de las medianas entre ambas poblaciones
         test_medianas = kruskal(SMA_movimiento, SMA_reposo)
 
         # ## ---------------------------------- MÉTODO I -----------------------------------------
+        
         # ## El primer método de cálculo de umbral óptimo involucra el uso de estadísticas provenientes de la muestra
         # ## Construyo un vector de indicadores estadísticos para los valores de SMA en movimiento
         # stats_SMA_mov = [np.mean(SMA_movimiento), np.median(SMA_movimiento), np.std(SMA_movimiento)]
@@ -454,20 +486,6 @@ if __name__== '__main__':
         # ## Sea b = Media(SMA_reposo) + Desv(SMA_reposo)
         # ## Entonces el valor del umbral lo ajusto al punto medio de a y b para que quede margen: umbral = (a + b) / 2
         # umbral = (stats_SMA_mov[0] - stats_SMA_mov[2] + stats_SMA_rep[0] + stats_SMA_rep[2]) / 2
-
-        # ## ---------------------------------- MÉTODO II -----------------------------------------
-        # ## El segundo método de cálculo de umbral óptimo involucra el entrenamiento de un SVM con los datos etiquetados por actividad
-        # ## Construyo la Support Vector Machine
-        # clf = SVC(C = 1, gamma = 1, kernel = 'rbf')
-
-        # ## Llevo a cabo el entrenamiento del clasificador
-        # ## <<values>> es la secuencia de valores de entrada
-        # ## <<ground_truth>> es la secuencia de valores de salida
-        # ## Se etiquetan como 0 las actividades de reposo mientras que se etiquetan como 1 las actividades de movimiento
-        # clf.fit(np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))))
-
-        # ## Guardo el modelo entrenado en la ruta de salida
-        # dump(clf, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
 
         # ## Hago la lectura del archivo JSON previamente existente
         # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", 'r') as openfile:
@@ -484,7 +502,55 @@ if __name__== '__main__':
 
         #     ## Escribo el diccionario actualizado
         #     json.dump(dicc_umbral, outfile)
+
+        # ## ---------------------------------- MÉTODO II -----------------------------------------
         
+        # ## El segundo método de cálculo de umbral óptimo involucra el entrenamiento de un SVM con los datos etiquetados por actividad
+        # ## Construyo la Support Vector Machine
+        # clf_rep_act = SVC(C = 1, gamma = 1, kernel = 'rbf')
+
+        # ## Llevo a cabo el entrenamiento del clasificador
+        # ## <<values>> es la secuencia de valores de entrada
+        # ## <<ground_truth>> es la secuencia de valores de salida
+        # ## Se etiquetan como 0 las actividades de reposo mientras que se etiquetan como 1 las actividades de movimiento
+        # clf_rep_act.fit(np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))))
+
+        # ## Guardo el modelo entrenado en la ruta de salida
+        # dump(clf, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
+        
+        ## ---------------------------------- MÉTODO III -----------------------------------------
+        
+        ## Construyo un tensor bimensional para el entrenamiento donde:
+        ## La i-ésima fila identifica a la i-ésima instancia de entrenamiento
+        ## La j-ésima columna identifica a la j-ésima feature tomada
+        features_total = np.concatenate((np.array(vectores_features_escaleras), np.array(vectores_features_parado), np.array(vectores_features_sentado), np.array(vectores_features_caminando)))
+
+        ## Construyo el vector de etiquetas correspondiente con el siguiente significado:
+        ## Etiqueta 0: Escaleras
+        ## Etiqueta 1: Parado
+        ## Etiqueta 2: Sentado
+        ## Etiqueta 3: Caminando
+        etiquetas = np.concatenate((np.zeros(len(vectores_features_escaleras)), np.ones(len(vectores_features_parado)), 
+                                    2 * np.ones(len(vectores_features_sentado)), 3 * np.ones(len(vectores_features_caminando)))).astype(int)
+        
+        ## Construyo una support vector machine especificando una opción 'One Versus One'
+        clf_act = SVC(decision_function_shape = 'ovo')
+
+        ## Hago el entrenamiento del clasificador
+        clf_act.fit(features_total, etiquetas)
+
+        ## Guardo el modelo entrenado en la ruta de salida
+        dump(clf_act, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM_Nuevo_Actividades.joblib")
+
+        ## Construyo el clasificador LDA
+        lda_act = LinearDiscriminantAnalysis()
+
+        ## Hago el entrenamiento del clasificador LDA
+        lda_act.fit(features_total, etiquetas)
+
+        ## Guardo el modelo entrenado en la ruta de salida
+        dump(lda_act, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/LDA_Nuevo_Actividades.joblib")
+
     ## En caso de que quiera realizar la clasificación actividad/reposo en base al valor del SMA
     elif opcion == 3:
 
