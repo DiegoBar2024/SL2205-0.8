@@ -46,6 +46,9 @@ id_estables = np.concatenate((train_estables, val_estables))
 ## Obtengo el conjunto de inestables
 id_inestables = np.concatenate((train_inestables, val_inestables))
 
+## Obtengo el conjunto de los IDs de todos los pacientes
+ids_pacientes = np.concatenate((id_estables, id_inestables))
+
 ## ---------------------------------- CARGADO DE COMPRIMIDAS ESTABLES ----------------------------------
 
 ## Especifico la ruta en la cual se encuentran las muestras comprimidas
@@ -56,6 +59,12 @@ estables = np.zeros((1, 256))
 
 ## Construyo una lista donde voy a guardar las muestras etiquetadas como inestables
 inestables = np.zeros((1, 256))
+
+## Inicializo un diccionario cuya clave va a ser el ID del paciente y el valor una tupla con las posiciones de sus objetos en la matriz en estables
+ids_posiciones_estables = {}
+
+## Inicializo un diccionario cuya clave va a ser el ID del paciente y el valor una tupla con las posiciones de sus objetos en la matriz en inestables
+ids_posiciones_inestables = {}
 
 ## Itero para cada uno de los IDs considerados como estables
 for estable in id_estables:
@@ -68,6 +77,9 @@ for estable in id_estables:
 
         ## Selecciono la representación en espacio latente de los segmentos de marcha
         latente_estable = comprimida_estable['X']
+
+        ## Guardo en el diccionario la ID del paciente con sus posiciones
+        ids_posiciones_estables[str(estable)] = (len(estables) - 1, len(estables) + len(latente_estable) - 2)
 
         ## Agrego dicho espacio latente a la lista de estables
         estables = np.concatenate((estables, latente_estable), axis = 0)
@@ -92,6 +104,9 @@ for inestable in id_inestables:
         ## Selecciono la representación en espacio latente de los segmentos de marcha
         latente_inestable = comprimida_inestable['X']
 
+        ## Guardo en el diccionario la ID del paciente con sus posiciones
+        ids_posiciones_inestables[str(inestable)] = (len(inestables) - 1, len(inestables) + len(latente_inestable) - 2)
+
         ## Agrego dicho espacio latente a la lista de estables
         inestables = np.concatenate((inestables, latente_inestable), axis = 0)
 
@@ -106,3 +121,77 @@ estables = estables[1:,:]
 
 ## Selecciono únicamente aquellas muestras no nulas (elimino el dummy vector) para inestables
 inestables = inestables[1:,:]
+
+## -------------------------------- VALIDACIÓN CRUZADA DE LOS MODELOS ----------------------------------
+
+## Inicializo una lista en la cual voy a guardar los errores de predicción para el modelo
+errores_prediccion = []
+
+## Genero una variable la cual especifique el modelo que voy a usar para hacer la validacion
+modelo = 'lda'
+
+## Itero para cada uno de los pacientes en el conjunto de IDs de entrenamiento y validacion
+for id_paciente in ids_pacientes:
+
+    ## Construyo un bloque try except para atrapar errores
+    try:
+
+        ## Asigno por defecto el conjunto de entrenamiento de los estables al vector total de estables
+        train_estables = estables
+
+        ## Asigno por defecto el conjunto de entrenamiento de los inestables al vector total de inestables
+        train_inestables = inestables
+
+        ## En caso de que el paciente sea estable
+        if id_paciente in id_estables:
+
+            ## Selecciono los segmentos asociados al paciente como conjunto de validacion
+            validation_set = estables[ids_posiciones_estables[str(id_paciente)][0] : ids_posiciones_estables[str(id_paciente)][1] + 1, :]
+
+            ## Saco el conjunto de validación del conjunto de entrenamiento de estables
+            train_estables = np.concatenate((estables[ : ids_posiciones_estables[str(id_paciente)][0], :], estables[ids_posiciones_estables[str(id_paciente)][1] + 1 :, :]))
+
+            ## Genero el vector de etiquetas para el conjunto de validación correspondiente
+            etiquetas_val = np.zeros(len(validation_set))
+
+        ## En caso de que el paciente sea inestable
+        elif id_paciente in id_inestables:
+
+            ## Selecciono los segmentos asociados al paciente como conjunto de validacion
+            validation_set = inestables[ids_posiciones_inestables[str(id_paciente)][0] : ids_posiciones_inestables[str(id_paciente)][1] + 1, :]
+
+            ## Saco el conjunto de validación del conjunto de entrenamiento de inestables
+            train_inestables = np.concatenate((inestables[ : ids_posiciones_inestables[str(id_paciente)][0], :], inestables[ids_posiciones_inestables[str(id_paciente)][1] + 1 :, :]))
+
+            ## Genero el vector de etiquetas para el conjunto de validación correspondiente
+            etiquetas_val = np.zeros(len(validation_set))
+
+        ## Obtengo el vector de etiquetas según estabilidad (0 es estable, 1 es inestable)
+        etiquetas = np.concatenate((np.zeros(train_estables.shape[0]), np.ones(train_inestables.shape[0])))
+
+        ## Hago la concatenación de las matrices para obtener el conjunto de entrenamiento total
+        train_set = np.concatenate((train_estables, train_inestables))
+
+        ## En caso de que el modelo elegido sea LDA
+        if modelo == 'lda':
+
+            ## Construyo el modelo inicial
+            lda_model = LinearDiscriminantAnalysis()
+
+            ## Hago el entrenamiento del modelo usando el conjunto de entrenamiento y sus etiquetas
+            lda_model.fit(train_set, etiquetas)
+
+            ## Hago la prediccion del modelo para el validation set
+            val_predict = lda_model.predict(validation_set)
+
+            ## Calculo el error correspondiente al modelo como el cociente entre los segmentos mal clasificados del paciente y los segmentos totales
+            error = np.logical_xor(val_predict, etiquetas_val)[np.logical_xor(val_predict, etiquetas_val) == True].shape[0] / np.logical_xor(val_predict, etiquetas_val).shape[0]
+
+            ## Agrego el error de predicción junto con el ID del paciente usado para la validación
+            errores_prediccion.append((id_paciente, error))
+
+    ## En caso de que haya algún error
+    except:
+
+        ## Que continúe con la siguiente muestra
+        continue
