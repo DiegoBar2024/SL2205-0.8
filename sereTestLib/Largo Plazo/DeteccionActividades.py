@@ -189,16 +189,16 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
         ubicacion_muestra += muestras_ventana - muestras_solapamiento
 
         ## Hago el cálculo del valor medio para las tres aceleraciones en el segmento
-        valores_medios = [np.mean(segmento_ML), np.mean(segmento_AP), np.mean(segmento_VT)]
+        valores_medios = [np.mean(segmento_ML_filt), np.mean(segmento_AP_filt), np.mean(segmento_VT_filt)]
 
         ## Hago el cálculo de la desviación estándar para las tres aceleraciones en el segmento
-        desv_estandar = [np.std(segmento_ML), np.std(segmento_AP), np.std(segmento_VT)]
+        desv_estandar = [np.std(segmento_ML_filt), np.std(segmento_AP_filt), np.std(segmento_VT_filt)]
 
         ## Hago el cálculo de los valores máximos para las tres aceleraciones en el segmento
-        maximos = [np.max(segmento_ML), np.max(segmento_AP), np.max(segmento_VT)]
+        maximos = [np.max(segmento_ML_filt), np.max(segmento_AP_filt), np.max(segmento_VT_filt)]
 
         ## Hago el cálculo de los valores máximos para las tres aceleraciones en el segmento
-        minimos = [np.min(segmento_ML), np.min(segmento_AP), np.min(segmento_VT)]
+        minimos = [np.min(segmento_ML_filt), np.min(segmento_AP_filt), np.min(segmento_VT_filt)]
 
         ## Genero el feature vector correspondiente a la ventana
         feature_vector = valores_medios + desv_estandar + maximos + minimos + [valor_SMA]

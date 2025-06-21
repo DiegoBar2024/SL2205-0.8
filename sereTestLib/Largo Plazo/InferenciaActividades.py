@@ -43,8 +43,6 @@ clf_entrenado = load("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/
 ## Etiqueta 1: Movimiento
 pat_predictions = clf_entrenado.predict(np.array((vector_SMA)).reshape(-1, 1))
 
-print(pat_predictions)
-
 ## Defino el espaciado de las ventanas
 ventanas = np.arange(0, 200, 100)
 

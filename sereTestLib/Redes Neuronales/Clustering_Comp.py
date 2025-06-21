@@ -6,17 +6,33 @@ import scipy.spatial
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import normalize
+from dtwParallel import dtw_functions
+from scipy.spatial import distance as d
 import os
 from PIL import Image as im 
 from matplotlib import pyplot as plt
 from sklearn.metrics import silhouette_score
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 from LecturaDatosPacientes import *
+from scipy.stats import *
+from pingouin import multivariate_normality
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+from sklearn.datasets import make_blobs
+import susi
+import numpy as np
+
+from pyts.classification import BOSSVS
+from pyts.datasets import load_basic_motions
+from pyts.multivariate.classification import MultivariateClassifier
+from dtaidistance import dtw
+from dtaidistance import dtw_visualisation as dtwvis
 
 ## ------------------------------------- SELECCIÓN DE MUESTRAS ----------------------------------------------
 
 ## Construyo una variable booleana de modo de poder filtrar aquellos pacientes etiquetados
-filtrar_etiquetados = False
+filtrar_etiquetados = True
 
 ## Construyo una lista con todos aquellos pacientes denominados estables no añosos
 id_estables_no_añosos = np.array([114, 127, 128, 129, 130, 133, 213, 224, 226, 44, 294])
@@ -45,6 +61,13 @@ vector_etiquetas = []
 ## Genero un vector vacío para poder concatenar los vectores con todas las representaciones latentes
 comprimidos_total = np.zeros((1, 256))
 
+## Genero un vector donde voy a guardar los espacios latentes donde cada elemento es un tensor bidimensional de un paciente
+## Entonces me queda un tensor tridimensional (i, j, k) donde:
+## i: Hace referencia a la i-ésima persona a la que corresponde el registro
+## j: Hace referencia al j-ésimo segmento correspondiente a la persona
+## K: Hace referencia a la k-ésima caracteristica (feature)
+comprimidos_por_persona = []
+
 ## Inicializo un diccionario cuya clave sea el ID del paciente y el valor una tupla con la posición inicial y final de los escalogramas
 dicc_ID_pos = {}
 
@@ -54,9 +77,9 @@ for id_persona in ids_existentes:
     ## Creo un bloque try catch en caso de que ocurra algún error en el procesamiento
     try:
 
-        if not id_persona == 114:
+        # if id_persona != 299:
 
-            continue
+        #     continue
 
         ## Especifico la ruta de donde voy a leer los escalogramas comprimidos
         ruta_lectura = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae/S{}/".format(id_persona)
@@ -92,6 +115,9 @@ for id_persona in ids_existentes:
         ## Concateno el espacio comprimido por filas a la matriz donde guardo los espacios latentes totales
         comprimidos_total = np.concatenate((comprimidos_total, espacio_comprimido), axis = 0)
 
+        ## Agrego el espacio comprimido a la lista correspondiente
+        comprimidos_por_persona.append(espacio_comprimido)
+
         ## Impresión en pantalla avisando el identificador del paciente que está siendo procesado
         print("ID del paciente que está siendo procesado: {}".format(id_persona))
 
@@ -102,7 +128,7 @@ for id_persona in ids_existentes:
         continue
 
 ## Selecciono únicamente aquellas muestras no nulas (elimino el dummy vector)
-## Se obtiene entonces una matriz de datos donde:
+## Se obtiene entonces una matriz de datos bidimensional donde:
 ## La i-ésima fila representa el i-ésimo segmento
 ## La j-ésima columna representa el j-ésimo feature
 comprimidos_total = comprimidos_total[1:,:]
@@ -112,6 +138,8 @@ comprimidos_total = comprimidos_total[1:,:]
 ## Normalización de la matriz de datos de entrada al algoritmo de clustering
 ## Hago la normalización por columna es decir por feature
 comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
+
+## Hago la normalización por feature
 
 ## Especifico una lista con la cantidad de clusters que voy a usar durante el análisis
 clusters = np.linspace(2, 30, 29).astype(int)
@@ -218,10 +246,10 @@ for i in range (len(comprimidos_total)):
         ## Agrego la distancia del punto a su centroide a la lista
         distancias_puntos.append(distancia)
 
-## Graficación de las distancias de cada punto a los clusters
-plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos)
-plt.ylim(0, max(distancias_puntos) * 1.2)
-plt.show()
+# ## Graficación de las distancias de cada punto a los clusters
+# plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos)
+# plt.ylim(0, max(distancias_puntos) * 1.2)
+# plt.show()
 
 ## -------------------------------------------- TRAYECTORIA CLUSTERS ------------------------------------------------
 
@@ -256,6 +284,30 @@ dists, neighs = kdt.query(comprimidos_total, k + 1)
 ## Hago el cálculo del promedio de las distancias de cada punto a su K vecino más próximo
 avg_dists = np.mean(dists[:, 1:], axis = 1)
 
-## Hago la graficación de los valores de distancia promedio a los K vecinos más próximos
-plt.scatter(np.linspace(0, len(avg_dists) - 1, len(avg_dists)), avg_dists)
-plt.show()
+# ## Hago la graficación de los valores de distancia promedio a los K vecinos más próximos
+# plt.scatter(np.linspace(0, len(avg_dists) - 1, len(avg_dists)), avg_dists)
+# plt.show()
+
+## Test de Hipótesis para la comprobación de normalidad de los vectores comprimidos
+test_normal = multivariate_normality(comprimidos_total, alpha = 0.05)
+
+## ---------------------------------------------- LSTM ------------------------------------------------
+
+# ## Hago un reshape de la matriz de entrada
+# comprimidos_total = comprimidos_total.reshape((1, comprimidos_total.shape[0], comprimidos_total.shape[1]))
+
+# ## Construyo un modelo LSTM
+# model = Sequential([LSTM(100, activation = 'tanh', return_sequences = True, input_shape = (None, 256))])
+
+# ## Compilo el modelo LSTM
+# model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+
+# model.fit(comprimidos_total)
+
+## ---------------------------------------------- DTW ------------------------------------------------
+
+## Recuerdo que las filas de la matriz son las observaciones
+## Recuerdo que las columnas de la matriz son las variables
+## Para que la DTW esté bien definida los tensores deben tener mismo numero de variables (o sea de columnas)
+## El DTW se encuentra bien definido incluso cuando los tensores tienen distinto número de filas
+dist = dtw_functions.dtw(comprimidos_por_persona[0], comprimidos_por_persona[2], type_dtw = "d", local_dissimilarity = d.euclidean, MTS = True)

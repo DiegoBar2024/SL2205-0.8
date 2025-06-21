@@ -128,10 +128,10 @@ inestables = inestables[1:,:]
 errores_prediccion = []
 
 ## Genero una variable la cual especifique el modelo que voy a usar para hacer la validacion
-modelo = 'lda'
+modelo = 'svm'
 
 ## Itero para cada uno de los pacientes en el conjunto de IDs de entrenamiento y validacion
-for id_paciente in ids_pacientes:
+for id_paciente in np.sort(ids_pacientes):
 
     ## Construyo un bloque try except para atrapar errores
     try:
@@ -183,15 +183,42 @@ for id_paciente in ids_pacientes:
 
             ## Hago la prediccion del modelo para el validation set
             val_predict = lda_model.predict(validation_set)
+        
+        ## En caso de que el modelo elegido sea SVM
+        elif modelo == 'svm':
 
-            ## Calculo el error correspondiente al modelo como el cociente entre los segmentos mal clasificados del paciente y los segmentos totales
-            error = np.logical_xor(val_predict, etiquetas_val)[np.logical_xor(val_predict, etiquetas_val) == True].shape[0] / np.logical_xor(val_predict, etiquetas_val).shape[0]
+            ## Construyo el modelo inicial
+            svm_model = SVC(C = 1, gamma = 1, kernel = 'rbf')
 
-            ## Agrego el error de predicción junto con el ID del paciente usado para la validación
-            errores_prediccion.append((id_paciente, error))
+            ## Hago el entrenamiento del modelo usando el conjunto de entrenamiento y sus etiquetas
+            svm_model.fit(train_set, etiquetas)
+
+            ## Hago la prediccion del modelo para el validation set
+            val_predict = svm_model.predict(validation_set)
+        
+        ## Calculo el error correspondiente al modelo como el cociente entre los segmentos mal clasificados del paciente y los segmentos totales
+        error = np.logical_xor(val_predict, etiquetas_val)[np.logical_xor(val_predict, etiquetas_val) == True].shape[0] / np.logical_xor(val_predict, etiquetas_val).shape[0]
+
+        ## Agrego el error de predicción junto con el ID del paciente usado para la validación
+        errores_prediccion.append([id_paciente, error])
 
     ## En caso de que haya algún error
     except:
 
         ## Que continúe con la siguiente muestra
         continue
+
+## Hago la conversión de la matriz de errores de predicción a una numpy array
+errores_prediccion = np.array((errores_prediccion))
+
+## Obtengo el error medio de predicción con el modelo
+error_promedio = np.mean(errores_prediccion[:, 1])
+
+plt.boxplot(errores_prediccion[:, 1])
+plt.show()
+
+# plt.bar(errores_prediccion[:, 0], errores_prediccion[:, 1])
+# plt.xlabel("ID del Paciente de Validacion")
+# plt.ylabel("Error Medio de Prediccion")
+# plt.legend()
+# plt.show()
