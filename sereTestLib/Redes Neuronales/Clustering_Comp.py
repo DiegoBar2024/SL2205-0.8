@@ -20,6 +20,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 from sklearn.datasets import make_blobs
+from mlxtend.preprocessing import MeanCenterer
 import susi
 import numpy as np
 
@@ -68,18 +69,11 @@ comprimidos_total = np.zeros((1, 256))
 ## K: Hace referencia a la k-ésima caracteristica (feature)
 comprimidos_por_persona = []
 
-## Inicializo un diccionario cuya clave sea el ID del paciente y el valor una tupla con la posición inicial y final de los escalogramas
-dicc_ID_pos = {}
-
 ## Itero para cada uno de los identificadores de los pacientes. Hago la generación de escalogramas para cada paciente
 for id_persona in ids_existentes:
 
     ## Creo un bloque try catch en caso de que ocurra algún error en el procesamiento
     try:
-
-        # if id_persona != 299:
-
-        #     continue
 
         ## Especifico la ruta de donde voy a leer los escalogramas comprimidos
         ruta_lectura = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae/S{}/".format(id_persona)
@@ -138,8 +132,6 @@ comprimidos_total = comprimidos_total[1:,:]
 ## Normalización de la matriz de datos de entrada al algoritmo de clustering
 ## Hago la normalización por columna es decir por feature
 comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
-
-## Hago la normalización por feature
 
 ## Especifico una lista con la cantidad de clusters que voy a usar durante el análisis
 clusters = np.linspace(2, 30, 29).astype(int)
@@ -306,8 +298,30 @@ test_normal = multivariate_normality(comprimidos_total, alpha = 0.05)
 
 ## ---------------------------------------------- DTW ------------------------------------------------
 
-## Recuerdo que las filas de la matriz son las observaciones
-## Recuerdo que las columnas de la matriz son las variables
-## Para que la DTW esté bien definida los tensores deben tener mismo numero de variables (o sea de columnas)
-## El DTW se encuentra bien definido incluso cuando los tensores tienen distinto número de filas
-dist = dtw_functions.dtw(comprimidos_por_persona[0], comprimidos_por_persona[2], type_dtw = "d", local_dissimilarity = d.euclidean, MTS = True)
+## Construyo un tensor bidimensional de modo que guarde las distancias relativas
+distancias_series = np.zeros((len(comprimidos_por_persona), len(comprimidos_por_persona)))
+
+## Itero para cada uno de las series temporales por persona
+for i in range (len(comprimidos_por_persona)):
+
+    ## Itero para las series temporales que no corresponden a la persona (se puede optimizar)
+    for j in range (i + 1, len(comprimidos_por_persona)):
+
+        ## Hago la normalización de las columnas del tensor de la persona i
+        serie_i = MeanCenterer().fit(comprimidos_por_persona[i]).transform(comprimidos_por_persona[i])
+
+        ## Hago la normalización de las columnas del tensor de la persona j
+        serie_j = MeanCenterer().fit(comprimidos_por_persona[j]).transform(comprimidos_por_persona[j])
+
+        ## CÁLCULO DE LA DWT entre ambas series
+        ## Recuerdo que las filas de la matriz son las observaciones
+        ## Recuerdo que las columnas de la matriz son las variables
+        ## Para que la DTW esté bien definida los tensores deben tener mismo numero de variables (o sea de columnas)
+        ## El DTW se encuentra bien definido incluso cuando los tensores tienen distinto número de filas
+        dist = dtw_functions.dtw(serie_i, serie_j, type_dtw = "d", local_dissimilarity = d.euclidean, MTS = True)
+
+        ## Asigno la distancia a la posición de la matriz correspondiente
+        distancias_series[i, j] = dist
+        
+        ## Como la matriz de distancias es simétrica hago lo mismo con la otra posicion
+        distancias_series[j, i] = dist

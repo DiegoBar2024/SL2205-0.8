@@ -11,6 +11,8 @@ from Modelo_CLAS import *
 from Etiquetado import *
 from Modelo_CLAS import *
 from LecturaDatosPacientes import *
+from mlxtend.preprocessing import MeanCenterer
+from dtwParallel import dtw_functions
 
 ## ------------------------------------------- ETIQUETADOS ---------------------------------------------
 
@@ -213,9 +215,6 @@ errores_prediccion = np.array((errores_prediccion))
 
 ## Obtengo el error medio de predicción con el modelo
 error_promedio = np.mean(errores_prediccion[:, 1])
-
-plt.boxplot(errores_prediccion[:, 1])
-plt.show()
 
 # plt.bar(errores_prediccion[:, 0], errores_prediccion[:, 1])
 # plt.xlabel("ID del Paciente de Validacion")
