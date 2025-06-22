@@ -69,6 +69,9 @@ comprimidos_total = np.zeros((1, 256))
 ## K: Hace referencia a la k-ésima caracteristica (feature)
 comprimidos_por_persona = []
 
+## Genero una lista vacía que va a contener las etiquetas de los pacientes
+etiquetas = []
+
 ## Itero para cada uno de los identificadores de los pacientes. Hago la generación de escalogramas para cada paciente
 for id_persona in ids_existentes:
 
@@ -100,11 +103,17 @@ for id_persona in ids_existentes:
                 ## Concateno un vector de ceros con la cantidad de segmentos que tengo para el registro del paciente
                 vector_etiquetas = np.concatenate((np.array(vector_etiquetas), np.zeros((espacio_comprimido.shape[0])))).astype(int)
             
+                ## Asigno la etiqueta numérica 0 al paciente estable
+                etiquetas.append(0)
+
             ## En caso de que el paciente haya sido clasificado como inestable
             else:
 
                 ## Concateno un vector de ceros con la cantidad de segmentos que tengo para el registro del paciente
                 vector_etiquetas = np.concatenate((np.array(vector_etiquetas), np.ones((espacio_comprimido.shape[0])))).astype(int)
+
+                ## Asigno la etiqueta numérica 1 al paciente inestable
+                etiquetas.append(1)
 
         ## Concateno el espacio comprimido por filas a la matriz donde guardo los espacios latentes totales
         comprimidos_total = np.concatenate((comprimidos_total, espacio_comprimido), axis = 0)
@@ -308,12 +317,18 @@ for i in range (len(comprimidos_por_persona)):
     for j in range (i + 1, len(comprimidos_por_persona)):
 
         ## Hago la normalización de las columnas del tensor de la persona i
-        serie_i = MeanCenterer().fit(comprimidos_por_persona[i]).transform(comprimidos_por_persona[i])
+        ## serie_i = MeanCenterer().fit(comprimidos_por_persona[i]).transform(comprimidos_por_persona[i])
 
         ## Hago la normalización de las columnas del tensor de la persona j
-        serie_j = MeanCenterer().fit(comprimidos_por_persona[j]).transform(comprimidos_por_persona[j])
+        ## serie_j = MeanCenterer().fit(comprimidos_por_persona[j]).transform(comprimidos_por_persona[j])
 
-        ## CÁLCULO DE LA DWT entre ambas series
+        ## Obtengo la serie asociada al paciente actual (sin normalizar)
+        serie_i = comprimidos_por_persona[i]
+
+        ## Obtengo la serie asociada al paciente a comparar (sin normalizar)
+        serie_j = comprimidos_por_persona[j]
+
+        ## CÁLCULO DE LA DTW entre ambas series
         ## Recuerdo que las filas de la matriz son las observaciones
         ## Recuerdo que las columnas de la matriz son las variables
         ## Para que la DTW esté bien definida los tensores deben tener mismo numero de variables (o sea de columnas)
@@ -325,3 +340,24 @@ for i in range (len(comprimidos_por_persona)):
         
         ## Como la matriz de distancias es simétrica hago lo mismo con la otra posicion
         distancias_series[j, i] = dist
+
+## ---------------------------------------- VALIDACIÓN ------------------------------------------------
+
+## Genero una variable donde voy a guardar el error de prediccion medio
+## Error Medio = Pacientes Mal Clasificados / Pacientes Totales
+error_medio = 0
+
+## Itero para cada uno de las series temporales por persona
+for i in range (len(comprimidos_por_persona)):
+
+    ## Obtengo la posición del argumento minimo no nulo en donde se presenta la distancia deseada
+    posicion_minimo = np.argmin(distancias_series[i, :][distancias_series[i, :] != 0])
+
+    ## En caso de que el paciente esté mal clasificado
+    if etiquetas[posicion_minimo + 1] != etiquetas[i]:
+
+        ## Agrego una unidad al error
+        error_medio += 1
+
+## Divido el error medio por la cantidad de pacientes que tengo clasificados
+error_medio /= len(comprimidos_por_persona)
