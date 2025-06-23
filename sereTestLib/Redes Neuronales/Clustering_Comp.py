@@ -1,5 +1,6 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
+import keras
 import sys
 from scipy.signal import *
 import scipy.spatial
@@ -23,6 +24,7 @@ from sklearn.datasets import make_blobs
 from mlxtend.preprocessing import MeanCenterer
 import susi
 import numpy as np
+from sklearn_som import som
 
 from pyts.classification import BOSSVS
 from pyts.datasets import load_basic_motions
@@ -88,6 +90,12 @@ for id_persona in ids_existentes:
         ## La i-ésima fila representa el i-ésimo segmento
         ## La j-ésima columna representa el j-ésimo feature
         espacio_comprimido = archivo_comprimido['X']
+
+        ## En caso de que no haya ningun archivo comprimido
+        if len(espacio_comprimido) == 0:
+
+            ## Continúo al siguiente paciente
+            continue
 
         ## En caso de que yo quiera filtrar los pacientes etiquetados en mi muestra
         if filtrar_etiquetados:
@@ -218,11 +226,11 @@ for nro_clusters in clusters:
     ## Agrego la silhouette score a la lista de indicadores
     silhouette_scores.append(silhouette_score(comprimidos_total, kmeans.fit_predict(comprimidos_total)))
 
-# Grafico la inercia en función de la cantidad de clusters que tengo
-plt.bar(clusters, silhouette_scores)
-plt.xlabel("Numero de Clusters")
-plt.ylabel("Silhouette Score")
-plt.show()
+# # Grafico la inercia en función de la cantidad de clusters que tengo
+# plt.bar(clusters, silhouette_scores)
+# plt.xlabel("Numero de Clusters")
+# plt.ylabel("Silhouette Score")
+# plt.show()
 
 ## ------------------------------------------- CLUSTERIZADO ----------------------------------------------
 
@@ -294,16 +302,33 @@ test_normal = multivariate_normality(comprimidos_total, alpha = 0.05)
 
 ## ---------------------------------------------- LSTM ------------------------------------------------
 
-# ## Hago un reshape de la matriz de entrada
-# comprimidos_total = comprimidos_total.reshape((1, comprimidos_total.shape[0], comprimidos_total.shape[1]))
+## Construyo un modelo secuencial de Keras
+model = Sequential()
 
-# ## Construyo un modelo LSTM
-# model = Sequential([LSTM(100, activation = 'tanh', return_sequences = True, input_shape = (None, 256))])
+## Agrego una capa de LSTM al modelo especificando la cantidad de hidden units
+model.add(LSTM(100, activation = 'tanh', return_sequences = True, input_shape = (None, 256)))
 
-# ## Compilo el modelo LSTM
-# model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+## Agrego una segunda capa de LSTM
+model.add(LSTM(50, activation = 'tanh'))
 
-# model.fit(comprimidos_total)
+## Agrego una neuronal de salida para hacer la clasificacion
+model.add(Dense(1, activation = 'sigmoid'))
+
+## Compilo el modelo LSTM
+model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+
+## Itero para cada uno de los pacientes etiquetados
+for i in range (len(etiquetas)):
+
+    ## Hago el ajuste del modelo LSTM para el i-ésimo paciente
+    model.fit(np.reshape(comprimidos_por_persona[i], (1, comprimidos_por_persona[i].shape[0], comprimidos_por_persona[i].shape[1])),
+            np.reshape(etiquetas[i], (1, 1)), epochs = 50)
+
+## Itero para cada uno de los pacientes etiquetados
+for i in range (len(etiquetas)):
+
+    pred = model.evaluate(np.reshape(comprimidos_por_persona[i], (1, comprimidos_por_persona[i].shape[0], comprimidos_por_persona[i].shape[1])),
+                        np.reshape(etiquetas[i], (1, 1)))
 
 ## ---------------------------------------------- DTW ------------------------------------------------
 
@@ -361,3 +386,11 @@ for i in range (len(comprimidos_por_persona)):
 
 ## Divido el error medio por la cantidad de pacientes que tengo clasificados
 error_medio /= len(comprimidos_por_persona)
+
+## -------------------------------------- CLASIFICACIÓN LIBRERIA ------------------------------------------------
+
+## Creo un objeto clusterizador de SOM
+clustering_som = som.SOM(dim = comprimidos_total.shape[1])
+
+## Hago la clusterizacion
+clustering_som.fit(comprimidos_total, epochs = 10)
