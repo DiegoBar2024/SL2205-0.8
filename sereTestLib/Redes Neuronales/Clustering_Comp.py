@@ -306,12 +306,12 @@ test_normal = multivariate_normality(comprimidos_total, alpha = 0.05)
 model = Sequential()
 
 ## Agrego una capa de LSTM al modelo especificando la cantidad de hidden units
-model.add(LSTM(100, activation = 'tanh', return_sequences = True, input_shape = (None, 256)))
+model.add(LSTM(20, activation = 'tanh', return_sequences = True, input_shape = (None, 256)))
 
 ## Agrego una segunda capa de LSTM
-model.add(LSTM(50, activation = 'tanh'))
+model.add(LSTM(1, activation = 'tanh'))
 
-## Agrego una neuronal de salida para hacer la clasificacion
+## Agrego una neuron0l de salida para hacer la clasificacion
 model.add(Dense(1, activation = 'sigmoid'))
 
 ## Compilo el modelo LSTM
@@ -324,11 +324,19 @@ for i in range (len(etiquetas)):
     model.fit(np.reshape(comprimidos_por_persona[i], (1, comprimidos_por_persona[i].shape[0], comprimidos_por_persona[i].shape[1])),
             np.reshape(etiquetas[i], (1, 1)), epochs = 50)
 
+## Defino una variable donde guardo el error de prediccion
+error_medio_lstm = 0
+
 ## Itero para cada uno de los pacientes etiquetados
 for i in range (len(etiquetas)):
 
-    pred = model.evaluate(np.reshape(comprimidos_por_persona[i], (1, comprimidos_por_persona[i].shape[0], comprimidos_por_persona[i].shape[1])),
+    loss, accuracy = model.evaluate(np.reshape(comprimidos_por_persona[i], (1, comprimidos_por_persona[i].shape[0], comprimidos_por_persona[i].shape[1])),
                         np.reshape(etiquetas[i], (1, 1)))
+    
+    error_medio_lstm += (1 - accuracy)
+
+## Obtengo la cantidad de series mal clasificadas en proporcion a las totales
+error_medio_lstm /= len(etiquetas)
 
 ## ---------------------------------------------- DTW ------------------------------------------------
 

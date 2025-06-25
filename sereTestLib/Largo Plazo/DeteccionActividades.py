@@ -134,8 +134,14 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
     ## El i-ésimo elemento de dicho vector será el vector de features asociada a la i-ésima ventana del registro
     features = []
 
+    ## Genero un vector en donde voy a guardar los índices correspondientes a cada ventana
+    ventanas = []
+
     ## Pregunto si ya terminó de recorrer todo el vector de muestras
     while ubicacion_muestra < cant_muestras:
+
+        ## Agrego las posiciones inicial y final de la ventana actual
+        ventanas.append([ubicacion_muestra, ubicacion_muestra + muestras_ventana])
 
         ## En caso que la última ventana no pueda tener el tamaño predefinido, la seteo manualmente
         if (cant_muestras - ubicacion_muestra < muestras_ventana):
@@ -219,8 +225,11 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
         plt.boxplot(vector_SMA)
         plt.show()
 
+    ## Hago la conversión del array de las ventanas a un numpy array
+    ventanas = np.array(ventanas)
+
     ## Retorno el vector con los valores de SMA y los features (que va a ser una matriz)
-    return vector_SMA, features
+    return vector_SMA, features, ventanas
 
 ## Ejecución principal del programa
 if __name__== '__main__':
@@ -288,7 +297,7 @@ if __name__== '__main__':
                             periodoMuestreo = PeriodoMuestreo(data)
 
                         ## Hago el cálculo del vector de SMA para dicha persona
-                        vector_SMA, features = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
+                        vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
 
                         ## ---------------------------------- SMA ------------------------------------------
                         ## Hago la lectura del archivo JSON previamente existente
@@ -600,7 +609,7 @@ if __name__== '__main__':
             periodoMuestreo = PeriodoMuestreo(data)
         
         ## Hago el cálculo del vector de SMA para dicha persona
-        vector_SMA, features = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
+        vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
 
         ## ---------------------------------- MÉTODO I -----------------------------------------
         ## Obtengo el valor del umbral para comparar

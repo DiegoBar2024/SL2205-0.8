@@ -21,7 +21,7 @@ from DeteccionActividades import DeteccionActividades
 ## ------------------------------- DISCRIMINACIÓN ACTIVIDAD - REPOSO -----------------------------------
 
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Rodrigo.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Sabrina.txt'
 
 ##  Hago la lectura de los datos
 data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = None, lectura_datos_propios = True, ruta = ruta_registro)
