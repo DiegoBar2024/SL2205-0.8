@@ -16,11 +16,14 @@ import seaborn as sns
 from scipy.stats import *
 from sklearn.svm import SVC
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.feature_selection import SequentialFeatureSelector
 from joblib import dump, load
+from tsfel import *
+from sklearn.model_selection import cross_val_score, KFold
 
 ## -------------------------------------- DETECCIÓN DE ACTIVIDADES ------------------------------------------
 
-def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad, plot = False):
+def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad):
 
     ## ---------------------------------------- FILTRADO DE MEDIANA ----------------------------------------
 
@@ -32,26 +35,6 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
 
     ## Aplico filtrado de mediana con una ventana de tamaño 3 a la aceleración anteroposterior
     acc_AP = signal.medfilt(volume = acel[:,2], kernel_size = 3)
-
-    ## -------------------------------------- GRAFICACIÓN DE SEÑALES ---------------------------------------
-
-    ## En caso de que quiera graficar
-    if plot:
-
-        ## Grafico los datos. En mi caso las tres aceleraciones en el mismo eje
-        plt.plot(tiempo, acc_ML, color = 'r', label = 'Aceleración ML')
-        plt.plot(tiempo, acc_VT, color = 'b', label = 'Aceleración VT')
-        plt.plot(tiempo, acc_AP, color = 'g', label = 'Aceleración AP')
-
-        ## Nomenclatura de ejes. En el eje x tenemos el tiempo (s) y en el eje y la aceleracion (m/s2)
-        plt.xlabel("Tiempo (s)")
-        plt.ylabel("Aceleracion $(m/s^2)$")
-
-        ## Agrego la leyenda para poder identificar que curva corresponde a cada aceleración
-        plt.legend()
-
-        ## Despliego la gráfica
-        plt.show()
 
     ## ---------------------------------------- FILTRADO PASABAJOS -----------------------------------------
 
@@ -70,26 +53,6 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
     ## Filtrado de la señal de aceleración Anteroposterior
     acc_AP_GA = signal.sosfiltfilt(sos_iir, acc_AP)
 
-    ## -------------------------------------- GRAFICACIÓN DE SEÑALES ---------------------------------------
-
-    ## En caso de que quiera graficar
-    if plot:
-
-        ## Grafico los datos. En mi caso las tres aceleraciones en el mismo eje
-        plt.plot(tiempo, acc_ML_GA, color = 'r', label = 'Aceleración ML')
-        plt.plot(tiempo, acc_VT_GA, color = 'b', label = 'Aceleración VT')
-        plt.plot(tiempo, acc_AP_GA, color = 'g', label = 'Aceleración AP')
-
-        ## Nomenclatura de ejes. En el eje x tenemos el tiempo (s) y en el eje y la aceleracion (m/s2)
-        plt.xlabel("Tiempo (s)")
-        plt.ylabel("Aceleracion $(m/s^2)$")
-
-        ## Agrego la leyenda para poder identificar que curva corresponde a cada aceleración
-        plt.legend()
-
-        ## Despliego la gráfica
-        plt.show()
-
     ## --------------------------------- OBTENCIÓN DE COMPONENTES BA ---------------------------------------
 
     ## En base a las componentes de GA (Gravity Acceleration) en los tres ejes, se obtienen los componentes de BA (Body Acceleration) en los tres ejes
@@ -101,26 +64,6 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
 
     ## Obtengo la componente de BA en dirección anteroposterior
     acc_AP_BA = acc_AP - acc_AP_GA
-
-    ## -------------------------------------- GRAFICACIÓN DE SEÑALES ---------------------------------------
-
-    ## En caso de que quiera graficar
-    if plot:
-
-        ## Grafico los datos. En mi caso las tres aceleraciones en el mismo eje
-        plt.plot(tiempo, acc_ML_BA, color = 'r', label = 'Aceleración ML')
-        plt.plot(tiempo, acc_VT_BA, color = 'b', label = 'Aceleración VT')
-        plt.plot(tiempo, acc_AP_BA, color = 'g', label = 'Aceleración AP')
-
-        ## Nomenclatura de ejes. En el eje x tenemos el tiempo (s) y en el eje y la aceleracion (m/s2)
-        plt.xlabel("Tiempo (s)")
-        plt.ylabel("Aceleracion $(m/s^2)$")
-
-        ## Agrego la leyenda para poder identificar que curva corresponde a cada aceleración
-        plt.legend()
-
-        ## Despliego la gráfica
-        plt.show()
 
     ## ------------------------------------------- SEGMENTACIÓN --------------------------------------------
 
@@ -155,15 +98,6 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
             ## Me quedo con el segmento de la aceleración anteroposterior (componente BA)
             segmento_AP_filt = acc_AP_BA[ubicacion_muestra :]
 
-            ## Me quedo con el segmento de la aceleración mediolateral (componente original)
-            segmento_ML = acc_ML[ubicacion_muestra :]
-
-            ## Me quedo con el segmento de la aceleración vertical (componente original)
-            segmento_VT = acc_VT[ubicacion_muestra :]
-
-            ## Me quedo con el segmento de la aceleración anteroposterior (componente original)
-            segmento_AP = acc_AP[ubicacion_muestra :]
-        
         ## En otro caso, digo que la ventana tenga el tamaño predefinido
         else:
 
@@ -176,14 +110,27 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
             ## Me quedo con el segmento de la aceleración anteroposterior (componente BA)
             segmento_AP_filt = acc_AP_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
 
-            ## Me quedo con el segmento de la aceleración mediolateral (componente original)
-            segmento_ML = acc_ML[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
+        ## Especifico la configuración predeterminada usando los features estadísticos, temporales y espectrales
+        cfg = tsfel.get_features_by_domain(domain = 'statistical')
 
-            ## Me quedo con el segmento de la aceleración vertical (componente original)
-            segmento_VT = acc_VT[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
+        ## ------------------------------ FEATURE EXTRACTION ------------------------------------------
 
-            ## Me quedo con el segmento de la aceleración anteroposterior (componente original)
-            segmento_AP = acc_AP[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
+        ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)
+        features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])
+
+        ## Hago la extracción de features de la señal de acelerómetro AP (Body Acceleration)
+        features_AP = np.array(tsfel.time_series_features_extractor(cfg, segmento_AP_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])
+
+        ## Hago la extracción de features de la señal de acelerómetro VT (Body Acceleration)
+        features_VT = np.array(tsfel.time_series_features_extractor(cfg, segmento_VT_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])
+
+        ## Obtengo el vector de features extraido con TSFEL concatenando los features de la ML, AP, VT
+        feature_vector = np.concatenate((features_ML, features_AP, features_VT), axis = 1)
+
+        ## Agrego el vector de features de la ventana a la lista correspondiente
+        features.append(feature_vector)
+
+        ## -------------------------------- CÁLCULO DE SMA ------------------------------------------
 
         ## Hago el cálculo del SMA (Signal Magnitude Area) para dicha ventana siguiendo la definición
         valor_SMA = (np.sum(np.abs(segmento_ML_filt)) + np.sum(np.abs(segmento_VT_filt)) + np.sum(np.abs(segmento_AP_filt))) / (periodoMuestreo * muestras_ventana)
@@ -193,37 +140,6 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
 
         ## Actualizo el valor de la ubicación de la muestra para que me guarde la posición en la que debe comenzar la siguiente ventana
         ubicacion_muestra += muestras_ventana - muestras_solapamiento
-
-        ## Hago el cálculo del valor medio para las tres aceleraciones en el segmento
-        valores_medios = [np.mean(segmento_ML_filt), np.mean(segmento_AP_filt), np.mean(segmento_VT_filt)]
-
-        ## Hago el cálculo de la desviación estándar para las tres aceleraciones en el segmento
-        desv_estandar = [np.std(segmento_ML_filt), np.std(segmento_AP_filt), np.std(segmento_VT_filt)]
-
-        ## Hago el cálculo de los valores máximos para las tres aceleraciones en el segmento
-        maximos = [np.max(segmento_ML_filt), np.max(segmento_AP_filt), np.max(segmento_VT_filt)]
-
-        ## Hago el cálculo de los valores máximos para las tres aceleraciones en el segmento
-        minimos = [np.min(segmento_ML_filt), np.min(segmento_AP_filt), np.min(segmento_VT_filt)]
-
-        ## Genero el feature vector correspondiente a la ventana
-        feature_vector = valores_medios + desv_estandar + maximos + minimos + [valor_SMA]
-
-        ## Agrego el feature vector calculado al vector de features
-        features.append(feature_vector)
-
-    ## --------------------------------------- GRAFICACIÓN VALORES SMA -------------------------------------
-
-    ## En caso de que quiera graficar
-    if plot:
-
-        ## Gráfica de Scatter
-        plt.scatter(x = np.arange(start = 0, stop = len(vector_SMA)), y = vector_SMA)
-        plt.show()
-
-        ## Gráfica de Boxplot
-        plt.boxplot(vector_SMA)
-        plt.show()
 
     ## Hago la conversión del array de las ventanas a un numpy array
     ventanas = np.array(ventanas)
@@ -297,9 +213,10 @@ if __name__== '__main__':
                             periodoMuestreo = PeriodoMuestreo(data)
 
                         ## Hago el cálculo del vector de SMA para dicha persona
-                        vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
+                        vector_SMA, features, ventanas, features_tsfel = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
 
                         ## ---------------------------------- SMA ------------------------------------------
+
                         ## Hago la lectura del archivo JSON previamente existente
                         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), 'r') as openfile:
 
@@ -316,6 +233,7 @@ if __name__== '__main__':
                             json.dump(vectores_SMAs, outfile)
 
                         ## -------------------------------- FEATURES -----------------------------------------
+
                         ## Hago la lectura del archivo JSON previamente existente
                         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_{}.json".format(actividad), 'r') as openfile:
 
@@ -341,6 +259,7 @@ if __name__== '__main__':
     elif opcion == 2:
 
         ## ---------------------------------- PROCESAMIENTO SMA -----------------------------------------
+
         ## Hago la lectura del archivo JSON previamente existente
         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_Parado.json", 'r') as openfile:
 
@@ -366,6 +285,7 @@ if __name__== '__main__':
             SMA_escaleras = json.load(openfile)
         
         ## ----------------------------- PROCESAMIENTO FEATURES -----------------------------------------
+
         ## Hago la lectura del archivo JSON previamente existente
         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_Parado.json", 'r') as openfile:
 
@@ -514,51 +434,64 @@ if __name__== '__main__':
 
         # ## ---------------------------------- MÉTODO II -----------------------------------------
         
-        # ## El segundo método de cálculo de umbral óptimo involucra el entrenamiento de un SVM con los datos etiquetados por actividad
-        # ## Construyo la Support Vector Machine
-        # clf_rep_act = SVC(C = 1, gamma = 1, kernel = 'rbf')
+        ## El segundo método de cálculo de umbral óptimo involucra el entrenamiento de un SVM con los datos etiquetados por actividad
+        ## Construyo la Support Vector Machine
+        svm_rep_mov = SVC(C = 1, gamma = 1, kernel = 'rbf')
 
         # ## Llevo a cabo el entrenamiento del clasificador
         # ## <<values>> es la secuencia de valores de entrada
         # ## <<ground_truth>> es la secuencia de valores de salida
         # ## Se etiquetan como 0 las actividades de reposo mientras que se etiquetan como 1 las actividades de movimiento
-        # clf_rep_act.fit(np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))))
+        # svm_rep_mov.fit(np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))))
 
-        # ## Guardo el modelo entrenado en la ruta de salida
-        # dump(clf, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
-        
-        ## ---------------------------------- MÉTODO III -----------------------------------------
-        
-        ## Construyo un tensor bimensional para el entrenamiento donde:
-        ## La i-ésima fila identifica a la i-ésima instancia de entrenamiento
-        ## La j-ésima columna identifica a la j-ésima feature tomada
-        features_total = np.concatenate((np.array(vectores_features_escaleras), np.array(vectores_features_parado), np.array(vectores_features_sentado), np.array(vectores_features_caminando)))
+        ## Especifico la cantidad de folds que voy a utilizar para poder hacer la validación cruzada
+        k_folds = KFold(n_splits = 10, shuffle = False)
 
-        ## Construyo el vector de etiquetas correspondiente con el siguiente significado:
-        ## Etiqueta 0: Escaleras
-        ## Etiqueta 1: Parado
-        ## Etiqueta 2: Sentado
-        ## Etiqueta 3: Caminando
-        etiquetas = np.concatenate((np.zeros(len(vectores_features_escaleras)), np.ones(len(vectores_features_parado)), 
-                                    2 * np.ones(len(vectores_features_sentado)), 3 * np.ones(len(vectores_features_caminando)))).astype(int)
-        
-        ## Construyo una support vector machine especificando una opción 'One Versus One'
-        clf_act = SVC(decision_function_shape = 'ovo')
-
-        ## Hago el entrenamiento del clasificador
-        clf_act.fit(features_total, etiquetas)
-
-        ## Guardo el modelo entrenado en la ruta de salida
-        dump(clf_act, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM_Nuevo_Actividades.joblib")
+        ## Hago la validación cruzada del modelo
+        scores_svm = cross_val_score(svm_rep_mov, np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))), cv = k_folds)
 
         ## Construyo el clasificador LDA
-        lda_act = LinearDiscriminantAnalysis()
+        lda_rep_mov = LinearDiscriminantAnalysis()
 
-        ## Hago el entrenamiento del clasificador LDA
-        lda_act.fit(features_total, etiquetas)
+        ## Hago la validación cruzada del modelo
+        scores_lda = cross_val_score(lda_rep_mov, np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))), cv = k_folds)
 
-        ## Guardo el modelo entrenado en la ruta de salida
-        dump(lda_act, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/LDA_Nuevo_Actividades.joblib")
+        print("Scores SVM: {}".format(scores_svm))
+
+        print("Scores LDA: {}".format(scores_lda))
+
+        ## ---------------------------------- MÉTODO III -----------------------------------------
+        
+        # ## Construyo un tensor bimensional para el entrenamiento donde:
+        # ## La i-ésima fila identifica a la i-ésima instancia de entrenamiento
+        # ## La j-ésima columna identifica a la j-ésima feature tomada
+        # features_total = np.concatenate((np.array(vectores_features_escaleras), np.array(vectores_features_parado), np.array(vectores_features_sentado), np.array(vectores_features_caminando)))
+
+        # ## Construyo el vector de etiquetas correspondiente con el siguiente significado:
+        # ## Etiqueta 0: Escaleras
+        # ## Etiqueta 1: Parado
+        # ## Etiqueta 2: Sentado
+        # ## Etiqueta 3: Caminando
+        # etiquetas = np.concatenate((np.zeros(len(vectores_features_escaleras)), np.ones(len(vectores_features_parado)), 
+        #                             2 * np.ones(len(vectores_features_sentado)), 3 * np.ones(len(vectores_features_caminando)))).astype(int)
+        
+        # ## Construyo una support vector machine especificando una opción 'One Versus One'
+        # clf_act = SVC(decision_function_shape = 'ovo')
+
+        # ## Hago el entrenamiento del clasificador
+        # clf_act.fit(features_total, etiquetas)
+
+        # ## Guardo el modelo entrenado en la ruta de salida
+        # dump(clf_act, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM_Nuevo_Actividades.joblib")
+
+        # ## Construyo el clasificador LDA
+        # lda_act = LinearDiscriminantAnalysis()
+
+        # ## Hago el entrenamiento del clasificador LDA
+        # lda_act.fit(features_total, etiquetas)
+
+        # ## Guardo el modelo entrenado en la ruta de salida
+        # dump(lda_act, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/LDA_Nuevo_Actividades.joblib")
 
     ## En caso de que quiera realizar la clasificación actividad/reposo en base al valor del SMA
     elif opcion == 3:
@@ -609,17 +542,17 @@ if __name__== '__main__':
             periodoMuestreo = PeriodoMuestreo(data)
         
         ## Hago el cálculo del vector de SMA para dicha persona
-        vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
+        vector_SMA, features, ventanas, features_tsfel = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
 
         ## ---------------------------------- MÉTODO I -----------------------------------------
-        ## Obtengo el valor del umbral para comparar
-        umbral = dicc_umbral['U_{}_{}'.format(muestras_ventana, muestras_solapamiento)]
+        # ## Obtengo el valor del umbral para comparar
+        # umbral = dicc_umbral['U_{}_{}'.format(muestras_ventana, muestras_solapamiento)]
 
-        ## Obtengo un vector con el resultado de la clasificación para el registro disponible de la actividad correspondiente
-        ## El i-ésimo valor de dicho vector va a estar dado por:
-        ## <<True>> si el i-ésimo segmento del registro se asocia con movimiento (caminar, subir/bajar escaleras)
-        ## <<False>> si el i-ésimo segmento del registro se asocia con reposo (parado, sentado)
-        clas_registro = np.array([vector_SMA]) > umbral
+        # ## Obtengo un vector con el resultado de la clasificación para el registro disponible de la actividad correspondiente
+        # ## El i-ésimo valor de dicho vector va a estar dado por:
+        # ## <<True>> si el i-ésimo segmento del registro se asocia con movimiento (caminar, subir/bajar escaleras)
+        # ## <<False>> si el i-ésimo segmento del registro se asocia con reposo (parado, sentado)
+        # clas_registro = np.array([vector_SMA]) > umbral
 
         ## ---------------------------------- MÉTODO II -----------------------------------------
         ## Cargo el modelo del clasificador ya entrenado según la ruta del clasificador

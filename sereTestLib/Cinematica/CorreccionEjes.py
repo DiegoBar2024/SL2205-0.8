@@ -16,18 +16,150 @@ from scipy import integrate
 from Filtros import FiltroMediana
 import math
 import pykalman
+import numpy as np
+from scipy.signal import filtfilt, butter
+from ahrs import *
+from pyquaternion import Quaternion
+from Cuaterniones import *
 
-integrate.cumulative_trapezoid
+def quaternion_to_euler_angle_vectorized1(w, x, y, z):
+
+    ysqr = y * y
+
+    t0 = +2.0 * (w * x + y * z)
+    t1 = +1.0 - 2.0 * (x * x + ysqr)
+    X = np.degrees(np.arctan2(t0, t1))
+
+    t2 = +2.0 * (w * y - z * x)
+    t2 = np.where(t2>+1.0,+1.0,t2)
+    #t2 = +1.0 if t2 > +1.0 else t2
+
+    t2 = np.where(t2<-1.0, -1.0, t2)
+    #t2 = -1.0 if t2 < -1.0 else t2
+    Y = np.degrees(np.arcsin(t2))
+
+    t3 = +2.0 * (w * z + x * y)
+    t4 = +1.0 - 2.0 * (ysqr + z * z)
+    Z = np.degrees(np.arctan2(t3, t4))
+
+    return X, Y, Z
+
+def estimate_orientation(a, w, t, alpha=0.9, g_ref=(0., 0., 1.),
+                         theta_min=1e-6, highpass=.01, lowpass=.05):
+    """ Estimate orientation with a complementary filter.
+    Fuse linear acceleration and angular velocity measurements to obtain an
+    estimate of orientation using a complementary filter as described in
+    `Wetzstein 2017: 3-DOF Orientation Tracking with IMUs`_
+    .. _Wetzstein 2017: 3-DOF Orientation Tracking with IMUs:
+    https://pdfs.semanticscholar.org/5568/e2100cab0b573599accd2c77debd05ccf3b1.pdf
+    Parameters
+    ----------
+    a : array-like, shape (N, 3)
+        Acceleration measurements (in arbitrary units).
+    w : array-like, shape (N, 3)
+        Angular velocity measurements (in rad/s).
+    t : array-like, shape (N,)
+        Timestamps of the measurements (in s).
+    alpha : float, default 0.9
+        Weight of the angular velocity measurements in the estimate.
+    g_ref : tuple, len 3, default (0., 0., 1.)
+        Unit vector denoting direction of gravity.
+    theta_min : float, default 1e-6
+        Minimal angular velocity after filtering. Values smaller than this
+        will be considered noise and are not used for the estimate.
+    highpass : float, default .01
+        Cutoff frequency of the high-pass filter for the angular velocity as
+        fraction of Nyquist frequency.
+    lowpass : float, default .05
+        Cutoff frequency of the low-pass filter for the linear acceleration as
+        fraction of Nyquist frequency.
+    Returns
+    -------
+    q : array of quaternions, shape (N,)
+        The estimated orientation for each measurement.
+    """
+
+    # initialize some things
+    N = len(t)
+    dt = np.diff(t)
+    g_ref = np.array(g_ref)
+    q = np.ones(N, dtype=Quaternion)
+
+    # get high-passed angular velocity
+    w = filtfilt(*butter(5, highpass, btype='high'), w, axis=0)
+    w[np.linalg.norm(w, axis=1) < theta_min] = 0
+    q_delta = from_rotation_vector(w[1:] * dt[:, None])
+
+    # get low-passed linear acceleration
+    a = filtfilt(*butter(5, lowpass, btype='low'), a, axis=0)
+
+    for i in range(1, N):
+
+        # get rotation estimate from gyroscope
+        q_w = q[i - 1] * q_delta[i - 1]
+
+        # get rotation estimate from accelerometer
+        v_world = rotate_vectors(q_w, a[i])
+        n = np.cross(v_world, g_ref)
+        phi = np.arccos(np.dot(v_world / np.linalg.norm(v_world), g_ref))
+        q_a = from_rotation_vector(
+            (1 - alpha) * phi * n[None, :] / np.linalg.norm(n))[0]
+
+        # fuse both estimates
+        q[i] = q_a * q_w
+
+    return q
 
 ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
 
-ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S269/3S269.csv"
+## Ruta donde voy a abrir el archivo
+ruta_registro = "C:/Yo/Tesis/sereData/sereData/Registros/MarchaLibre_Rodrigo.txt"
 
-## Lectura de datos
-data = pd.read_csv(ruta)
+## Abro el fichero correspondiente
+fichero = open(ruta_registro, "r")
 
-## Hallo el período de muestreo de las señales
-periodoMuestreo = PeriodoMuestreo(data)
+## Hago la lectura de todas las lineas correspondientes al fichero
+lineas = fichero.readlines()
+
+## Creo un array vacío en donde voy a guardar los datos
+data = []
+
+## Itero para todas aquellas lineas que tengan información útil
+for linea in lineas[3:]:
+
+    ## Hago la traducción de la línea de datos a una lista de numeros flotantes, segmentando la línea por tabulación
+    lista_datos = list(map(float,linea.split("\t")[:-1]))
+
+    ## Agrego la lista de datos como renglón de la matriz de datos
+    data.append(lista_datos)
+
+## Hago una lista con todos los headers de los datos tomados
+headers = lineas[1].split("\t")[:-1]
+
+## Hago el pasaje de los datos en forma de matriz a forma de dataframe
+data = pd.DataFrame(data, columns = headers)
+
+## Creo una lista con las columnas deseadas
+columnas_deseadas = ['Time', 'AC_x', 'AC_y', 'AC_z', 'GY_x', 'GY_y', 'GY_z']
+
+## Creo un diccionario con los nombres originales de las columnas y sus nombres nuevos
+nombres_columnas = {'Timestamp': 'Time', 'Accel_LN_X_CAL' : 'AC_x', 'Accel_LN_Y_CAL' : 'AC_y', 'Accel_LN_Z_CAL' : 'AC_z'
+                    ,'Gyro_X_CAL' : 'GY_x', 'Gyro_Y_CAL' : 'GY_y', 'Gyro_Z_CAL' : 'GY_z'}
+
+## Itero para cada una de las columnas del dataframe
+for columna in data.columns:
+
+    ## Itero para cada uno de los nombres posibles
+    for nombre in nombres_columnas.keys():
+
+        ## En caso de que un nombre esté en la columna
+        if nombre in columna:
+
+            ## Renombro la columna
+            data = data.rename(columns = {columna : nombres_columnas[nombre]})
+
+## Selecciono las columnas deseadas
+data = data[columnas_deseadas]
 
 ## Armamos una matriz donde las columnas sean las aceleraciones
 acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(data['AC_z'])]).transpose()
@@ -41,11 +173,8 @@ tiempo = np.array(data['Time'])
 ## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
 tiempo = (tiempo - tiempo[0]) / 1000
 
-## Calculamos los valores del magnetometro
-data_mag = ValoresMagnetometro("C:/Yo/Tesis/sereData/sereData/Dataset/raw_2_process", 151, ['Caminando'])
-
-## Armamos una matriz donde las columnas sean los valores del magnetometro
-mag = np.array([np.array(data_mag['Mag_x']), np.array(data_mag['Mag_y']), np.array(data_mag['Mag_z'])], dtype = float).transpose()
+## Obtengo el período de muestreo
+periodoMuestreo = PeriodoMuestreo(data)
 
 ## ------------------------------------ MÉTODO CON FILTRO DE KALMAN ------------------------------------
 
@@ -106,6 +235,19 @@ gSens_analytic = imu_analytic.gCorr
 
 ## Accedo a la aceleración con compensación de deriva
 accComp_analytic = imu_analytic.accReSpaceComp
+
+q = filters.complementary.Complementary(gyr = gyro, acc = acel, frequency = 1 /periodoMuestreo)
+
+q_am = q.am_estimation(acc = acel)
+
+angulos_gy = []
+
+for i in range (q_analytic.shape[0]):
+
+    angulos_gy.append(quaternion_to_euler_angle_vectorized1(q[i,0], q[i,1], q[i,2], q[i,3]))
+
+plt.plot(angulos_gy)
+plt.show()
 
 ## ------------------------------------------------GRAFICACIÓN --------------------------------------------------------
 

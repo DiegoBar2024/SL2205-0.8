@@ -5,6 +5,7 @@ from ContactosTerminales import *
 from ParametrosGaitPy import *
 from SegmentacionGaitPy import Segmentacion as SegmentacionGaitPy
 from scipy.signal import find_peaks
+from scipy.integrate import cumulative_trapezoid
 
 ## -------------------------------------- SEGMENTACIÓN DE MARCHA ---------------------------------------
 
@@ -21,6 +22,9 @@ def Segmentacion(picos_sucesivos, toe_offs, muestras_paso, periodoMuestreo, acc_
     ## i) En caso de que hayan más muestras que la media, puede ocurrir que hayan otros ICs en el medio que no hayan sido detectados
     ## ii) En caso que hayan menos muestras que la media, hay uno de los dos picos que no se trata de un IC 
     pasos_defectuosos = []
+
+    ## Genero una lista en la cual voy a guardar los giros detectados
+    giros = []
 
     ## Itero para cada uno de los picos detectados
     for i in range (len(picos_sucesivos) - 1):
@@ -50,6 +54,15 @@ def Segmentacion(picos_sucesivos, toe_offs, muestras_paso, periodoMuestreo, acc_
 
             ## Agrego el paso a la lista de pasos defectuosos
             pasos_defectuosos.append({'IC': (picos_sucesivos[i], picos_sucesivos[i + 1])})
+        
+        ## Hago la integración usando trapezoidal de la señal del giroscopio vertical segmentada en el paso
+        angulos_y = cumulative_trapezoid(gyro[:, 1][picos_sucesivos[i] : picos_sucesivos[i + 1]], dx = periodoMuestreo, initial = 0)
+
+        ## En caso de que la diferencia entre el ángulo máximo y el mínimo sea mayor a 45 quiere decir que estoy en presencia de un giro
+        if np.max(np.abs(angulos_y)) - np.min(np.abs(angulos_y)) > 45:
+
+            ## Me guardo entonces los tiempos asociados al giro
+            giros.append([picos_sucesivos[i], picos_sucesivos[i + 1]])
 
     ## ---------------------------------- TRATAMIENTO DE PASOS DEFECTUOSOS ---------------------------------
 
@@ -124,4 +137,4 @@ def Segmentacion(picos_sucesivos, toe_offs, muestras_paso, periodoMuestreo, acc_
         doble_estancia.append(doble_estancia_paso)
     
     ## Retorno una lista de diccionarios con los pasos detectados
-    return pasos, duraciones_pasos
+    return pasos, duraciones_pasos, giros

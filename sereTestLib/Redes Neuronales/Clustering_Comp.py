@@ -25,6 +25,7 @@ from mlxtend.preprocessing import MeanCenterer
 import susi
 import numpy as np
 from sklearn_som import som
+from pyts.transformation import ShapeletTransform
 
 from pyts.classification import BOSSVS
 from pyts.datasets import load_basic_motions
@@ -302,41 +303,58 @@ test_normal = multivariate_normality(comprimidos_total, alpha = 0.05)
 
 ## ---------------------------------------------- LSTM ------------------------------------------------
 
-## Construyo un modelo secuencial de Keras
-model = Sequential()
-
-## Agrego una capa de LSTM al modelo especificando la cantidad de hidden units
-model.add(LSTM(20, activation = 'tanh', return_sequences = True, input_shape = (None, 256)))
-
-## Agrego una segunda capa de LSTM
-model.add(LSTM(1, activation = 'tanh'))
-
-## Agrego una neuron0l de salida para hacer la clasificacion
-model.add(Dense(1, activation = 'sigmoid'))
-
-## Compilo el modelo LSTM
-model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
-
-## Itero para cada uno de los pacientes etiquetados
-for i in range (len(etiquetas)):
-
-    ## Hago el ajuste del modelo LSTM para el i-ésimo paciente
-    model.fit(np.reshape(comprimidos_por_persona[i], (1, comprimidos_por_persona[i].shape[0], comprimidos_por_persona[i].shape[1])),
-            np.reshape(etiquetas[i], (1, 1)), epochs = 50)
-
+## Defino un factor de partición
 ## Defino una variable donde guardo el error de prediccion
 error_medio_lstm = 0
 
-## Itero para cada uno de los pacientes etiquetados
+## Defino una variable que me de la cantidad de subsecuencias que voy a generar para cada paciente
+## En este caso las subsecuencias no se solapan, ya que las transformadas CWT están solapadas entre si
+nro_subsec = 1
+
+## Algoritmo de validación cruzada Leave One Out
+## Itero para cada uno de los pacientes etiquetados para validar el modelo
 for i in range (len(etiquetas)):
 
-    loss, accuracy = model.evaluate(np.reshape(comprimidos_por_persona[i], (1, comprimidos_por_persona[i].shape[0], comprimidos_por_persona[i].shape[1])),
-                        np.reshape(etiquetas[i], (1, 1)))
-    
-    error_medio_lstm += (1 - accuracy)
+    ## Construyo un modelo secuencial de Keras
+    model = Sequential()
 
-## Obtengo la cantidad de series mal clasificadas en proporcion a las totales
-error_medio_lstm /= len(etiquetas)
+    ## Agrego una capa de LSTM al modelo especificando la cantidad de hidden units
+    model.add(LSTM(20, activation = 'tanh', input_shape = (None, 256)))
+
+    ## Agrego una neurona de salida para hacer la clasificacion
+    model.add(Dense(1, activation = 'sigmoid'))
+
+    ## Compilo el modelo LSTM
+    model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+
+    ## Itero para cada uno de los pacientes etiquetados para entrenar el modelo
+    for j in range (len(etiquetas)):
+
+        ## En caso de que el paciente de entrenamiento coincida con el de validación
+        if i == j:
+
+            ## Sigo con el siguiente paciente de entrenamiento
+            continue
+
+        ## Hago una partición de la serie del paciente j según el numero dado
+        comprimidos_particion_j = np.array_split(comprimidos_por_persona[j], nro_subsec)
+
+        ## Itero para cada uno de los segmentos comprimidos de la persona
+        for segmento in comprimidos_particion_j:
+
+            ## Hago el ajuste del modelo LSTM para el j-ésimo paciente en su segmento
+            model.fit(np.reshape(segmento, (1, segmento.shape[0], segmento.shape[1])),
+                    np.reshape(etiquetas[j], (1, 1)), epochs = 20)
+    
+    ## Hago una partición de la serie del paciente j según el numero dado
+    comprimidos_particion_i = np.array_split(comprimidos_por_persona[i], nro_subsec)
+
+    ## Itero para cada uno de los segmentos comprimidos de la persona
+    for segmento in comprimidos_particion_i:
+
+        ## Evalúo la precisión de modelo en el paciente separado para la validación
+        loss, accuracy = model.evaluate(np.reshape(segmento, (1, segmento.shape[0], segmento.shape[1])),
+                            np.reshape(etiquetas[i], (1, 1)))
 
 ## ---------------------------------------------- DTW ------------------------------------------------
 
@@ -376,9 +394,16 @@ for i in range (len(comprimidos_por_persona)):
 
 ## ---------------------------------------- VALIDACIÓN ------------------------------------------------
 
-## Genero una variable donde voy a guardar el error de prediccion medio
-## Error Medio = Pacientes Mal Clasificados / Pacientes Totales
-error_medio = 0
+## POSITIVO = PACIENTE INESTABLE
+## NEGATIVO = PACIENTE ESTABLE
+## Variable que contabiliza los Falsos Positivos
+falsos_positivos = 0
+
+## Variable que contabiliza los Falsos Negativos
+falsos_negativos = 0
+
+## Variable que contabiliza los Verdaderos Positivos
+verdaderos_positivos = 0
 
 ## Itero para cada uno de las series temporales por persona
 for i in range (len(comprimidos_por_persona)):
@@ -389,16 +414,36 @@ for i in range (len(comprimidos_por_persona)):
     ## En caso de que el paciente esté mal clasificado
     if etiquetas[posicion_minimo + 1] != etiquetas[i]:
 
-        ## Agrego una unidad al error
-        error_medio += 1
+        ## Si el paciente estaba etiquetado con 1 (positivo)
+        if etiquetas[i] == 1:
 
-## Divido el error medio por la cantidad de pacientes que tengo clasificados
-error_medio /= len(comprimidos_por_persona)
+            ## Este es un falso negativo
+            falsos_negativos += 1
+        
+        ## Si el paciente estaba etiquetado con 0 (negativo)
+        elif etiquetas[i] == 0:
 
-## -------------------------------------- CLASIFICACIÓN LIBRERIA ------------------------------------------------
+            ## Este es un falso positivo
+            falsos_negativos += 1
+        
+    ## En caso de que el paciente esté bien clasificado
+    else:
 
-## Creo un objeto clusterizador de SOM
-clustering_som = som.SOM(dim = comprimidos_total.shape[1])
+        ## En caso de esté etiquetado con 1
+        if etiquetas[i] == 0:
 
-## Hago la clusterizacion
-clustering_som.fit(comprimidos_total, epochs = 10)
+            ## Este es un verdadero positivo
+            verdaderos_positivos += 1
+
+## Obtengo los verdaderos negativos como los restantes
+verdaderos_negativos = len(etiquetas) - (verdaderos_positivos + falsos_negativos + falsos_positivos)
+
+## --------------------------------------------- SOM ------------------------------------------------
+
+som = susi.SOMClustering()
+som.fit(comprimidos_total)
+
+u_matrix = som.get_u_matrix()
+plt.imshow(np.squeeze(u_matrix), cmap="Greys")
+plt.colorbar()
+plt.show()

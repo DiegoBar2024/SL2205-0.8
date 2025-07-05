@@ -13,12 +13,13 @@ from sklearn.metrics import silhouette_score
 from sklearn.cluster import KMeans
 from matplotlib import pyplot as plt
 from scipy.stats import *
+from pyod.models.knn import KNN
 
 ## -------------------------------- DISCRIMINACIÓN REPOSO - ACTIVIDAD --------------------------------------
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Sabrina.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Rodrigo.txt'
 
 ##  Hago la lectura de los datos
 data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = None, lectura_datos_propios = True, ruta = ruta_registro)
@@ -67,7 +68,7 @@ tramos_actividades = np.array((tramos_actividades[1:]))
 ## Obtengo una matriz donde:
 ## La i-ésima fila hace referencia al i-ésimo segmento
 ## La j-ésima columna hace referencia al j-ésimo feature
-features = np.array((features))
+features = np.reshape(features, (np.array(features).shape[0], np.array(features).shape[2]))
 
 ## Hago la normalización de la matriz de features
 features_norm = normalize(features, norm = "l2", axis = 0)
@@ -81,9 +82,13 @@ anomalias = np.zeros((1, 2))
 ## Itero para cada una de los tramos que tengo detectados
 for i in range (tramos_actividades.shape[0]):
 
-    ## En caso de que el segmento tenga menos de dos elementos
-    if features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]].shape[0] <= 2:
+    ## En caso de que el segmento tenga menos de una cantidad predeterminada de ventanas
+    if features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]].shape[0] <= 10:
 
+        ## Concateno la posicion de las anomalias detectadas en el tramo con las previas
+        anomalias = np.concatenate((anomalias, ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1],:]))
+
+        ## Sigo con el siguiente segmento
         continue
 
     ## Construyo un vector en donde voy a guardar los silhouette scores para cada una de las distribuciones de clusters
@@ -94,6 +99,9 @@ for i in range (tramos_actividades.shape[0]):
 
         ## En caso de que el número de clusters en la iteración sea mayor a la cantidad de puntos en el dataset
         if nro_clusters > features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]].shape[0] - 1:
+
+            ## Concateno la posicion de las anomalias detectadas en el tramo con las previas
+            anomalias = np.concatenate((anomalias, ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1],:]))
 
             continue
 
@@ -127,14 +135,27 @@ for i in range (tramos_actividades.shape[0]):
     ## Hago la transformación del vector a numpy array
     distancias_puntos = np.array(distancias_puntos)
 
-    ## Obtengo el umbral como el percentil 95% de la muestra
-    umbral = np.percentile(distancias_puntos, 95)
+    ## Obtengo el umbral como el percentil 90% de la muestra
+    umbral = np.percentile(distancias_puntos, 90)
 
     ## Obtengo el valor de las distancias a los centroides de los puntos que considero anomalías
     anomalias_tramo = distancias_puntos[distancias_puntos > umbral]
 
     ## Concateno la posicion de las anomalias detectadas en el tramo con las previas
     anomalias = np.concatenate((anomalias, ventanas[np.where(np.isin(distancias_puntos, anomalias_tramo))[0] + tramos_actividades[i, 0]]))
+
+    ## Genero el modelo KNN para mis datos
+    knn_model = KNN()
+    
+    ## Hago la predicción según el modelo de KNN
+    knn_df = knn_model.fit_predict(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]])
+
+    ## Obtengo las filas de las ventanas en las cuales se detectaron las anomalias
+    anomalias_knn = np.where(np.isin(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]], 
+                                    features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][knn_df == 1])[:,0] == True)
+    
+    ## Obtengo las posiciones absolutas de las anomalias en el array de ventanas
+    anomalias_knn = ventanas[anomalias_knn + tramos_actividades[i, 0],:]
 
     ## Diagrama de dispersión de las distancias a los centroides
     plt.figure(figsize = (10, 6))
