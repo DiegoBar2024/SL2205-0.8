@@ -111,18 +111,19 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
             segmento_AP_filt = acc_AP_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
 
         ## Especifico la configuración predeterminada usando los features estadísticos, temporales y espectrales
-        cfg = tsfel.get_features_by_domain(domain = 'statistical')
+        cfg = tsfel.get_features_by_domain(domain = ['statistical', 'temporal'])
 
         ## ------------------------------ FEATURE EXTRACTION ------------------------------------------
 
         ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)
-        features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])
+        #features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])
+        features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt))
 
         ## Hago la extracción de features de la señal de acelerómetro AP (Body Acceleration)
-        features_AP = np.array(tsfel.time_series_features_extractor(cfg, segmento_AP_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])
+        features_AP = np.array(tsfel.time_series_features_extractor(cfg, segmento_AP_filt))
 
         ## Hago la extracción de features de la señal de acelerómetro VT (Body Acceleration)
-        features_VT = np.array(tsfel.time_series_features_extractor(cfg, segmento_VT_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])
+        features_VT = np.array(tsfel.time_series_features_extractor(cfg, segmento_VT_filt))
 
         ## Obtengo el vector de features extraido con TSFEL concatenando los features de la ML, AP, VT
         feature_vector = np.concatenate((features_ML, features_AP, features_VT), axis = 1)
@@ -133,7 +134,7 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
         ## -------------------------------- CÁLCULO DE SMA ------------------------------------------
 
         ## Hago el cálculo del SMA (Signal Magnitude Area) para dicha ventana siguiendo la definición
-        valor_SMA = (np.sum(np.abs(segmento_ML_filt)) + np.sum(np.abs(segmento_VT_filt)) + np.sum(np.abs(segmento_AP_filt))) / (periodoMuestreo * muestras_ventana)
+        valor_SMA = (np.sum(np.abs(segmento_ML_filt)) + np.sum(np.abs(segmento_VT_filt)) + np.sum(np.abs(segmento_AP_filt))) / muestras_ventana
 
         ## Agrego el valor computado de SMA al vector correspondiente
         vector_SMA.append(valor_SMA)
@@ -213,7 +214,7 @@ if __name__== '__main__':
                             periodoMuestreo = PeriodoMuestreo(data)
 
                         ## Hago el cálculo del vector de SMA para dicha persona
-                        vector_SMA, features, ventanas, features_tsfel = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
+                        vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
 
                         ## ---------------------------------- SMA ------------------------------------------
 
@@ -235,7 +236,7 @@ if __name__== '__main__':
                         ## -------------------------------- FEATURES -----------------------------------------
 
                         ## Hago la lectura del archivo JSON previamente existente
-                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_{}.json".format(actividad), 'r') as openfile:
+                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_{}.json".format(actividad), 'r') as openfile:
 
                             # Cargo el diccionario el cual va a ser un objeto JSON
                             dicc_features = json.load(openfile)
@@ -244,7 +245,7 @@ if __name__== '__main__':
                         dicc_features[str(id_persona)] = features
 
                         ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
-                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_{}.json".format(actividad), "w") as outfile:
+                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_{}.json".format(actividad), "w") as outfile:
 
                             ## Escribo el diccionario actualizado
                             json.dump(dicc_features, outfile)
@@ -438,11 +439,14 @@ if __name__== '__main__':
         ## Construyo la Support Vector Machine
         svm_rep_mov = SVC(C = 1, gamma = 1, kernel = 'rbf')
 
-        # ## Llevo a cabo el entrenamiento del clasificador
-        # ## <<values>> es la secuencia de valores de entrada
-        # ## <<ground_truth>> es la secuencia de valores de salida
-        # ## Se etiquetan como 0 las actividades de reposo mientras que se etiquetan como 1 las actividades de movimiento
-        # svm_rep_mov.fit(np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))))
+        ## Llevo a cabo el entrenamiento del clasificador
+        ## <<values>> es la secuencia de valores de entrada
+        ## <<ground_truth>> es la secuencia de valores de salida
+        ## Se etiquetan como 0 las actividades de reposo mientras que se etiquetan como 1 las actividades de movimiento
+        svm_rep_mov.fit(np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))))
+
+        # Guardo el modelo entrenado en la ruta de salida
+        dump(svm_rep_mov, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
 
         ## Especifico la cantidad de folds que voy a utilizar para poder hacer la validación cruzada
         k_folds = KFold(n_splits = 10, shuffle = False)
@@ -542,7 +546,7 @@ if __name__== '__main__':
             periodoMuestreo = PeriodoMuestreo(data)
         
         ## Hago el cálculo del vector de SMA para dicha persona
-        vector_SMA, features, ventanas, features_tsfel = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
+        vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
 
         ## ---------------------------------- MÉTODO I -----------------------------------------
         # ## Obtengo el valor del umbral para comparar

@@ -32,8 +32,11 @@ muestras_ventana = 200
 ## Defino la cantidad de muestras de solapamiento entre ventanas
 muestras_solapamiento = 100
 
+## Genero una matriz de tamaño aleatorio del mismo tamaño que la matriz de aceleración
+señal = np.random.rand(acel.shape[0], acel.shape[1]) + 100 * np.random.rand(10, 10)
+
 ## Hago el cálculo del vector de SMA para dicha persona
-vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad = None)
+vector_SMA, features, ventanas = DeteccionActividades(señal, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad = None)
 
 ## Cargo el modelo del clasificador ya entrenado según la ruta del clasificador
 clf_entrenado = load("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
@@ -70,35 +73,26 @@ tramos_actividades = np.array((tramos_actividades[1:]))
 ## ------------------------------------------ GRAFICACIÓN ---------------------------------------------
 
 ## La idea es poder graficar las señales de acelerómetros
-## Itero para cada uno de los segmentos tomados
+## Itero para cada uno de los tramos de actividad detectados
 for i in range (tramos_actividades.shape[0]):
 
     ## En caso de que dicho tramo corresponda a movimiento
     if pat_predictions[tramos_actividades[i, 0]] == 1:
         
         ## Hago la graficación en rojo del tramo de movimiento detectado en los tres acelerómeteros
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
-                acel[:, 0][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'r', label = 'Movimiento')
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
-                acel[:, 1][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'r')
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
-                acel[:, 2][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'r')
-        
+        plt.plot(tiempo[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0], acel[:, 0][tramos_actividades[i, 0] : tramos_actividades[i, 1]], color = 'r')
+        plt.plot(tiempo[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0], acel[:, 1][tramos_actividades[i, 0] : tramos_actividades[i, 1]], color = 'r')
+        plt.plot(tiempo[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0], acel[:, 2][tramos_actividades[i, 0] : tramos_actividades[i, 1]], color = 'r')
+    
     ## En caso de que dicho tramo corresponda a reposo
     else:
 
-        ## Hago la graficación en rojo del tramo de movimiento detectado en los tres acelerómeteros
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
-                acel[:, 0][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'b', label = 'Reposo')
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
-                acel[:, 1][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'b')
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
-                acel[:, 2][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'b')
-
+        ## Hago la graficación en azu del tramo de reposo detectado en los tres acelerómeteros
+        plt.plot(tiempo[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0], acel[:, 0][tramos_actividades[i, 0] : tramos_actividades[i, 1]], color = 'b')
+        plt.plot(tiempo[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0], acel[:, 1][tramos_actividades[i, 0] : tramos_actividades[i, 1]], color = 'b')
+        plt.plot(tiempo[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0], acel[:, 2][tramos_actividades[i, 0] : tramos_actividades[i, 1]], color = 'b')
+    
 ## Despliego la gráfica
-handles, labels = plt.gca().get_legend_handles_labels()
-by_label = dict(zip(labels, handles))
-plt.legend(by_label.values(), by_label.keys())
 plt.show()
 
 ## ------------------------------------------- ANOMALÍAS ----------------------------------------------
