@@ -21,7 +21,7 @@ from matplotlib import pyplot as plt
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Rodrigo.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Sabrina.txt'
 
 ##  Hago la lectura de los datos
 data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = None, lectura_datos_propios = True, ruta = ruta_registro)
@@ -69,7 +69,7 @@ tramos_actividades = np.array((tramos_actividades[1:]))
 
 ## ------------------------------------------ GRAFICACIÓN ---------------------------------------------
 
-## La idea es poder graficar las señales de acelerómetros
+## La idea es poder graficar las señales de acelerómetros discriminando entre movimiento y reposo
 ## Itero para cada uno de los segmentos tomados
 for i in range (tramos_actividades.shape[0]):
 
@@ -220,9 +220,6 @@ anomalias = anomalias[1:,:]
 ## Elimino el dummy vector inicial de la matriz de anomalias para NN
 anomalias_nn = anomalias_nn[1:,:]
 
-print(anomalias * periodoMuestreo)
-print(anomalias_nn * periodoMuestreo)
-
 ## Grafico los datos. En mi caso las tres aceleraciones en el mismo eje
 plt.plot(tiempo, acel[:,0], color = 'r', label = '$a_x$')
 plt.plot(tiempo, acel[:,1], color = 'b', label = '$a_y$')
@@ -236,4 +233,38 @@ plt.ylabel("Aceleracion $(m/s^2)$")
 plt.legend()
 
 ## Muestro la gráfica
+plt.show()
+
+## ------------------------------------------ GRAFICACIÓN ---------------------------------------------
+
+## La idea es poder discriminar entre segmentos anómalos y no anómalos
+## Itero para cada una de las ventanas
+for i in range (ventanas.shape[0]):
+
+    ## En caso de que la ventana haya sido categorizada como anómala
+    if ventanas[i, :] in anomalias:
+        
+        ## Hago la graficación en rojo de la ventana anómala detectada en los tres acelerómetros
+        plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
+                acel[:, 0][ventanas[i, :][0] : ventanas[i, :][1]], color = 'r', label = 'Anomalía')
+        plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
+                acel[:, 1][ventanas[i, :][0] : ventanas[i, :][1]], color = 'r')
+        plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
+                acel[:, 2][ventanas[i, :][0] : ventanas[i, :][1]], color = 'r')
+
+    ## En caso de que dicha ventana no haya sido clasificada como anómala
+    else:
+
+        ## Hago la graficación en rojo del tramo de movimiento detectado en los tres acelerómeteros
+        plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
+                acel[:, 0][ventanas[i, :][0] : ventanas[i, :][1]], color = 'b', label = 'Normal')
+        plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
+                acel[:, 1][ventanas[i, :][0] : ventanas[i, :][1]], color = 'b')
+        plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
+                acel[:, 2][ventanas[i, :][0] : ventanas[i, :][1]], color = 'b')
+
+## Despliego la gráfica
+handles, labels = plt.gca().get_legend_handles_labels()
+by_label = dict(zip(labels, handles))
+plt.legend(by_label.values(), by_label.keys())
 plt.show()
