@@ -13,6 +13,7 @@ from Modelo_CLAS import *
 from LecturaDatosPacientes import *
 from mlxtend.preprocessing import MeanCenterer
 from dtwParallel import dtw_functions
+from sklearn.model_selection import cross_val_score, KFold
 
 ## ------------------------------------------- ETIQUETADOS ---------------------------------------------
 
@@ -54,7 +55,7 @@ ids_pacientes = np.concatenate((id_estables, id_inestables))
 ## ---------------------------------- CARGADO DE COMPRIMIDAS ESTABLES ----------------------------------
 
 ## Especifico la ruta en la cual se encuentran las muestras comprimidas
-ruta_comprimidas = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae"
+ruta_comprimidas = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae_giros_tot"
 
 ## Construyo una lista donde voy a guardar las muestras etiquetadas como estables
 estables = np.zeros((1, 256))
@@ -126,11 +127,26 @@ inestables = inestables[1:,:]
 
 ## -------------------------------- VALIDACIÓN CRUZADA DE LOS MODELOS ----------------------------------
 
+## Construyo la Support Vector Machine
+svm_giros = SVC(C = 1, gamma = 1, kernel = 'rbf')
+
+## Especifico la cantidad de folds que voy a utilizar para poder hacer la validación cruzada
+k_folds = KFold(n_splits = 50, shuffle = False)
+
+## Hago la validación cruzada del modelo
+scores_svm = cross_val_score(svm_giros, np.concatenate((estables, inestables)), np.concatenate((np.zeros(len(estables)), np.ones(len(inestables)))), cv = k_folds)
+
+## Construyo el Linear Discrminant Analysis
+lda_giros = LinearDiscriminantAnalysis()
+
+## Hago la validación cruzada del modelo
+scores_lda = cross_val_score(lda_giros, np.concatenate((estables, inestables)), np.concatenate((np.zeros(len(estables)), np.ones(len(inestables)))), cv = k_folds)
+
 ## Inicializo una lista en la cual voy a guardar los errores de predicción para el modelo
 errores_prediccion = []
 
 ## Genero una variable la cual especifique el modelo que voy a usar para hacer la validacion
-modelo = 'svm'
+modelo = 'lda'
 
 ## Itero para cada uno de los pacientes en el conjunto de IDs de entrenamiento y validacion
 for id_paciente in np.sort(ids_pacientes):
@@ -166,7 +182,7 @@ for id_paciente in np.sort(ids_pacientes):
             train_inestables = np.concatenate((inestables[ : ids_posiciones_inestables[str(id_paciente)][0], :], inestables[ids_posiciones_inestables[str(id_paciente)][1] + 1 :, :]))
 
             ## Genero el vector de etiquetas para el conjunto de validación correspondiente
-            etiquetas_val = np.zeros(len(validation_set))
+            etiquetas_val = np.ones(len(validation_set))
 
         ## Obtengo el vector de etiquetas según estabilidad (0 es estable, 1 es inestable)
         etiquetas = np.concatenate((np.zeros(train_estables.shape[0]), np.ones(train_inestables.shape[0])))

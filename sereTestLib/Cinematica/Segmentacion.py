@@ -61,8 +61,17 @@ def Segmentacion(picos_sucesivos, toe_offs, muestras_paso, periodoMuestreo, acc_
         ## En caso de que la diferencia entre el ángulo máximo y el mínimo sea mayor a 45 quiere decir que estoy en presencia de un giro
         if np.max(np.abs(angulos_y)) - np.min(np.abs(angulos_y)) > 45:
 
-            ## Me guardo entonces los tiempos asociados al giro
-            giros.append([picos_sucesivos[i], picos_sucesivos[i + 1]])
+            ## En caso de que el intervalo detectado anterior se trate del mismo giro
+            if len(giros) > 0 and giros[-1][1] == picos_sucesivos[i]:
+
+                ## Creo un intervalo que abarque todo el giro
+                giros[-1][1] = picos_sucesivos[i + 1]
+            
+            ## En caso de que tenga un sólo tramo de giro
+            else:
+
+                ## Me guardo entonces los tiempos asociados al giro
+                giros.append([picos_sucesivos[i], picos_sucesivos[i + 1]])
 
     ## ---------------------------------- TRATAMIENTO DE PASOS DEFECTUOSOS ---------------------------------
 

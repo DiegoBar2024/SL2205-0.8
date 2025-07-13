@@ -16,6 +16,7 @@ from scipy.stats import *
 from pyod.models.knn import KNN
 import numpy
 from matplotlib import pyplot as plt
+from sklearn.neighbors import NearestNeighbors
 
 ## -------------------------------- DISCRIMINACIÓN REPOSO - ACTIVIDAD --------------------------------------
 
@@ -24,7 +25,7 @@ from matplotlib import pyplot as plt
 ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Sabrina.txt'
 
 ##  Hago la lectura de los datos
-data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = None, lectura_datos_propios = True, ruta = ruta_registro)
+data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 299, lectura_datos_propios = True, ruta = ruta_registro)
 
 ## Defino la cantidad de muestras de la ventana que voy a tomar
 muestras_ventana = 200
@@ -72,7 +73,7 @@ tramos_actividades = np.array((tramos_actividades[1:]))
 ## La idea es poder graficar las señales de acelerómetros discriminando entre movimiento y reposo
 ## Itero para cada uno de los segmentos tomados
 for i in range (tramos_actividades.shape[0]):
-
+    
     ## En caso de que dicho tramo corresponda a movimiento
     if pat_predictions[tramos_actividades[i, 0]] == 1:
         
@@ -183,8 +184,9 @@ for i in range (tramos_actividades.shape[0]):
     ## Hago la transformación del vector a numpy array
     distancias_puntos = np.array(distancias_puntos)
 
-    ## Obtengo el umbral como el percentil 90% de la muestra
-    umbral = np.percentile(distancias_puntos, 90)
+    ## Defino el umbral de distancia a partir del cual yo considero que van a ser anomalías
+    # umbral = np.percentile(distancias_puntos, 95)
+    umbral = np.mean(distancias_puntos) + 2 * np.std(distancias_puntos)
 
     ## Obtengo el valor de las distancias a los centroides de los puntos que considero anomalías
     anomalias_tramo = distancias_puntos[distancias_puntos > umbral]
@@ -212,6 +214,27 @@ for i in range (tramos_actividades.shape[0]):
     plt.figure(figsize = (10, 6))
     plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos, c = kmeans.labels_, cmap='viridis')
     plt.scatter(np.where(np.isin(distancias_puntos, anomalias_tramo))[0], anomalias_tramo, c = 'red')
+    plt.show()
+    
+    ## Especifico la cantidad de vecinos
+    neighbors = NearestNeighbors(n_neighbors = 4)
+
+    ## Hago el ajuste de los vecinos más cercanos de mis datos
+    neighbors_fit = neighbors.fit(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]])
+
+    ## Calculo las distancias a los k vecinos más próximos
+    distances, indices = neighbors_fit.kneighbors(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]])
+
+    # Graficación de distancia al k-vecino más proximo en función de la cantidad de puntos
+    distances = np.sort(distances[:, 3], axis = 0)
+    plt.plot(distances)
+    plt.ylabel('k-distancia')
+    plt.xlabel('Puntos ordenados por distancia')
+    plt.show()
+
+    plt.plot(np.diff(distances))
+    plt.ylabel('k-distancia')
+    plt.xlabel('Puntos ordenados por distancia')
     plt.show()
 
 ## Elimino el dummy vector inicial de la matriz de anomalias para clustering

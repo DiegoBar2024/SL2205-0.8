@@ -7,7 +7,7 @@ from LecturaDatosPacientes import *
 from ContactosIniciales import *
 from ContactosTerminales import *
 from Segmentacion import *
-from Escalogramas import *
+from EscalogramasGiros import *
 from Escalado import *
 
 ## ------------------------------------ GENERACIÓN DE ESCALOGRAMAS --------------------------------------
@@ -17,7 +17,7 @@ from Escalado import *
 pacientes, ids_existentes = LecturaDatosPacientes()
 
 ## Especifico la ruta en la cual yo voy a hacer el guardado de los escalogramas
-ruta = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo'
+ruta = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_giros_tot'
 
 ## Itero para cada uno de los identificadores de los pacientes. Hago la generación de escalogramas para cada paciente
 for id_persona in ids_existentes:
@@ -38,7 +38,7 @@ for id_persona in ids_existentes:
         pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro)
 
         ## Hago el cálculo de los escalogramas correspondientes
-        escalogramas_segmentos, directorio_muestra, nombre_base_segmento = Escalogramas(id_persona, tiempo, pasos, cant_muestras, acel, gyro, periodoMuestreo)
+        escalogramas_segmentos, directorio_muestra, nombre_base_segmento = EscalogramasGiros(id_persona, tiempo, giros, cant_muestras, acel, gyro, periodoMuestreo)
 
         ## Hago el escalado y el guardado correspondiente de los escalogramas
         Escalado(escalogramas_segmentos, directorio_muestra, nombre_base_segmento, ruta)

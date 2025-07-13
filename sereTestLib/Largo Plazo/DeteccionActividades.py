@@ -83,64 +83,76 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
     ## Pregunto si ya terminó de recorrer todo el vector de muestras
     while ubicacion_muestra < cant_muestras:
 
-        ## Agrego las posiciones inicial y final de la ventana actual
-        ventanas.append([ubicacion_muestra, ubicacion_muestra + muestras_ventana])
+        ## Pongo un bloque try para abarcar la posibilidad de una excepción
+        try:
 
-        ## En caso que la última ventana no pueda tener el tamaño predefinido, la seteo manualmente
-        if (cant_muestras - ubicacion_muestra < muestras_ventana):
-        
-            ## Me quedo con el segmento de la aceleración mediolateral (componente BA)
-            segmento_ML_filt = acc_ML_BA[ubicacion_muestra :]
+            ## Agrego las posiciones inicial y final de la ventana actual
+            ventanas.append([ubicacion_muestra, ubicacion_muestra + muestras_ventana])
 
-            ## Me quedo con el segmento de la aceleración vertical (componente BA)
-            segmento_VT_filt = acc_VT_BA[ubicacion_muestra :]
+            ## En caso que la última ventana no pueda tener el tamaño predefinido, la seteo manualmente
+            if (cant_muestras - ubicacion_muestra < muestras_ventana):
+            
+                ## Me quedo con el segmento de la aceleración mediolateral (componente BA)
+                segmento_ML_filt = acc_ML_BA[ubicacion_muestra :]
 
-            ## Me quedo con el segmento de la aceleración anteroposterior (componente BA)
-            segmento_AP_filt = acc_AP_BA[ubicacion_muestra :]
+                ## Me quedo con el segmento de la aceleración vertical (componente BA)
+                segmento_VT_filt = acc_VT_BA[ubicacion_muestra :]
 
-        ## En otro caso, digo que la ventana tenga el tamaño predefinido
-        else:
+                ## Me quedo con el segmento de la aceleración anteroposterior (componente BA)
+                segmento_AP_filt = acc_AP_BA[ubicacion_muestra :]
 
-            ## Me quedo con el segmento de la aceleración mediolateral (componente BA)
-            segmento_ML_filt = acc_ML_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
+            ## En otro caso, digo que la ventana tenga el tamaño predefinido
+            else:
 
-            ## Me quedo con el segmento de la aceleración vertical (componente BA)
-            segmento_VT_filt = acc_VT_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
+                ## Me quedo con el segmento de la aceleración mediolateral (componente BA)
+                segmento_ML_filt = acc_ML_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
 
-            ## Me quedo con el segmento de la aceleración anteroposterior (componente BA)
-            segmento_AP_filt = acc_AP_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
+                ## Me quedo con el segmento de la aceleración vertical (componente BA)
+                segmento_VT_filt = acc_VT_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
 
-        ## Especifico la configuración predeterminada usando los features estadísticos, temporales y espectrales
-        cfg = tsfel.get_features_by_domain(domain = ['statistical', 'temporal'])
+                ## Me quedo con el segmento de la aceleración anteroposterior (componente BA)
+                segmento_AP_filt = acc_AP_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
 
-        ## ------------------------------ FEATURE EXTRACTION ------------------------------------------
+            ## Especifico la configuración predeterminada usando los features estadísticos, temporales y espectrales
+            cfg = tsfel.get_features_by_domain(domain = ['statistical', 'temporal'])
 
-        ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)
-        #features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])
-        features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt))
+            ## ------------------------------ FEATURE EXTRACTION ------------------------------------------
 
-        ## Hago la extracción de features de la señal de acelerómetro AP (Body Acceleration)
-        features_AP = np.array(tsfel.time_series_features_extractor(cfg, segmento_AP_filt))
+            ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)
+            #features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])
+            features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt))
 
-        ## Hago la extracción de features de la señal de acelerómetro VT (Body Acceleration)
-        features_VT = np.array(tsfel.time_series_features_extractor(cfg, segmento_VT_filt))
+            ## Hago la extracción de features de la señal de acelerómetro AP (Body Acceleration)
+            features_AP = np.array(tsfel.time_series_features_extractor(cfg, segmento_AP_filt))
 
-        ## Obtengo el vector de features extraido con TSFEL concatenando los features de la ML, AP, VT
-        feature_vector = np.concatenate((features_ML, features_AP, features_VT), axis = 1)
+            ## Hago la extracción de features de la señal de acelerómetro VT (Body Acceleration)
+            features_VT = np.array(tsfel.time_series_features_extractor(cfg, segmento_VT_filt))
 
-        ## Agrego el vector de features de la ventana a la lista correspondiente
-        features.append(feature_vector)
+            ## Obtengo el vector de features extraido con TSFEL concatenando los features de la ML, AP, VT
+            feature_vector = np.concatenate((features_ML, features_AP, features_VT), axis = 1)
 
-        ## -------------------------------- CÁLCULO DE SMA ------------------------------------------
+            ## Agrego el vector de features de la ventana a la lista correspondiente
+            features.append(feature_vector)
 
-        ## Hago el cálculo del SMA (Signal Magnitude Area) para dicha ventana siguiendo la definición
-        valor_SMA = (np.sum(np.abs(segmento_ML_filt)) + np.sum(np.abs(segmento_VT_filt)) + np.sum(np.abs(segmento_AP_filt))) / muestras_ventana
+            ## -------------------------------- CÁLCULO DE SMA ------------------------------------------
 
-        ## Agrego el valor computado de SMA al vector correspondiente
-        vector_SMA.append(valor_SMA)
+            ## Hago el cálculo del SMA (Signal Magnitude Area) para dicha ventana siguiendo la definición
+            valor_SMA = (np.sum(np.abs(segmento_ML_filt)) + np.sum(np.abs(segmento_VT_filt)) + np.sum(np.abs(segmento_AP_filt))) / muestras_ventana
 
-        ## Actualizo el valor de la ubicación de la muestra para que me guarde la posición en la que debe comenzar la siguiente ventana
-        ubicacion_muestra += muestras_ventana - muestras_solapamiento
+            ## Agrego el valor computado de SMA al vector correspondiente
+            vector_SMA.append(valor_SMA)
+
+            ## Actualizo el valor de la ubicación de la muestra para que me guarde la posición en la que debe comenzar la siguiente ventana
+            ubicacion_muestra += muestras_ventana - muestras_solapamiento
+
+        ## En caso de que ocurra algun error
+        except:
+
+            ## Actualizo el valor de la ubicación de la muestra para que me guarde la posición en la que debe comenzar la siguiente ventana
+            ubicacion_muestra += muestras_ventana - muestras_solapamiento
+
+            ## Continúo con la siguiente ventana
+            continue
 
     ## Hago la conversión del array de las ventanas a un numpy array
     ventanas = np.array(ventanas)
@@ -459,10 +471,6 @@ if __name__== '__main__':
 
         ## Hago la validación cruzada del modelo
         scores_lda = cross_val_score(lda_rep_mov, np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))), cv = k_folds)
-
-        print("Scores SVM: {}".format(scores_svm))
-
-        print("Scores LDA: {}".format(scores_lda))
 
         ## ---------------------------------- MÉTODO III -----------------------------------------
         
