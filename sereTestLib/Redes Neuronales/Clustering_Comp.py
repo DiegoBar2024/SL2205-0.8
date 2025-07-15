@@ -82,7 +82,7 @@ for id_persona in ids_existentes:
     try:
 
         ## Especifico la ruta de donde voy a leer los escalogramas comprimidos
-        ruta_lectura = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae/S{}/".format(id_persona)
+        ruta_lectura = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae_giros_tot/S{}/".format(id_persona)
 
         ## Hago la lectura del archivo con el espacio latente
         archivo_comprimido = np.load(ruta_lectura + 'S{}_latente.npz'.format(id_persona))
@@ -227,11 +227,11 @@ for nro_clusters in clusters:
     ## Agrego la silhouette score a la lista de indicadores
     silhouette_scores.append(silhouette_score(comprimidos_total, kmeans.fit_predict(comprimidos_total)))
 
-# # Grafico la inercia en función de la cantidad de clusters que tengo
-# plt.bar(clusters, silhouette_scores)
-# plt.xlabel("Numero de Clusters")
-# plt.ylabel("Silhouette Score")
-# plt.show()
+# Grafico la inercia en función de la cantidad de clusters que tengo
+plt.bar(clusters, silhouette_scores)
+plt.xlabel("Numero de Clusters")
+plt.ylabel("Silhouette Score")
+plt.show()
 
 ## ------------------------------------------- CLUSTERIZADO ----------------------------------------------
 

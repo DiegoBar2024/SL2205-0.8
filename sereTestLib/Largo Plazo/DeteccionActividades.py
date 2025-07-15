@@ -21,6 +21,12 @@ from joblib import dump, load
 from tsfel import *
 from sklearn.model_selection import cross_val_score, KFold
 
+class NumpyArrayEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+
 ## -------------------------------------- DETECCIÓN DE ACTIVIDADES ------------------------------------------
 
 def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad):
@@ -166,7 +172,7 @@ if __name__== '__main__':
     ## Opción 1: Generar los ficheros JSON con los SMA y features para cada actividad
     ## Opción 2: Entrenamiento de modelos que permitan discriminar actividades usando SMA y otras features
     ## Opción 3: Llevar a cabo la clasificación de actividades en reposo/actividad usando SMA
-    opcion = 2
+    opcion = 1
 
     ## Hago la lectura de los datos generales de los pacientes
     pacientes, ids_existentes = LecturaDatosPacientes()
@@ -230,20 +236,20 @@ if __name__== '__main__':
 
                         ## ---------------------------------- SMA ------------------------------------------
 
-                        ## Hago la lectura del archivo JSON previamente existente
-                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), 'r') as openfile:
+                        # ## Hago la lectura del archivo JSON previamente existente
+                        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), 'r') as openfile:
 
-                            # Cargo el diccionario el cual va a ser un objeto JSON
-                            vectores_SMAs = json.load(openfile)
+                        #     # Cargo el diccionario el cual va a ser un objeto JSON
+                        #     vectores_SMAs = json.load(openfile)
 
-                        ## Agrego en el diccionario los datos de SMAs el vector correspondiente al paciente actual
-                        vectores_SMAs[str(id_persona)] = vector_SMA
+                        # ## Agrego en el diccionario los datos de SMAs el vector correspondiente al paciente actual
+                        # vectores_SMAs[str(id_persona)] = vector_SMA
 
-                        ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
-                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), "w") as outfile:
+                        # ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
+                        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_{}.json".format(actividad), "w") as outfile:
 
-                            ## Escribo el diccionario actualizado
-                            json.dump(vectores_SMAs, outfile)
+                        #     ## Escribo el diccionario actualizado
+                        #     json.dump(vectores_SMAs, outfile)
 
                         ## -------------------------------- FEATURES -----------------------------------------
 
@@ -260,7 +266,7 @@ if __name__== '__main__':
                         with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_{}.json".format(actividad), "w") as outfile:
 
                             ## Escribo el diccionario actualizado
-                            json.dump(dicc_features, outfile)
+                            json.dump(dicc_features, outfile, cls = NumpyArrayEncoder)
 
                 ## Si hay un error de procesamiento
                 except:

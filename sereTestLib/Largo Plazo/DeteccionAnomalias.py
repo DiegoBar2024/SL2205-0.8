@@ -78,28 +78,31 @@ for i in range (tramos_actividades.shape[0]):
     if pat_predictions[tramos_actividades[i, 0]] == 1:
         
         ## Hago la graficación en rojo del tramo de movimiento detectado en los tres acelerómeteros
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
+        plt.plot(periodoMuestreo * tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
                 acel[:, 0][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'r', label = 'Movimiento')
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
+        plt.plot(periodoMuestreo * tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
                 acel[:, 1][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'r')
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
+        plt.plot(periodoMuestreo * tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
                 acel[:, 2][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'r')
         
     ## En caso de que dicho tramo corresponda a reposo
     else:
 
         ## Hago la graficación en rojo del tramo de movimiento detectado en los tres acelerómeteros
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
+        plt.plot(periodoMuestreo * tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
                 acel[:, 0][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'b', label = 'Reposo')
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
+        plt.plot(periodoMuestreo * tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
                 acel[:, 1][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'b')
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
+        plt.plot(periodoMuestreo * tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
                 acel[:, 2][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'b')
 
-## Despliego la gráfica
+## Despliego la gráfica y configuro los parámetros de Leyendas
 handles, labels = plt.gca().get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
+plt.xlabel('Tiempo(s)')
+plt.ylabel("Aceleracion $(m/s^2)$")
 plt.legend(by_label.values(), by_label.keys())
+plt.title('Discriminación Movimiento-Reposo')
 plt.show()
 
 ## ------------------------------------------- ANOMALÍAS ----------------------------------------------
