@@ -83,7 +83,8 @@ class DataGeneratorAuto(keras.utils.Sequence):
     def __get_files_lists(self, id_folder):
 
         ## Concateno primero los paths <<self.data_dir>> con <<id_folder>>
-        fullD = self.data_dir + '/' + id_folder
+        ## fullD = self.data_dir + '/' + id_folder
+        fullD = self.data_dir
 
         try:
 
@@ -201,7 +202,7 @@ class DataGeneratorAuto(keras.utils.Sequence):
 
                 # <<fullPath>> me va a contener toda la ruta del escalograma que yo voy a procesar
                 fullPath = self.data_dir + '/' + dirIn + '/' + file
-                
+
                 ## En caso de que exista la ruta que yo le estoy especificando
                 if os.path.exists(fullPath):
 

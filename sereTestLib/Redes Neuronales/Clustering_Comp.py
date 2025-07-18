@@ -25,8 +25,6 @@ from mlxtend.preprocessing import MeanCenterer
 import susi
 import numpy as np
 from sklearn_som import som
-from pyts.transformation import ShapeletTransform
-
 from pyts.classification import BOSSVS
 from pyts.datasets import load_basic_motions
 from pyts.multivariate.classification import MultivariateClassifier

@@ -22,7 +22,7 @@ from sklearn.neighbors import NearestNeighbors
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Sabrina.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Rodrigo.txt'
 
 ##  Hago la lectura de los datos
 data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 299, lectura_datos_propios = True, ruta = ruta_registro)
@@ -78,22 +78,22 @@ for i in range (tramos_actividades.shape[0]):
     if pat_predictions[tramos_actividades[i, 0]] == 1:
         
         ## Hago la graficación en rojo del tramo de movimiento detectado en los tres acelerómeteros
-        plt.plot(periodoMuestreo * tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
+        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
                 acel[:, 0][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'r', label = 'Movimiento')
-        plt.plot(periodoMuestreo * tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
+        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
                 acel[:, 1][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'r')
-        plt.plot(periodoMuestreo * tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
+        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
                 acel[:, 2][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'r')
-        
+
     ## En caso de que dicho tramo corresponda a reposo
     else:
 
         ## Hago la graficación en rojo del tramo de movimiento detectado en los tres acelerómeteros
-        plt.plot(periodoMuestreo * tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
+        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
                 acel[:, 0][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'b', label = 'Reposo')
-        plt.plot(periodoMuestreo * tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
+        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
                 acel[:, 1][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'b')
-        plt.plot(periodoMuestreo * tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
+        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
                 acel[:, 2][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'b')
 
 ## Despliego la gráfica y configuro los parámetros de Leyendas
