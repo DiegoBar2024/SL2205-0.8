@@ -172,7 +172,7 @@ if __name__== '__main__':
     ## Opción 1: Generar los ficheros JSON con los SMA y features para cada actividad
     ## Opción 2: Entrenamiento de modelos que permitan discriminar actividades usando SMA y otras features
     ## Opción 3: Llevar a cabo la clasificación de actividades en reposo/actividad usando SMA
-    opcion = 1
+    opcion = 2
 
     ## Hago la lectura de los datos generales de los pacientes
     pacientes, ids_existentes = LecturaDatosPacientes()
@@ -306,25 +306,25 @@ if __name__== '__main__':
         ## ----------------------------- PROCESAMIENTO FEATURES -----------------------------------------
 
         ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_Parado.json", 'r') as openfile:
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Parado.json", 'r') as openfile:
 
             # Cargo el diccionario el cual va a ser un objeto JSON
             features_parado = json.load(openfile)
         
         ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_Sentado.json", 'r') as openfile:
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Sentado.json", 'r') as openfile:
 
             # Cargo el diccionario el cual va a ser un objeto JSON
             features_sentado = json.load(openfile)
         
         ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_Caminando.json", 'r') as openfile:
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Caminando.json", 'r') as openfile:
 
             # Cargo el diccionario el cual va a ser un objeto JSON
             features_caminando = json.load(openfile)
         
         ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_Escalera.json", 'r') as openfile:
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Escalera.json", 'r') as openfile:
 
             # Cargo el diccionario el cual va a ser un objeto JSON
             features_escaleras = json.load(openfile)

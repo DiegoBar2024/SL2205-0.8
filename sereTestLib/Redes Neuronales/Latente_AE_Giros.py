@@ -33,7 +33,7 @@ pacientes, ids_existentes = LecturaDatosPacientes()
 ruta_escalogramas = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_giros_tot'
 
 ## Itero para cada uno de los identificadores de los pacientes. Hago la generación de escalogramas para cada paciente
-for id_persona in ids_existentes[ids_existentes > 73]:
+for id_persona in ids_existentes:
 
     ## Creo un bloque try catch en caso de que ocurra algún error en el procesamiento
     try:
@@ -47,21 +47,27 @@ for id_persona in ids_existentes[ids_existentes > 73]:
             ## Creo el directorio correspondiente
             os.makedirs(ruta_comprimidas)
 
-        ## Parámetros de compresión del autoencoder
-        params = {'data_dir' :  ruta_escalogramas,
-                                'dim' : inDim,
-                                'batch_size' : batch_size,
-                                'shuffle' : False,
-                                'activities' : ['Caminando']}
+        ## Obtengo el conjunto de segmentos correspondientes a ese paciente a ese tramo
+        segmentos = sorted(os.listdir('C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_giros_tot/S{}'.format(id_persona)), key = len)
 
-        ## Lista de identificadores de los pacientes para el cual se van a computar las imagenes
-        lista_IDs = np.array([id_persona])
+        ## Construyo un vector vacío en el cual voy a almacenar los espacios latentes como matriz de ceros
+        espacio_latente = np.zeros((len(segmentos), 256))
 
-        ## Obtengo el espacio latente de todas las muestras correspondientes al paciente según mi modelo de autoencoder
-        ## La variable <<espacio_latente>> va a ser una matriz de dos dimensiones dadas por (m, c) donde
-        ##  m: Me da la cantidad de muestras que estoy comprimiendo
-        ##  c: Me da la cantidad de características (feature) correspondientes al espacio latente
-        espacio_latente = patient_group_aelda(lista_IDs, modelo_autoencoder, layer_name = layer_name, **params)
+        ## Itero para cada uno de los escalogramas del tramo
+        for j in range (len(segmentos)):
+
+            ## Abro el archivo .npz correspondiente
+            escalograma_segmento = np.load(ruta_escalogramas + '/S{}/{}'.format(id_persona, segmentos[j]))['X']
+
+            ## Se crea un modelo en base al autoencoder que toma como entrada la entrada al autoencoder y que toma como la salida las 256 características del autoencoder con los parámetros que ya tiene
+            intermediate_layer_model = keras.Model(inputs = modelo_autoencoder.input,
+                                    outputs = modelo_autoencoder.get_layer(layer_name).output)
+
+            ## Se realiza entonces la predicción del autoencoder a los datos del generador dando como resultado para cada muestra las 256 características a que correspondan a la salida
+            intermediate = intermediate_layer_model.predict(np.reshape(escalograma_segmento, (1, 6, 128, 800)))
+
+            ## Lo agrego a la matriz de los espacios latentes
+            espacio_latente[j, :] = intermediate
 
         ## Guardo el espacio latente como una matriz bidimensional
         ## Las filas van a ser cada una de las muestras observadas mientras que las columnas corresponden a los features (formato tidy)
