@@ -18,12 +18,13 @@ import numpy
 from matplotlib import pyplot as plt
 from sklearn.neighbors import NearestNeighbors
 from sklearn.decomposition import PCA
+from sklearn.covariance import EmpiricalCovariance, MinCovDet
 
 ## -------------------------------- DISCRIMINACIÓN REPOSO - ACTIVIDAD --------------------------------------
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Sabrina.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Rodrigo.txt'
 
 ##  Hago la lectura de los datos
 data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 299, lectura_datos_propios = True, ruta = ruta_registro)
@@ -216,14 +217,42 @@ for i in range (tramos_actividades.shape[0]):
     ## Construyo un vector donde voy a guardar la distancia euclideana de cada punto a su respectivo centroide
     distancias_puntos = []
 
+    ## Construyo un vector en donde voy a guardar las matrices de covarianza de los clusters
+    matrices_cov = []
+
+    ## Itero para cada uno de los clusters que tengo
+    for cluster in range (clusters_optimo):
+
+        ## Obtengo todos los puntos correspondientes al cluster
+        puntos_cluster = features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][np.where(kmeans.labels_ == cluster)]
+
+        ## En caso de que la cantidad de puntos en el cluster sea mayor a 1
+        if puntos_cluster.shape[0] > 1:
+
+            ## Hago el cálculo de la matriz de covarianza del clúster
+            matriz_cov = MinCovDet().fit(puntos_cluster)
+
+            ## Agrego la matriz de covarianza a la lista correspondiente
+            matrices_cov.append(matriz_cov.covariance_)
+        
+        ## En otro caso
+        else:
+
+            ## Asigno como matriz de covarianza la matriz identidad
+            matriz_cov = np.identity(puntos_cluster.shape[1])
+
+            ## La agrego a la lista de matrices
+            matrices_cov.append(matriz_cov)
+
     ## Itero para cada uno de los puntos del dataset
     for j in range (len(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]])):
 
         ## Obtengo el centroide del clúster que está asociado al i-ésimo punto
         centroide = kmeans.cluster_centers_[kmeans.labels_[j]]
 
-        ## Calculo la distancia entre el i-ésimo punto y el centroide asociado (usando norma Euclideana) y la elevo al cuadrado
-        distancia = np.linalg.norm(centroide - features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][j]) ** 2
+        ## Calculo la distancia de Mahalanobis al cuadrado entre el i-ésimo punto y el centroide asociado
+        distancia = np.dot((features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][j] - centroide), 
+                        np.matmul(np.linalg.inv(matrices_cov[0]), (features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][j] - centroide)))
 
         ## Agrego la distancia del punto a su centroide a la lista
         distancias_puntos.append(distancia)
@@ -232,8 +261,8 @@ for i in range (tramos_actividades.shape[0]):
     distancias_puntos = np.array(distancias_puntos)
 
     ## Defino el umbral de distancia a partir del cual yo considero que van a ser anomalías
-    # umbral = np.percentile(distancias_puntos, 95)
-    umbral = np.mean(distancias_puntos) + 2 * np.std(distancias_puntos)
+    umbral = np.percentile(distancias_puntos, 95)
+    # umbral = np.mean(distancias_puntos) + 2 * np.std(distancias_puntos)
 
     ## Obtengo el valor de las distancias a los centroides de los puntos que considero anomalías
     anomalias_tramo = distancias_puntos[distancias_puntos > umbral]
