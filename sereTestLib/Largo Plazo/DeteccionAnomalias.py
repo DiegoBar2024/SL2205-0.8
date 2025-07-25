@@ -17,12 +17,13 @@ from pyod.models.knn import KNN
 import numpy
 from matplotlib import pyplot as plt
 from sklearn.neighbors import NearestNeighbors
+from sklearn.decomposition import PCA
 
 ## -------------------------------- DISCRIMINACIÓN REPOSO - ACTIVIDAD --------------------------------------
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Rodrigo.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Sabrina.txt'
 
 ##  Hago la lectura de los datos
 data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 299, lectura_datos_propios = True, ruta = ruta_registro)
@@ -73,7 +74,7 @@ tramos_actividades = np.array((tramos_actividades[1:]))
 ## La idea es poder graficar las señales de acelerómetros discriminando entre movimiento y reposo
 ## Itero para cada uno de los segmentos tomados
 for i in range (tramos_actividades.shape[0]):
-    
+
     ## En caso de que dicho tramo corresponda a movimiento
     if pat_predictions[tramos_actividades[i, 0]] == 1:
         
@@ -105,7 +106,7 @@ plt.legend(by_label.values(), by_label.keys())
 plt.title('Discriminación Movimiento-Reposo')
 plt.show()
 
-## ------------------------------------------- ANOMALÍAS ----------------------------------------------
+## ---------------------------------------- PREPROCESAMIENTO -------------------------------------------
 
 ## Hago la conversión de los features a un array bidimensional
 ## Obtengo una matriz donde:
@@ -118,6 +119,49 @@ features_norm = normalize(features, norm = "l2", axis = 0)
 
 ## Especifico una lista con la cantidad de clusters que voy a usar durante el análisis
 clusters = np.linspace(2, 10, 9).astype(int)
+
+## Genero un objeto el cual realizará el PCA
+pca_init = PCA()
+
+## Ajusto el modelo de PCA a los datos
+pca_init.fit(features_norm)
+
+## Genero una variable donde guardo la suma de la explicación de la varianza del dataset por las features
+suma_exp_varianza = pca_init.explained_variance_ratio_.cumsum()
+
+## Grafico la varianza explicada por los componentes
+plt.figure(figsize = (10, 8))
+plt.plot(range(1, features_norm.shape[1] + 1), suma_exp_varianza, marker = 'o', linestyle = '--')
+plt.title('Varianza Explicada por los componentes')
+plt.xlabel('Número de componentes')
+plt.ylabel('Varianca Explicada Acumulativa')
+plt.show()
+
+## Construyo una variable que me va a decir la cantidad de componentes que tengo
+componentes = 0
+
+## Itero para cada una de las proporciones explicativas de la varianza
+for i in range (len(suma_exp_varianza)):
+    
+    ## Aumento en una unidad la cantidad de componentes
+    componentes += 1
+
+    ## En caso de que la suma total de la varianza explicada sea mayor a 0.8
+    if suma_exp_varianza[i] > 0.8:
+
+        ## Termino el bucle
+        break
+
+## Ahora aplico PCA con la cantidad de componentes que seleccioné con el criterio anterior
+pca = PCA(n_components = componentes)
+
+## Ajusto el modelo a mis datos con la cantidad seleccionada de componentes
+pca.fit(features_norm)
+
+## Hago la selección de los features transformando según las componentes principales halladas
+features_norm = pca.transform(features_norm)
+
+## ------------------------------------------- ANOMALÍAS ----------------------------------------------
 
 ## Construyo una matriz donde voy a guardar las anomalías detectadas usando el método de clustering
 anomalias = np.zeros((1, 2))
@@ -228,17 +272,17 @@ for i in range (tramos_actividades.shape[0]):
     ## Calculo las distancias a los k vecinos más próximos
     distances, indices = neighbors_fit.kneighbors(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]])
 
-    # Graficación de distancia al k-vecino más proximo en función de la cantidad de puntos
-    distances = np.sort(distances[:, 3], axis = 0)
-    plt.plot(distances)
-    plt.ylabel('k-distancia')
-    plt.xlabel('Puntos ordenados por distancia')
-    plt.show()
+#     # Graficación de distancia al k-vecino más proximo en función de la cantidad de puntos
+#     distances = np.sort(distances[:, 3], axis = 0)
+#     plt.plot(distances)
+#     plt.ylabel('k-distancia')
+#     plt.xlabel('Puntos ordenados por distancia')
+#     plt.show()
 
-    plt.plot(np.diff(distances))
-    plt.ylabel('k-distancia')
-    plt.xlabel('Puntos ordenados por distancia')
-    plt.show()
+#     plt.plot(np.diff(distances))
+#     plt.ylabel('k-distancia')
+#     plt.xlabel('Puntos ordenados por distancia')
+#     plt.show()
 
 ## Elimino el dummy vector inicial de la matriz de anomalias para clustering
 anomalias = anomalias[1:,:]
@@ -292,5 +336,8 @@ for i in range (ventanas.shape[0]):
 ## Despliego la gráfica
 handles, labels = plt.gca().get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
+plt.xlabel('Tiempo(s)')
+plt.ylabel("Aceleracion $(m/s^2)$")
 plt.legend(by_label.values(), by_label.keys())
+plt.title('Deteccion Anomalias')
 plt.show()

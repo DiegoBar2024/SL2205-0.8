@@ -255,7 +255,7 @@ comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
 
 #             ## Entonces la prediccion realizada es inestable
 #             predicciones.append(1)
-        
+
 #         ## En caso de que el segmento sea inestable verdaderamente
 #         else:
 
@@ -287,7 +287,7 @@ for i in range (len(comprimidos_por_persona)):
         ## Obtengo la serie asociada al paciente a comparar
         serie_j = normalize(comprimidos_por_persona[j], norm = "l2", axis = 0)
         # serie_j = comprimidos_por_persona[j]
-        # serie_j = StandardScaler().fit_transform(comprimidos_por_persona[j])
+        #serie_j = StandardScaler().fit_transform(comprimidos_por_persona[j])
 
         ## CÁLCULO DE LA DTW entre ambas series
         ## Recuerdo que las filas de la matriz son las observaciones
@@ -315,11 +315,17 @@ falsos_negativos = 0
 ## Variable que contabiliza los Verdaderos Positivos
 verdaderos_positivos = 0
 
+## Genero un vector donde me guardo las predicciones
+predicciones_dtw = []
+
 ## Itero para cada uno de las series temporales por persona
 for i in range (len(comprimidos_por_persona)):
 
     ## Obtengo la posición del argumento minimo no nulo en donde se presenta la distancia deseada
     posicion_minimo = np.argmin(distancias_series[i, :][distancias_series[i, :] != 0])
+
+    ## Agrego la prediccion como la etiqueta del más cercano
+    predicciones_dtw.append(etiquetas[posicion_minimo + 1])
 
     ## En caso de que el paciente esté mal clasificado
     if etiquetas[posicion_minimo + 1] != etiquetas[i]:
@@ -339,13 +345,14 @@ for i in range (len(comprimidos_por_persona)):
     ## En caso de que el paciente esté bien clasificado
     else:
 
-        ## En caso de esté etiquetado con 0
-        if etiquetas[i] == 0:
+        ## En caso de esté etiquetado con 1
+        if etiquetas[i] == 1:
 
             ## Este es un verdadero positivo
             verdaderos_positivos += 1
 
+## Convierto el vector de predicciones en vector numpy
+predicciones_dtw = np.array(predicciones_dtw)
+
 ## Obtengo los verdaderos negativos como los restantes
 verdaderos_negativos = len(etiquetas) - (verdaderos_positivos + falsos_negativos + falsos_positivos)
-
-print(verdaderos_negativos)
