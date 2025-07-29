@@ -67,7 +67,7 @@ def RealizarAnalisis():
     contactos_terminales = ContactosTerminales(acel, cant_muestras, periodoMuestreo, graficar = False)
 
     ## Hago la segmentación de la marcha
-    pasos, duraciones_pasos = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro)
+    pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro)
 
     ## Cálculo de parámetros de marcha usando el método I
     pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, longitud_pierna)
@@ -116,6 +116,9 @@ boton_directorio = tk.Button(root, text = 'Seleccionar Archivo', command = Pedir
 # Button that will call the submit function 
 boton_comenzar = tk.Button(root,text = 'Comenzar Análisis', command = RealizarAnalisis)
 
+## Configuro un botón para terminar la ejecución
+terminar = tk.Button(root, text = "Cerrar", command = root.destroy)
+
 ## Botones
 etiqueta_ID.grid(row = 0,column = 0)
 entrada_ID.grid(row = 0,column = 1)
@@ -128,7 +131,8 @@ entrada_pierna.grid(row = 3,column = 1)
 etiqueta_pie.grid(row = 4,column = 0)
 entrada_pie.grid(row = 4,column = 1)
 boton_directorio.grid(row = 5, column = 0)
-boton_comenzar.grid(row = 6, column = 0)
+boton_comenzar.grid(row = 5, column = 1)
+terminar.grid(row = 6, column = 0)
 
 ## Hago un bucle infinito para el display de la ventana
 root.mainloop()

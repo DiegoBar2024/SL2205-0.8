@@ -14,6 +14,7 @@ from LecturaDatosPacientes import *
 from mlxtend.preprocessing import MeanCenterer
 from dtwParallel import dtw_functions
 from sklearn.model_selection import cross_val_score, KFold
+from sklearn.preprocessing import normalize
 
 ## ------------------------------------------- ETIQUETADOS ---------------------------------------------
 
@@ -55,7 +56,7 @@ ids_pacientes = np.concatenate((id_estables, id_inestables))
 ## ---------------------------------- CARGADO DE COMPRIMIDAS ESTABLES ----------------------------------
 
 ## Especifico la ruta en la cual se encuentran las muestras comprimidas
-ruta_comprimidas = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae_giros_tot"
+ruta_comprimidas = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae"
 
 ## Construyo una lista donde voy a guardar las muestras etiquetadas como estables
 estables = np.zeros((1, 256))
@@ -125,28 +126,37 @@ estables = estables[1:,:]
 ## Selecciono únicamente aquellas muestras no nulas (elimino el dummy vector) para inestables
 inestables = inestables[1:,:]
 
+## Construyo una matriz con todos los segmentos comprimidos
+comprimidos_total = np.concatenate((estables, inestables))
+
+## Construyo una matriz con todas las etiquetas
+vector_etiquetas =  np.concatenate((np.zeros(len(estables)), np.ones(len(inestables))))
+
+## Hago la normalización por columna es decir por feature
+comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
+
 ## -------------------------------- VALIDACIÓN CRUZADA DE LOS MODELOS ----------------------------------
 
 ## Construyo la Support Vector Machine
-svm_giros = SVC(C = 1, gamma = 1, kernel = 'rbf')
+svm = SVC(C = 1, gamma = 1, kernel = 'rbf')
 
 ## Especifico la cantidad de folds que voy a utilizar para poder hacer la validación cruzada
-k_folds = KFold(n_splits = 50, shuffle = False)
+k_folds = KFold(n_splits = 10, shuffle = True)
 
 ## Hago la validación cruzada del modelo
-scores_svm = cross_val_score(svm_giros, np.concatenate((estables, inestables)), np.concatenate((np.zeros(len(estables)), np.ones(len(inestables)))), cv = k_folds)
+scores_svm = cross_val_score(svm, comprimidos_total, vector_etiquetas, cv = k_folds)
 
-## Construyo el Linear Discrminant Analysis
-lda_giros = LinearDiscriminantAnalysis()
+## Construyo el clasificador LDA
+lda = LinearDiscriminantAnalysis()
 
 ## Hago la validación cruzada del modelo
-scores_lda = cross_val_score(lda_giros, np.concatenate((estables, inestables)), np.concatenate((np.zeros(len(estables)), np.ones(len(inestables)))), cv = k_folds)
+scores_lda = cross_val_score(lda, comprimidos_total, vector_etiquetas, cv = k_folds)
 
 ## Inicializo una lista en la cual voy a guardar los errores de predicción para el modelo
 errores_prediccion = []
 
 ## Genero una variable la cual especifique el modelo que voy a usar para hacer la validacion
-modelo = 'lda'
+modelo = 'svm'
 
 ## Itero para cada uno de los pacientes en el conjunto de IDs de entrenamiento y validacion
 for id_paciente in np.sort(ids_pacientes):
@@ -155,10 +165,10 @@ for id_paciente in np.sort(ids_pacientes):
     try:
 
         ## Asigno por defecto el conjunto de entrenamiento de los estables al vector total de estables
-        train_estables = estables
+        train_estables = normalize(estables, norm = "l2", axis = 0)
 
         ## Asigno por defecto el conjunto de entrenamiento de los inestables al vector total de inestables
-        train_inestables = inestables
+        train_inestables = normalize(inestables, norm = "l2", axis = 0)
 
         ## En caso de que el paciente sea estable
         if id_paciente in id_estables:
@@ -226,14 +236,5 @@ for id_paciente in np.sort(ids_pacientes):
         ## Que continúe con la siguiente muestra
         continue
 
-## Hago la conversión de la matriz de errores de predicción a una numpy array
+## Hago la conversión de la matriz de errores de predicción a precisiones
 errores_prediccion = np.array((errores_prediccion))
-
-## Obtengo el error medio de predicción con el modelo
-error_promedio = np.mean(errores_prediccion[:, 1])
-
-# plt.bar(errores_prediccion[:, 0], errores_prediccion[:, 1])
-# plt.xlabel("ID del Paciente de Validacion")
-# plt.ylabel("Error Medio de Prediccion")
-# plt.legend()
-# plt.show()

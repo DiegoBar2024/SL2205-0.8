@@ -27,7 +27,7 @@ from sklearn.covariance import EmpiricalCovariance, MinCovDet
 ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Rodrigo.txt'
 
 ##  Hago la lectura de los datos
-data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 299, lectura_datos_propios = True, ruta = ruta_registro)
+data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 256, lectura_datos_propios = False, ruta = ruta_registro)
 
 ## Defino la cantidad de muestras de la ventana que voy a tomar
 muestras_ventana = 200

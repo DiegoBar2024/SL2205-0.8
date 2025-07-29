@@ -17,9 +17,12 @@ from scipy.stats import *
 from sklearn.svm import SVC
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.feature_selection import SequentialFeatureSelector
+from sklearn.model_selection import cross_val_score, KFold
 from joblib import dump, load
 from tsfel import *
-from sklearn.model_selection import cross_val_score, KFold
+from tsfresh import *
+from tsfresh.feature_extraction import *
+from tsfresh.utilities.distribution import MultiprocessingDistributor
 
 class NumpyArrayEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -123,6 +126,25 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
             cfg = tsfel.get_features_by_domain(domain = ['statistical', 'temporal'])
 
             ## ------------------------------ FEATURE EXTRACTION ------------------------------------------
+
+            # Distributor = MultiprocessingDistributor(n_workers=4,
+            #                              disable_progressbar=False,
+            #                              progressbar_title="Feature Extraction")
+
+            # dataframe = pd.DataFrame(segmento_ML_filt)
+            # dataframe['id'] = 1
+            #extracted_features = extract_features(dataframe, column_id = 'id', default_fc_parameters = MinimalFCParameters())
+
+            # # Example time series data
+            # data = {
+            #     'id': [1, 1, 1, 2, 2, 2],
+            #     'time': [1, 2, 3, 1, 2, 3],
+            #     'value': [10, 20, 30, 15, 25, 35]
+            # }
+            # df = pd.DataFrame(data)
+
+            # features = extract_features(df, column_id='id', column_sort='time')
+            # print(features)
 
             ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)
             #features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])

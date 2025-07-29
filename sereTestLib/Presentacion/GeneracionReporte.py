@@ -12,8 +12,14 @@ from io import BytesIO
 import pandas as pd
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
+from datetime import date
 
 ## ------------------------------------- DEFINICIÓN DE FUNCIONES ---------------------------------------
+
+def calcularEdad(birthDate):
+    today = date.today()
+    age = today.year - birthDate.year - ((today.month, today.day) < (birthDate.month, birthDate.day))
+    return age
 
 def create_title(title, pdf):
     
@@ -80,6 +86,24 @@ def CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long
     write_to_pdf_bold(pdf, "Duración de la sesión: ")
     write_to_pdf(pdf, "{}m {}s".format(int(tiempo[-1] // 60), int(tiempo[-1]) - 60 * int(tiempo[-1] // 60)))
     pdf.ln(10)
+
+    ## Genero una lista con el dia, el mes y el año de nacimiento EN ESE ORDEN
+    ## MUY IMPORTANTE PARA QUE FUNCIONE EL CÁLCULO DE LA EDAD QUE LOS DATOS INGRESADOS TENGAN EL FORMATO: <<DD/MM/YYYY>>
+    edad_param = nacimiento_persona.split("/")
+
+    ## Hago el cálculo de la edad de la persona correspondiente
+    edad = calcularEdad(date(int(edad_param[2]), int(edad_param[1]), int(edad_param[0])))
+
+    # ## Genero una tabla con los valores máximo y mínimo de parámetros de marcha según rango etario
+    # parametros = {
+    #     '10-19': {'LP' : [0.53, 0.73], 'DP':, 'VEL':, 'CAD':,}
+    #     '20-29': {'LP' :, 'DP':, 'VEL':, 'CAD':,}
+    #     '30-39': {'LP' :, 'DP':, 'VEL':, 'CAD':,}
+    #     '40-49': {'LP' :, 'DP':, 'VEL':, 'CAD':,}
+    #     '50-59': {'LP' :, 'DP':, 'VEL':, 'CAD':,}
+    #     '60-69': {'LP' :, 'DP':, 'VEL':, 'CAD':,}
+    #     '70-': {'LP' :, 'DP':, 'VEL':, 'CAD':,}
+    # }
 
     ## Tablas con los resultados del análisis de marcha
     TABLE_DATA = (

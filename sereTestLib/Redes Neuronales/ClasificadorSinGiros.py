@@ -33,7 +33,10 @@ from pyts.multivariate.classification import MultivariateClassifier
 from dtaidistance import dtw
 from dtaidistance import dtw_visualisation as dtwvis
 from sklearn.preprocessing import *
-
+from sklearn.svm import SVC
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.feature_selection import SequentialFeatureSelector
+from sklearn.model_selection import cross_val_score, KFold
 
 ## ------------------------------------- SELECCIÓN DE MUESTRAS ----------------------------------------------
 
@@ -100,49 +103,49 @@ for id_persona in ids_existentes:
             ## La j-ésima columna representa el j-ésimo feature
             espacio_comprimido = archivo_comprimido['X']
 
-            ## En caso de que el segmento detectado tenga más de dos muestras
-            if espacio_comprimido.shape[0] > 2:
+            ## En caso de que el segmento detectado tenga la cantidad necesaria de muestras
+            if espacio_comprimido.shape[0] > 4:
 
-                ## Recorto una muestra del principio y una muestra del final (para obtener marcha en régimen)
-                espacio_comprimido = espacio_comprimido[1: -1, :]
+                ## Recorto muestras al principio y al final
+                espacio_comprimido = espacio_comprimido[2: -2, :]
 
-            ## En caso de que no haya ningun archivo comprimido
-            if len(espacio_comprimido) == 0:
+                ## En caso de que no haya ningun archivo comprimido
+                if len(espacio_comprimido) == 0:
 
-                ## Continúo al siguiente paciente
-                continue
-
-            ## En caso de que yo quiera filtrar los pacientes etiquetados en mi muestra
-            if filtrar_etiquetados:
-
-                ## En caso de que el ID del paciente que está siendo analizado no corresponde a un paciente etiquetado, me lo salteo y no lo proceso
-                if id_persona not in id_etiquetados:
-
+                    ## Continúo al siguiente paciente
                     continue
 
-                ## En caso de que el paciente haya sido clasificado como estable
-                if id_persona in id_estables:
+                ## En caso de que yo quiera filtrar los pacientes etiquetados en mi muestra
+                if filtrar_etiquetados:
 
-                    ## Concateno un vector de ceros con la cantidad de segmentos que tengo para el registro del paciente
-                    vector_etiquetas = np.concatenate((np.array(vector_etiquetas), np.zeros((espacio_comprimido.shape[0])))).astype(int)
-                
-                    ## Asigno la etiqueta numérica 0 al paciente estable
-                    etiquetas.append(0)
+                    ## En caso de que el ID del paciente que está siendo analizado no corresponde a un paciente etiquetado, me lo salteo y no lo proceso
+                    if id_persona not in id_etiquetados:
 
-                ## En caso de que el paciente haya sido clasificado como inestable
-                else:
+                        continue
 
-                    ## Concateno un vector de ceros con la cantidad de segmentos que tengo para el registro del paciente
-                    vector_etiquetas = np.concatenate((np.array(vector_etiquetas), np.ones((espacio_comprimido.shape[0])))).astype(int)
+                    ## En caso de que el paciente haya sido clasificado como estable
+                    if id_persona in id_estables:
 
-                    ## Asigno la etiqueta numérica 1 al paciente inestable
-                    etiquetas.append(1)
+                        ## Concateno un vector de ceros con la cantidad de segmentos que tengo para el registro del paciente
+                        vector_etiquetas = np.concatenate((np.array(vector_etiquetas), np.zeros((espacio_comprimido.shape[0])))).astype(int)
+                    
+                        ## Asigno la etiqueta numérica 0 al paciente estable
+                        etiquetas.append(0)
 
-            ## Concateno el espacio comprimido por filas a la matriz donde guardo los espacios latentes totales
-            comprimidos_total = np.concatenate((comprimidos_total, espacio_comprimido), axis = 0)
+                    ## En caso de que el paciente haya sido clasificado como inestable
+                    else:
 
-            ## Agrego el espacio comprimido a la lista correspondiente
-            comprimidos_por_persona.append(espacio_comprimido)
+                        ## Concateno un vector de ceros con la cantidad de segmentos que tengo para el registro del paciente
+                        vector_etiquetas = np.concatenate((np.array(vector_etiquetas), np.ones((espacio_comprimido.shape[0])))).astype(int)
+
+                        ## Asigno la etiqueta numérica 1 al paciente inestable
+                        etiquetas.append(1)
+
+                ## Concateno el espacio comprimido por filas a la matriz donde guardo los espacios latentes totales
+                comprimidos_total = np.concatenate((comprimidos_total, espacio_comprimido), axis = 0)
+
+                ## Agrego el espacio comprimido a la lista correspondiente
+                comprimidos_por_persona.append(espacio_comprimido)
 
         ## Impresión en pantalla avisando el identificador del paciente que está siendo procesado
         print("ID del paciente que está siendo procesado: {}".format(id_persona))
@@ -164,16 +167,6 @@ comprimidos_total = comprimidos_total[1:,:]
 comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
 
 ## ---------------------------------------------- LSTM ------------------------------------------------
-
-# precisiones = np.array([0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
-#        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-#        1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1,
-#        1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1])
-
-# etiquetas = np.array([0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-#        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-#        0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0,
-#        0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0])
 
 # ## Defino un factor de partición
 # ## Defino una variable donde guardo el error de prediccion
@@ -264,95 +257,112 @@ comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
 
 ## ---------------------------------------------- DTW ------------------------------------------------
 
-## Construyo un tensor bidimensional de modo que guarde las distancias relativas
-distancias_series = np.zeros((len(comprimidos_por_persona), len(comprimidos_por_persona)))
+# ## Construyo un tensor bidimensional de modo que guarde las distancias relativas
+# distancias_series = np.zeros((len(comprimidos_por_persona), len(comprimidos_por_persona)))
 
-## Itero para cada uno de las series temporales por persona
-for i in range (len(comprimidos_por_persona)):
+# ## Itero para cada uno de las series temporales por persona
+# for i in range (len(comprimidos_por_persona)):
 
-    ## Itero para las series temporales que no corresponden a la persona (se puede optimizar)
-    for j in range (i + 1, len(comprimidos_por_persona)):
+#     ## Itero para las series temporales que no corresponden a la persona (se puede optimizar)
+#     for j in range (i + 1, len(comprimidos_por_persona)):
 
-        # # Hago la normalización de las columnas del tensor de la persona i
-        # serie_i = MeanCenterer().fit(comprimidos_por_persona[i]).transform(comprimidos_por_persona[i])
+#         # # Hago la normalización de las columnas del tensor de la persona i
+#         # serie_i = MeanCenterer().fit(comprimidos_por_persona[i]).transform(comprimidos_por_persona[i])
 
-        # # Hago la normalización de las columnas del tensor de la persona j
-        # serie_j = MeanCenterer().fit(comprimidos_por_persona[j]).transform(comprimidos_por_persona[j])
+#         # # Hago la normalización de las columnas del tensor de la persona j
+#         # serie_j = MeanCenterer().fit(comprimidos_por_persona[j]).transform(comprimidos_por_persona[j])
 
-        ## Obtengo la serie asociada al paciente actual
-        serie_i = normalize(comprimidos_por_persona[i], norm = "l2", axis = 0)
-        # serie_i = comprimidos_por_persona[i]
-        # serie_i = StandardScaler().fit_transform(comprimidos_por_persona[i])
+#         ## Obtengo la serie asociada al paciente actual
+#         serie_i = normalize(comprimidos_por_persona[i], norm = "l2", axis = 0)
+#         # serie_i = comprimidos_por_persona[i]
+#         # serie_i = StandardScaler().fit_transform(comprimidos_por_persona[i])
 
-        ## Obtengo la serie asociada al paciente a comparar
-        serie_j = normalize(comprimidos_por_persona[j], norm = "l2", axis = 0)
-        # serie_j = comprimidos_por_persona[j]
-        #serie_j = StandardScaler().fit_transform(comprimidos_por_persona[j])
+#         ## Obtengo la serie asociada al paciente a comparar
+#         serie_j = normalize(comprimidos_por_persona[j], norm = "l2", axis = 0)
+#         # serie_j = comprimidos_por_persona[j]
+#         #serie_j = StandardScaler().fit_transform(comprimidos_por_persona[j])
 
-        ## CÁLCULO DE LA DTW entre ambas series
-        ## Recuerdo que las filas de la matriz son las observaciones
-        ## Recuerdo que las columnas de la matriz son las variables
-        ## Para que la DTW esté bien definida los tensores deben tener mismo numero de variables (o sea de columnas)
-        ## El DTW se encuentra bien definido incluso cuando los tensores tienen distinto número de filas
-        dist = dtw_functions.dtw(serie_i, serie_j, type_dtw = "d", local_dissimilarity = d.euclidean, MTS = True)
+#         ## CÁLCULO DE LA DTW entre ambas series
+#         ## Recuerdo que las filas de la matriz son las observaciones
+#         ## Recuerdo que las columnas de la matriz son las variables
+#         ## Para que la DTW esté bien definida los tensores deben tener mismo numero de variables (o sea de columnas)
+#         ## El DTW se encuentra bien definido incluso cuando los tensores tienen distinto número de filas
+#         dist = dtw_functions.dtw(serie_i, serie_j, type_dtw = "d", local_dissimilarity = d.euclidean, MTS = True)
 
-        ## Asigno la distancia a la posición de la matriz correspondiente
-        distancias_series[i, j] = dist
+#         ## Asigno la distancia a la posición de la matriz correspondiente
+#         distancias_series[i, j] = dist
         
-        ## Como la matriz de distancias es simétrica hago lo mismo con la otra posicion
-        distancias_series[j, i] = dist
+#         ## Como la matriz de distancias es simétrica hago lo mismo con la otra posicion
+#         distancias_series[j, i] = dist
 
 ## ---------------------------------------- VALIDACIÓN ------------------------------------------------
 
-## POSITIVO = PACIENTE INESTABLE
-## NEGATIVO = PACIENTE ESTABLE
-## Variable que contabiliza los Falsos Positivos
-falsos_positivos = 0
+# ## POSITIVO = PACIENTE INESTABLE
+# ## NEGATIVO = PACIENTE ESTABLE
+# ## Variable que contabiliza los Falsos Positivos
+# falsos_positivos = 0
 
-## Variable que contabiliza los Falsos Negativos
-falsos_negativos = 0
+# ## Variable que contabiliza los Falsos Negativos
+# falsos_negativos = 0
 
-## Variable que contabiliza los Verdaderos Positivos
-verdaderos_positivos = 0
+# ## Variable que contabiliza los Verdaderos Positivos
+# verdaderos_positivos = 0
 
-## Genero un vector donde me guardo las predicciones
-predicciones_dtw = []
+# ## Genero un vector donde me guardo las predicciones
+# predicciones_dtw = []
 
-## Itero para cada uno de las series temporales por persona
-for i in range (len(comprimidos_por_persona)):
+# ## Itero para cada uno de las series temporales por persona
+# for i in range (len(comprimidos_por_persona)):
 
-    ## Obtengo la posición del argumento minimo no nulo en donde se presenta la distancia deseada
-    posicion_minimo = np.argmin(distancias_series[i, :][distancias_series[i, :] != 0])
+#     ## Obtengo la posición del argumento minimo no nulo en donde se presenta la distancia deseada
+#     posicion_minimo = np.argmin(distancias_series[i, :][distancias_series[i, :] != 0])
 
-    ## Agrego la prediccion como la etiqueta del más cercano
-    predicciones_dtw.append(etiquetas[posicion_minimo + 1])
+#     ## Agrego la prediccion como la etiqueta del más cercano
+#     predicciones_dtw.append(etiquetas[posicion_minimo + 1])
 
-    ## En caso de que el paciente esté mal clasificado
-    if etiquetas[posicion_minimo + 1] != etiquetas[i]:
+#     ## En caso de que el paciente esté mal clasificado
+#     if etiquetas[posicion_minimo + 1] != etiquetas[i]:
 
-        ## Si el paciente estaba etiquetado con 1 (positivo)
-        if etiquetas[i] == 1:
+#         ## Si el paciente estaba etiquetado con 1 (positivo)
+#         if etiquetas[i] == 1:
 
-            ## Este es un falso negativo
-            falsos_negativos += 1
+#             ## Este es un falso negativo
+#             falsos_negativos += 1
         
-        ## Si el paciente estaba etiquetado con 0 (negativo)
-        elif etiquetas[i] == 0:
+#         ## Si el paciente estaba etiquetado con 0 (negativo)
+#         elif etiquetas[i] == 0:
 
-            ## Este es un falso positivo
-            falsos_positivos += 1
+#             ## Este es un falso positivo
+#             falsos_positivos += 1
         
-    ## En caso de que el paciente esté bien clasificado
-    else:
+#     ## En caso de que el paciente esté bien clasificado
+#     else:
 
-        ## En caso de esté etiquetado con 1
-        if etiquetas[i] == 1:
+#         ## En caso de esté etiquetado con 1
+#         if etiquetas[i] == 1:
 
-            ## Este es un verdadero positivo
-            verdaderos_positivos += 1
+#             ## Este es un verdadero positivo
+#             verdaderos_positivos += 1
 
-## Convierto el vector de predicciones en vector numpy
-predicciones_dtw = np.array(predicciones_dtw)
+# ## Convierto el vector de predicciones en vector numpy
+# predicciones_dtw = np.array(predicciones_dtw)
 
-## Obtengo los verdaderos negativos como los restantes
-verdaderos_negativos = len(etiquetas) - (verdaderos_positivos + falsos_negativos + falsos_positivos)
+# ## Obtengo los verdaderos negativos como los restantes
+# verdaderos_negativos = len(etiquetas) - (verdaderos_positivos + falsos_negativos + falsos_positivos)
+
+## ---------------------------------------- SEPARADO ------------------------------------------------
+
+## Construyo la Support Vector Machine
+svm = SVC(C = 1, gamma = 1, kernel = 'rbf')
+
+## Especifico la cantidad de folds que voy a utilizar para poder hacer la validación cruzada
+k_folds = KFold(n_splits = 10, shuffle = True)
+
+## Hago la validación cruzada del modelo
+scores_svm = cross_val_score(svm, comprimidos_total, vector_etiquetas, cv = k_folds)
+
+## Construyo el clasificador LDA
+lda = LinearDiscriminantAnalysis()
+
+## Hago la validación cruzada del modelo
+scores_lda = cross_val_score(lda, comprimidos_total, vector_etiquetas, cv = k_folds)
