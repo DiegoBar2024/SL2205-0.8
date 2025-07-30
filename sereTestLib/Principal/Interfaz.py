@@ -96,7 +96,7 @@ entrada_ID = tk.Entry(root,textvariable = ID_var, font = ('calibre', 10, 'normal
 ## Variable de etiqueta para el nombre del paciente
 etiqueta_nombre = tk.Label(root, text = 'Nombre del paciente (<<Nombre>> <<Apellido>>): ', font = ('calibre',10, 'bold'))
 
-entrada_nombre = tk.Entry(root,textvariable = nombre_var, font=('calibre',10,'normal'))
+entrada_nombre = tk.Entry(root,textvariable = nombre_var, font=('calibre', 10, 'normal'))
 
 etiqueta_nacimiento = tk.Label(root, text = 'Fecha de nacimiento del paciente: (<<DD/MM/YYYY>>): ', font=('calibre',10, 'bold'))
 

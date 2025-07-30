@@ -94,16 +94,31 @@ def CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long
     ## Hago el cálculo de la edad de la persona correspondiente
     edad = calcularEdad(date(int(edad_param[2]), int(edad_param[1]), int(edad_param[0])))
 
-    # ## Genero una tabla con los valores máximo y mínimo de parámetros de marcha según rango etario
-    # parametros = {
-    #     '10-19': {'LP' : [0.53, 0.73], 'DP':, 'VEL':, 'CAD':,}
-    #     '20-29': {'LP' :, 'DP':, 'VEL':, 'CAD':,}
-    #     '30-39': {'LP' :, 'DP':, 'VEL':, 'CAD':,}
-    #     '40-49': {'LP' :, 'DP':, 'VEL':, 'CAD':,}
-    #     '50-59': {'LP' :, 'DP':, 'VEL':, 'CAD':,}
-    #     '60-69': {'LP' :, 'DP':, 'VEL':, 'CAD':,}
-    #     '70-': {'LP' :, 'DP':, 'VEL':, 'CAD':,}
-    # }
+    ## Genero una tabla con la media y una desviación estándar aproximada para parámetros de marcha segun banda etaria
+    ## Los valores numéricos se extraen del estudio "Gait analysis with the Kinect v2: normative study with healthy individuals and 
+    ## comprehensive study of its sensitivity, validity, and reliability in individuals with stroke"
+    ## Nomenclatura: LP (Longitud Paso[m]), DP (Duración Paso[s]), VEL (Velocidad [m/s]), CAD (Cadencia [pasos/s])
+    parametros = {
+        '10-19': {'LP' : [0.63, 0.05], 'DP': [0.54, 0.05], 'VEL': [1.16, 0.15], 'CAD': [111.87 / 60, 9.27 / 60]},
+        '20-29': {'LP' : [0.67, 0.06], 'DP': [0.56, 0.05], 'VEL': [1.18, 0.15], 'CAD': [107.43 / 60, 9.60 / 60]},
+        '30-39': {'LP' : [0.65, 0.05], 'DP': [0.56, 0.05], 'VEL': [1.16, 0.12], 'CAD': [107.87 / 60, 10.25 / 60]},
+        '40-49': {'LP' : [0.64, 0.07] , 'DP': [0.54, 0.05], 'VEL': [1.19, 0.15], 'CAD': [112.37 / 60, 9.36 / 60]},
+        '50-59': {'LP' : [0.62, 0.07], 'DP': [0.55, 0.06], 'VEL': [1.16, 0.19], 'CAD': [111.15 / 60, 12.03 / 60]},
+        '60-69': {'LP' : [0.60, 0.08], 'DP': [0.56, 0.05], 'VEL': [1.06, 0.17], 'CAD': [107.56 / 60, 9.10 / 60]},
+        '70-120': {'LP' : [0.52, 0.08], 'DP': [0.59, 0.07], 'VEL': [0.94, 0.19], 'CAD': [102.04 / 60, 9.99 / 60]}
+    }
+
+    ## Itero para cada una de las franjas etarias que tengo disponibles
+    for franja in list(parametros.keys()):
+
+        ## Hago la conversión de la cadena que tiene la franja etaria en una lista
+        lista_franja = franja.split('-')
+
+        ## En caso de que la edad calculada de la persona pertenezca a la franja etaria
+        if int(lista_franja[0]) <= edad <= int(lista_franja[1]):
+
+            ## Finalizo la ejecución del bucle ya que me quedo con la franja resultante que voy a usar para indexar
+            break
 
     ## Tablas con los resultados del análisis de marcha
     TABLE_DATA = (
@@ -133,7 +148,10 @@ def CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long
     # Create a new figure object
     plt.figure()
     df = pd.DataFrame(DATA, columns = COLUMNS)
-    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (min(long_pasos) * 0.8, max(long_pasos) * 1.2))
+    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (min(long_pasos + [parametros[franja]['LP'][0] - 2 * parametros[franja]['LP'][1]]) * 0.8,
+                                                                      max(long_pasos + [parametros[franja]['LP'][0] + 2 * parametros[franja]['LP'][1]]) * 1.2))
+    plt.axhline(y = parametros[franja]['LP'][0] + 2 * parametros[franja]['LP'][1], color = 'red', linestyle = '--', linewidth = 2)
+    plt.axhline(y = parametros[franja]['LP'][0] - 2 * parametros[franja]['LP'][1], color = 'red', linestyle = '--', linewidth = 2)
 
     # Converting Figure to an image:
     img_buf = BytesIO()  # Create image object
@@ -151,7 +169,10 @@ def CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long
     # Create a new figure object
     plt.figure()
     df = pd.DataFrame(DATA, columns = COLUMNS)
-    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (min(duraciones_pasos) * 0.8, max(duraciones_pasos) * 1.2))
+    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (min(duraciones_pasos + [parametros[franja]['DP'][0] - 2 * parametros[franja]['DP'][1]]) * 0.8, 
+                                                                      max(duraciones_pasos + [parametros[franja]['DP'][0] + 2 * parametros[franja]['DP'][1]]) * 1.2))
+    plt.axhline(y = parametros[franja]['DP'][0] + 2 * parametros[franja]['DP'][1], color = 'red', linestyle = '--', linewidth = 2)
+    plt.axhline(y = parametros[franja]['DP'][0] - 2 * parametros[franja]['DP'][1], color = 'red', linestyle = '--', linewidth = 2)
 
     # Converting Figure to an image:
     img_buf = BytesIO()  # Create image object
@@ -169,7 +190,10 @@ def CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long
     # Create a new figure object
     plt.figure()
     df = pd.DataFrame(DATA, columns = COLUMNS)
-    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (min(velocidades) * 0.8, max(velocidades) * 1.2))
+    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (min(velocidades + [parametros[franja]['VEL'][0] - 2 * parametros[franja]['VEL'][1]]) * 0.8, 
+                                                                      max(velocidades + [parametros[franja]['VEL'][0] + 2 * parametros[franja]['VEL'][1]]) * 1.2))
+    plt.axhline(y = parametros[franja]['VEL'][0] + 2 * parametros[franja]['VEL'][1], color = 'red', linestyle = '--', linewidth = 2)
+    plt.axhline(y = parametros[franja]['VEL'][0] - 2 * parametros[franja]['VEL'][1], color = 'red', linestyle = '--', linewidth = 2)
 
     # Converting Figure to an image:
     img_buf = BytesIO()  # Create image object
@@ -187,7 +211,10 @@ def CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long
     # Create a new figure object
     plt.figure()
     df = pd.DataFrame(DATA, columns = COLUMNS)
-    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (min(frecuencias) * 0.8, max(frecuencias) * 1.2))
+    df.plot(x = COLUMNS[0], y = COLUMNS[1], kind = 'scatter', ylim = (min(frecuencias + [parametros[franja]['CAD'][0] - 2 * parametros[franja]['CAD'][1]]) * 0.8, 
+                                                                      max(frecuencias + [parametros[franja]['CAD'][0] + 2 * parametros[franja]['CAD'][1]]) * 1.2))
+    plt.axhline(y = parametros[franja]['CAD'][0] + 2 * parametros[franja]['CAD'][1], color = 'red', linestyle = '--', linewidth = 2)
+    plt.axhline(y = parametros[franja]['CAD'][0] - 2 * parametros[franja]['CAD'][1], color = 'red', linestyle = '--', linewidth = 2)
 
     # Converting Figure to an image:
     img_buf = BytesIO()  # Create image object
