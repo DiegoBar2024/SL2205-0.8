@@ -179,9 +179,6 @@ for i in range (tramos_actividades.shape[0]):
         ## Concateno la posicion de las anomalias detectadas en el tramo con las previas
         anomalias = np.concatenate((anomalias, ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1],:]))
 
-        ## Concateno la posicion de las anomalias detectadas en el tramo con las previas para NN
-        anomalias_nn = np.concatenate((anomalias_nn, ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1],:]))
-
         ## Sigo con el siguiente segmento
         continue
 
@@ -196,9 +193,6 @@ for i in range (tramos_actividades.shape[0]):
 
             ## Concateno la posicion de las anomalias detectadas en el tramo con las previas
             anomalias = np.concatenate((anomalias, ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1],:]))
-
-            ## Concateno la posicion de las anomalias detectadas en el tramo con las previas para NN
-            anomalias_nn = np.concatenate((anomalias_nn, ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1],:]))
 
             continue
 
@@ -270,54 +264,14 @@ for i in range (tramos_actividades.shape[0]):
     ## Concateno la posicion de las anomalias detectadas en el tramo con las previas
     anomalias = np.concatenate((anomalias, ventanas[np.where(np.isin(distancias_puntos, anomalias_tramo))[0] + tramos_actividades[i, 0]]))
 
-    ## Genero el modelo KNN para mis datos
-    knn_model = KNN()
-    
-    ## Hago la predicción según el modelo de KNN
-    knn_df = knn_model.fit_predict(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]])
-
-    ## Obtengo las filas de las ventanas en las cuales se detectaron las anomalias
-    anomalias_knn = np.where(np.isin(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]], 
-                                    features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][knn_df == 1])[:,0] == True)
-    
-    ## Obtengo las posiciones absolutas de las anomalias en el array de ventanas
-    anomalias_knn = ventanas[anomalias_knn + tramos_actividades[i, 0],:]
-
-    ## Concateno la posicion de las anomalias detectadas en el tramo con las previas para NN
-    anomalias_nn = np.concatenate((anomalias_nn, np.reshape(anomalias_knn, (anomalias_knn.shape[1], anomalias_knn.shape[2]))))
-
     ## Diagrama de dispersión de las distancias a los centroides
     plt.figure(figsize = (10, 6))
     plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos, c = kmeans.labels_, cmap='viridis')
     plt.scatter(np.where(np.isin(distancias_puntos, anomalias_tramo))[0], anomalias_tramo, c = 'red')
     plt.show()
-    
-    ## Especifico la cantidad de vecinos
-    neighbors = NearestNeighbors(n_neighbors = 4)
-
-    ## Hago el ajuste de los vecinos más cercanos de mis datos
-    neighbors_fit = neighbors.fit(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]])
-
-    ## Calculo las distancias a los k vecinos más próximos
-    distances, indices = neighbors_fit.kneighbors(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]])
-
-#     # Graficación de distancia al k-vecino más proximo en función de la cantidad de puntos
-#     distances = np.sort(distances[:, 3], axis = 0)
-#     plt.plot(distances)
-#     plt.ylabel('k-distancia')
-#     plt.xlabel('Puntos ordenados por distancia')
-#     plt.show()
-
-#     plt.plot(np.diff(distances))
-#     plt.ylabel('k-distancia')
-#     plt.xlabel('Puntos ordenados por distancia')
-#     plt.show()
 
 ## Elimino el dummy vector inicial de la matriz de anomalias para clustering
 anomalias = anomalias[1:,:]
-
-## Elimino el dummy vector inicial de la matriz de anomalias para NN
-anomalias_nn = anomalias_nn[1:,:]
 
 ## Grafico los datos. En mi caso las tres aceleraciones en el mismo eje
 plt.plot(tiempo, acel[:,0], color = 'r', label = '$a_x$')
