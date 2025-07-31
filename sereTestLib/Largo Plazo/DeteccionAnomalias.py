@@ -24,10 +24,10 @@ from sklearn.covariance import EmpiricalCovariance, MinCovDet
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Rodrigo.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/MarchaEstandar_Sabrina.txt'
 
 ##  Hago la lectura de los datos
-data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 256, lectura_datos_propios = False, ruta = ruta_registro)
+data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 256, lectura_datos_propios = True, ruta = ruta_registro)
 
 ## Defino la cantidad de muestras de la ventana que voy a tomar
 muestras_ventana = 200
@@ -132,10 +132,10 @@ suma_exp_varianza = pca_init.explained_variance_ratio_.cumsum()
 
 ## Grafico la varianza explicada por los componentes
 plt.figure(figsize = (10, 8))
-plt.plot(range(1, features_norm.shape[1] + 1), suma_exp_varianza, marker = 'o', linestyle = '--')
+plt.plot(range(1, suma_exp_varianza.shape[0] + 1), suma_exp_varianza, marker = 'o', linestyle = '--')
 plt.title('Varianza Explicada por los componentes')
 plt.xlabel('Número de componentes')
-plt.ylabel('Varianca Explicada Acumulativa')
+plt.ylabel('Varianza Explicada Acumulativa')
 plt.show()
 
 ## Construyo una variable que me va a decir la cantidad de componentes que tengo
@@ -229,7 +229,7 @@ for i in range (tramos_actividades.shape[0]):
             ## Agrego la matriz de covarianza a la lista correspondiente
             matrices_cov.append(matriz_cov.covariance_)
         
-        ## En otro caso
+        ## En caso de que tenga un singleton cluster (es decir un cluster que tenga un unico punto)
         else:
 
             ## Asigno como matriz de covarianza la matriz identidad

@@ -32,7 +32,7 @@ class NumpyArrayEncoder(json.JSONEncoder):
 
 ## -------------------------------------- DETECCIÓN DE ACTIVIDADES ------------------------------------------
 
-def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad):
+def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad, CalcFeatures = True):
 
     ## ---------------------------------------- FILTRADO DE MEDIANA ----------------------------------------
 
@@ -122,45 +122,29 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
                 ## Me quedo con el segmento de la aceleración anteroposterior (componente BA)
                 segmento_AP_filt = acc_AP_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
 
-            ## Especifico la configuración predeterminada usando los features estadísticos, temporales y espectrales
-            cfg = tsfel.get_features_by_domain(domain = ['statistical', 'temporal'])
+            ## En caso de que quiera calcular features
+            if CalcFeatures:
 
-            ## ------------------------------ FEATURE EXTRACTION ------------------------------------------
+                ## Especifico la configuración predeterminada usando los features estadísticos, temporales y espectrales
+                cfg = tsfel.get_features_by_domain(domain = ['statistical', 'temporal'])
 
-            # Distributor = MultiprocessingDistributor(n_workers=4,
-            #                              disable_progressbar=False,
-            #                              progressbar_title="Feature Extraction")
+                ## ------------------------------ FEATURE EXTRACTION ------------------------------------------
 
-            # dataframe = pd.DataFrame(segmento_ML_filt)
-            # dataframe['id'] = 1
-            #extracted_features = extract_features(dataframe, column_id = 'id', default_fc_parameters = MinimalFCParameters())
+                ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)
+                #features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])
+                features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt))
 
-            # # Example time series data
-            # data = {
-            #     'id': [1, 1, 1, 2, 2, 2],
-            #     'time': [1, 2, 3, 1, 2, 3],
-            #     'value': [10, 20, 30, 15, 25, 35]
-            # }
-            # df = pd.DataFrame(data)
+                ## Hago la extracción de features de la señal de acelerómetro AP (Body Acceleration)
+                features_AP = np.array(tsfel.time_series_features_extractor(cfg, segmento_AP_filt))
 
-            # features = extract_features(df, column_id='id', column_sort='time')
-            # print(features)
+                ## Hago la extracción de features de la señal de acelerómetro VT (Body Acceleration)
+                features_VT = np.array(tsfel.time_series_features_extractor(cfg, segmento_VT_filt))
 
-            ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)
-            #features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])
-            features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt))
+                ## Obtengo el vector de features extraido con TSFEL concatenando los features de la ML, AP, VT
+                feature_vector = np.concatenate((features_ML, features_AP, features_VT), axis = 1)
 
-            ## Hago la extracción de features de la señal de acelerómetro AP (Body Acceleration)
-            features_AP = np.array(tsfel.time_series_features_extractor(cfg, segmento_AP_filt))
-
-            ## Hago la extracción de features de la señal de acelerómetro VT (Body Acceleration)
-            features_VT = np.array(tsfel.time_series_features_extractor(cfg, segmento_VT_filt))
-
-            ## Obtengo el vector de features extraido con TSFEL concatenando los features de la ML, AP, VT
-            feature_vector = np.concatenate((features_ML, features_AP, features_VT), axis = 1)
-
-            ## Agrego el vector de features de la ventana a la lista correspondiente
-            features.append(feature_vector)
+                ## Agrego el vector de features de la ventana a la lista correspondiente
+                features.append(feature_vector)
 
             ## -------------------------------- CÁLCULO DE SMA ------------------------------------------
 
