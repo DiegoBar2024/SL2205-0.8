@@ -8,7 +8,7 @@ from LecturaDatosPacientes import *
 from DeteccionActividades import DeteccionActividades
 from joblib import load
 import numpy as np
-from sklearn.preprocessing import normalize
+from sklearn.preprocessing import normalize, StandardScaler
 from sklearn.metrics import silhouette_score
 from sklearn.cluster import KMeans
 from matplotlib import pyplot as plt
@@ -24,7 +24,7 @@ from sklearn.covariance import EmpiricalCovariance, MinCovDet
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/MarchaEstandar_Sabrina.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Rodrigo.txt'
 
 ##  Hago la lectura de los datos
 data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 256, lectura_datos_propios = True, ruta = ruta_registro)
@@ -80,23 +80,23 @@ for i in range (tramos_actividades.shape[0]):
     if pat_predictions[tramos_actividades[i, 0]] == 1:
         
         ## Hago la graficación en rojo del tramo de movimiento detectado en los tres acelerómeteros
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
-                acel[:, 0][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'r', label = 'Movimiento')
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
-                acel[:, 1][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'r')
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
-                acel[:, 2][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'r')
+        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][-1, -1]],
+                acel[:, 0][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][-1, -1]], color = 'r', label = 'Movimiento')
+        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][-1, -1]],
+                acel[:, 1][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][-1, -1]], color = 'r')
+        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][-1, -1]],
+                acel[:, 2][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][-1, -1]], color = 'r')
 
     ## En caso de que dicho tramo corresponda a reposo
     else:
 
         ## Hago la graficación en rojo del tramo de movimiento detectado en los tres acelerómeteros
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
-                acel[:, 0][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'b', label = 'Reposo')
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
-                acel[:, 1][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'b')
-        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]],
-                acel[:, 2][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1]][-1, -1]], color = 'b')
+        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][-1, -1]],
+                acel[:, 0][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][-1, -1]], color = 'b', label = 'Reposo')
+        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][-1, -1]],
+                acel[:, 1][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][-1, -1]], color = 'b')
+        plt.plot(tiempo[ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][-1, -1]],
+                acel[:, 2][ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][0, 0] : ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1] + 1][-1, -1]], color = 'b')
 
 ## Despliego la gráfica y configuro los parámetros de Leyendas
 handles, labels = plt.gca().get_legend_handles_labels()
@@ -107,7 +107,7 @@ plt.legend(by_label.values(), by_label.keys())
 plt.title('Discriminación Movimiento-Reposo')
 plt.show()
 
-## ---------------------------------------- PREPROCESAMIENTO -------------------------------------------
+## ---------------------------------------- NORMALIZACIÓN ----------------------------------------------
 
 ## Hago la conversión de los features a un array bidimensional
 ## Obtengo una matriz donde:
@@ -115,11 +115,14 @@ plt.show()
 ## La j-ésima columna hace referencia al j-ésimo feature
 features = np.reshape(features, (np.array(features).shape[0], np.array(features).shape[2]))
 
-## Hago la normalización de la matriz de features
-features_norm = normalize(features, norm = "l2", axis = 0)
+## Creo un objeto que me permita hacer el escalado de los datos
+escalador = StandardScaler()
 
-## Especifico una lista con la cantidad de clusters que voy a usar durante el análisis
-clusters = np.linspace(2, 10, 9).astype(int)
+## Hago la estandarización de los datos
+## Cada columna me queda entonces de valor medio 1 y desviación estándar 0
+features_norm = escalador.fit_transform(features)
+
+## -------------------------------------------- PCA ----------------------------------------------------
 
 ## Genero un objeto el cual realizará el PCA
 pca_init = PCA()
@@ -164,11 +167,11 @@ features_norm = pca.transform(features_norm)
 
 ## ------------------------------------------- ANOMALÍAS ----------------------------------------------
 
+## Especifico una lista con la cantidad de clusters que voy a usar durante el análisis
+clusters = np.linspace(2, 10, 9).astype(int)
+
 ## Construyo una matriz donde voy a guardar las anomalías detectadas usando el método de clustering
 anomalias = np.zeros((1, 2))
-
-## Construyo una matriz donde voy a guardar las anomalias detectadas usando knn
-anomalias_nn = np.zeros((1, 2))
 
 ## Itero para cada una de los tramos que tengo detectados
 for i in range (tramos_actividades.shape[0]):
