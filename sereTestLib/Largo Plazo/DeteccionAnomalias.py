@@ -24,10 +24,10 @@ from sklearn.covariance import EmpiricalCovariance, MinCovDet
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/MarchaLibre_Rodrigo.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Sabrina.txt'
 
 ##  Hago la lectura de los datos
-data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 302, lectura_datos_propios = False, ruta = ruta_registro)
+data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 299, lectura_datos_propios = True, ruta = ruta_registro)
 
 ## Defino la cantidad de muestras de la ventana que voy a tomar
 muestras_ventana = 200
@@ -256,11 +256,23 @@ for i in range (tramos_actividades.shape[0]):
     distancias_puntos = np.array(distancias_puntos)
 
     ## Defino el umbral de distancia a partir del cual yo considero que van a ser anomalías
-    umbral = np.percentile(distancias_puntos, 95)
-    # umbral = np.mean(distancias_puntos) + 2 * np.std(distancias_puntos)
+    # umbral = np.percentile(distancias_puntos, 95)
+    umbral = np.mean(distancias_puntos) + 2 * np.std(distancias_puntos)
 
     ## Obtengo el valor de las distancias a los centroides de los puntos que considero anomalías
     anomalias_tramo = distancias_puntos[distancias_puntos > umbral]
+
+    ## Genero una máscara para hacer la diferencia de conjuntos
+    mascara = ~np.in1d(distancias_puntos, anomalias_tramo)
+
+    ## Obtengo todas las distancias que corresponden a puntos no anómalos
+    distancias_no_anom = distancias_puntos[mascara]
+
+    ## Genero un segundo umbral en éstos puntos
+    umbral_no_anom = np.mean(distancias_no_anom) + 2 * np.std(distancias_no_anom)
+
+    ## Hago un segundo filtrado de puntos
+    anomalias_tramo_extra = distancias_no_anom[distancias_no_anom > umbral_no_anom]
 
     ## Concateno la posicion de las anomalias detectadas en el tramo con las previas
     anomalias = np.concatenate((anomalias, ventanas[np.where(np.isin(distancias_puntos, anomalias_tramo))[0] + tramos_actividades[i, 0]]))
@@ -275,11 +287,10 @@ for i in range (tramos_actividades.shape[0]):
     plt.figure(figsize = (10, 6))
     plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos, c = 'blue')
     plt.scatter(np.where(np.isin(distancias_puntos, anomalias_tramo))[0], anomalias_tramo, c = 'red')
-    plt.legend(('Normal', 'Anómalo'))
-    plt.title('Gráfico de dispersión anomalo-normal')
+    plt.scatter(np.where(np.isin(distancias_puntos, anomalias_tramo_extra))[0], anomalias_tramo_extra, c = 'orange')
     plt.show()
 
-## Elimino el dummy vector inicial de la matriz de anomalias para clustering
+## Elimino el dummy vector inicial de la matriz de anomalias
 anomalias = anomalias[1:,:]
 
 ## Grafico los datos. En mi caso las tres aceleraciones en el mismo eje
