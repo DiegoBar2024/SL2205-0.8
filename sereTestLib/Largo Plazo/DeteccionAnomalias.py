@@ -122,7 +122,7 @@ escalador = StandardScaler()
 ## Cada columna me queda entonces de valor medio 1 y desviación estándar 0
 features_norm = escalador.fit_transform(features)
 
-## -------------------------------------------- PCA ----------------------------------------------------
+## --------------------------------------------- PCA ---------------------------------------------------
 
 ## Genero un objeto el cual realizará el PCA
 pca_init = PCA()
@@ -197,6 +197,7 @@ for i in range (tramos_actividades.shape[0]):
             ## Concateno la posicion de las anomalias detectadas en el tramo con las previas
             anomalias = np.concatenate((anomalias, ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1],:]))
 
+            ## Me salteo la iteración ya que clasifiqué el segmento como anómalo
             continue
 
         ## Aplico un clustering KMeans a los datos correspondientes de entrada
@@ -227,10 +228,7 @@ for i in range (tramos_actividades.shape[0]):
         if puntos_cluster.shape[0] > 1:
 
             ## Hago el cálculo de la matriz de covarianza del clúster
-            matriz_cov = MinCovDet().fit(puntos_cluster)
-
-            ## Agrego la matriz de covarianza a la lista correspondiente
-            matrices_cov.append(matriz_cov.covariance_)
+            matriz_cov = np.cov(puntos_cluster, rowvar = False)
         
         ## En caso de que tenga un singleton cluster (es decir un cluster que tenga un unico punto)
         else:
@@ -238,8 +236,8 @@ for i in range (tramos_actividades.shape[0]):
             ## Asigno como matriz de covarianza la matriz identidad
             matriz_cov = np.identity(puntos_cluster.shape[1])
 
-            ## La agrego a la lista de matrices
-            matrices_cov.append(matriz_cov)
+        ## Agrego la matriz de covarianza a la lista correspondiente
+        matrices_cov.append(matriz_cov)
 
     ## Itero para cada uno de los puntos del dataset
     for j in range (len(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]])):
@@ -249,7 +247,7 @@ for i in range (tramos_actividades.shape[0]):
 
         ## Calculo la distancia de Mahalanobis al cuadrado entre el i-ésimo punto y el centroide asociado
         distancia = np.dot((features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][j] - centroide), 
-                        np.matmul(np.linalg.inv(matrices_cov[0]), (features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][j] - centroide)))
+                        np.matmul(np.linalg.inv(matrices_cov[kmeans.labels_[j]]), (features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][j] - centroide)))
 
         ## Agrego la distancia del punto a su centroide a la lista
         distancias_puntos.append(distancia)
