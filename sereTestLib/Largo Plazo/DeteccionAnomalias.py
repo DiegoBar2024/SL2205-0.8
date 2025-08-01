@@ -24,10 +24,10 @@ from sklearn.covariance import EmpiricalCovariance, MinCovDet
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Rodrigo.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/MarchaLibre_Rodrigo.txt'
 
 ##  Hago la lectura de los datos
-data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 256, lectura_datos_propios = True, ruta = ruta_registro)
+data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 302, lectura_datos_propios = False, ruta = ruta_registro)
 
 ## Defino la cantidad de muestras de la ventana que voy a tomar
 muestras_ventana = 200
@@ -265,10 +265,18 @@ for i in range (tramos_actividades.shape[0]):
     ## Concateno la posicion de las anomalias detectadas en el tramo con las previas
     anomalias = np.concatenate((anomalias, ventanas[np.where(np.isin(distancias_puntos, anomalias_tramo))[0] + tramos_actividades[i, 0]]))
 
-    ## Diagrama de dispersión de las distancias a los centroides
+    ## Diagrama de dispersión de las distancias a los centroides por cluster
     plt.figure(figsize = (10, 6))
-    plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos, c = kmeans.labels_, cmap='viridis')
+    plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos, c = kmeans.labels_, cmap = 'viridis')
+    plt.title('Gráfico de dispersión por clúster')
+    plt.show()
+
+    ## Diagrama de dispersión de distancias a los centroides anomalo-normal
+    plt.figure(figsize = (10, 6))
+    plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos, c = 'blue')
     plt.scatter(np.where(np.isin(distancias_puntos, anomalias_tramo))[0], anomalias_tramo, c = 'red')
+    plt.legend(('Normal', 'Anómalo'))
+    plt.title('Gráfico de dispersión anomalo-normal')
     plt.show()
 
 ## Elimino el dummy vector inicial de la matriz de anomalias para clustering
