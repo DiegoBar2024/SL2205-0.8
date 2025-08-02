@@ -156,7 +156,7 @@ scores_lda = cross_val_score(lda, comprimidos_total, vector_etiquetas, cv = k_fo
 errores_prediccion = []
 
 ## Genero una variable la cual especifique el modelo que voy a usar para hacer la validacion
-modelo = 'svm'
+modelo = 'lda'
 
 ## Itero para cada uno de los pacientes en el conjunto de IDs de entrenamiento y validacion
 for id_paciente in np.sort(ids_pacientes):
@@ -174,10 +174,10 @@ for id_paciente in np.sort(ids_pacientes):
         if id_paciente in id_estables:
 
             ## Selecciono los segmentos asociados al paciente como conjunto de validacion
-            validation_set = estables[ids_posiciones_estables[str(id_paciente)][0] : ids_posiciones_estables[str(id_paciente)][1] + 1, :]
+            validation_set = train_estables[ids_posiciones_estables[str(id_paciente)][0] : ids_posiciones_estables[str(id_paciente)][1] + 1, :]
 
             ## Saco el conjunto de validación del conjunto de entrenamiento de estables
-            train_estables = np.concatenate((estables[ : ids_posiciones_estables[str(id_paciente)][0], :], estables[ids_posiciones_estables[str(id_paciente)][1] + 1 :, :]))
+            train_estables = np.concatenate((train_estables[ : ids_posiciones_estables[str(id_paciente)][0], :], train_estables[ids_posiciones_estables[str(id_paciente)][1] + 1 :, :]))
 
             ## Genero el vector de etiquetas para el conjunto de validación correspondiente
             etiquetas_val = np.zeros(len(validation_set))
@@ -186,10 +186,10 @@ for id_paciente in np.sort(ids_pacientes):
         elif id_paciente in id_inestables:
 
             ## Selecciono los segmentos asociados al paciente como conjunto de validacion
-            validation_set = inestables[ids_posiciones_inestables[str(id_paciente)][0] : ids_posiciones_inestables[str(id_paciente)][1] + 1, :]
+            validation_set = train_inestables[ids_posiciones_inestables[str(id_paciente)][0] : ids_posiciones_inestables[str(id_paciente)][1] + 1, :]
 
             ## Saco el conjunto de validación del conjunto de entrenamiento de inestables
-            train_inestables = np.concatenate((inestables[ : ids_posiciones_inestables[str(id_paciente)][0], :], inestables[ids_posiciones_inestables[str(id_paciente)][1] + 1 :, :]))
+            train_inestables = np.concatenate((train_inestables[ : ids_posiciones_inestables[str(id_paciente)][0], :], train_inestables[ids_posiciones_inestables[str(id_paciente)][1] + 1 :, :]))
 
             ## Genero el vector de etiquetas para el conjunto de validación correspondiente
             etiquetas_val = np.ones(len(validation_set))

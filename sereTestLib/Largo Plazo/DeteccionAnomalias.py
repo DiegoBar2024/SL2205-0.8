@@ -24,7 +24,7 @@ from sklearn.covariance import EmpiricalCovariance, MinCovDet
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Sabrina.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/MarchaLibre_Rodrigo.txt'
 
 ##  Hago la lectura de los datos
 data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 299, lectura_datos_propios = True, ruta = ruta_registro)
@@ -173,6 +173,9 @@ clusters = np.linspace(2, 10, 9).astype(int)
 ## Construyo una matriz donde voy a guardar las anomalías detectadas usando el método de clustering
 anomalias = np.zeros((1, 2))
 
+## Construyo una matriz donde voy a guardar las anomalías "no extremas"
+anomalias_no_ext = np.zeros((1, 2))
+
 ## Itero para cada una de los tramos que tengo detectados
 for i in range (tramos_actividades.shape[0]):
 
@@ -245,9 +248,19 @@ for i in range (tramos_actividades.shape[0]):
         ## Obtengo el centroide del clúster que está asociado al i-ésimo punto
         centroide = kmeans.cluster_centers_[kmeans.labels_[j]]
 
-        ## Calculo la distancia de Mahalanobis al cuadrado entre el i-ésimo punto y el centroide asociado
-        distancia = np.dot((features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][j] - centroide), 
-                        np.matmul(np.linalg.inv(matrices_cov[kmeans.labels_[j]]), (features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][j] - centroide)))
+        ## En caso de que el determinante de la matriz sea nulo (no exista la inversa)
+        if np.linalg.det(matrices_cov[kmeans.labels_[j]]) == 0:
+
+            ## Hago el cálculo de la distancia de Mahalanobis al cuadrado usando la preudoinversa de la matriz de covarianza
+            distancia = np.dot((features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][j] - centroide), 
+                        np.matmul(np.linalg.pinv(matrices_cov[kmeans.labels_[j]]), (features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][j] - centroide)))
+
+        ## En caso de que la matriz de covarianza sea no singular, hago el calculo normal
+        else:
+
+            ## Calculo la distancia de Mahalanobis al cuadrado entre el i-ésimo punto y el centroide asociado
+            distancia = np.dot((features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][j] - centroide), 
+                            np.matmul(np.linalg.inv(matrices_cov[kmeans.labels_[j]]), (features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][j] - centroide)))
 
         ## Agrego la distancia del punto a su centroide a la lista
         distancias_puntos.append(distancia)
@@ -257,7 +270,7 @@ for i in range (tramos_actividades.shape[0]):
 
     ## Defino el umbral de distancia a partir del cual yo considero que van a ser anomalías
     # umbral = np.percentile(distancias_puntos, 95)
-    umbral = np.mean(distancias_puntos) + 2 * np.std(distancias_puntos)
+    umbral = np.median(distancias_puntos) + 2 * np.std(distancias_puntos)
 
     ## Obtengo el valor de las distancias a los centroides de los puntos que considero anomalías
     anomalias_tramo = distancias_puntos[distancias_puntos > umbral]
@@ -269,13 +282,16 @@ for i in range (tramos_actividades.shape[0]):
     distancias_no_anom = distancias_puntos[mascara]
 
     ## Genero un segundo umbral en éstos puntos
-    umbral_no_anom = np.mean(distancias_no_anom) + 2 * np.std(distancias_no_anom)
+    umbral_no_anom = np.median(distancias_no_anom) + 2 * np.std(distancias_no_anom)
 
     ## Hago un segundo filtrado de puntos
     anomalias_tramo_extra = distancias_no_anom[distancias_no_anom > umbral_no_anom]
 
     ## Concateno la posicion de las anomalias detectadas en el tramo con las previas
     anomalias = np.concatenate((anomalias, ventanas[np.where(np.isin(distancias_puntos, anomalias_tramo))[0] + tramos_actividades[i, 0]]))
+
+    ## Agrego las anomalias no extremas al vector correspondiente
+    anomalias_no_ext = np.concatenate((anomalias_no_ext, ventanas[np.where(np.isin(distancias_no_anom, anomalias_tramo_extra))[0] + tramos_actividades[i, 0]]))
 
     ## Diagrama de dispersión de las distancias a los centroides por cluster
     plt.figure(figsize = (10, 6))
