@@ -156,7 +156,7 @@ scores_lda = cross_val_score(lda, comprimidos_total, vector_etiquetas, cv = k_fo
 errores_prediccion = []
 
 ## Genero una variable la cual especifique el modelo que voy a usar para hacer la validacion
-modelo = 'lda'
+modelo = 'svm'
 
 ## Itero para cada uno de los pacientes en el conjunto de IDs de entrenamiento y validacion
 for id_paciente in np.sort(ids_pacientes):
@@ -238,3 +238,15 @@ for id_paciente in np.sort(ids_pacientes):
 
 ## Hago la conversión de la matriz de errores de predicción a precisiones
 errores_prediccion = np.array((errores_prediccion))
+
+## Inicializo un vector en donde voy a guardar las precisiones de las predicciones
+precisiones = []
+
+## Itero para cada una de las predicciones
+for i in range (len(errores_prediccion)):
+
+    ## Me quedo con el ID del paciente correspondiente y la precision que se calcula en base al error
+    precisiones.append([errores_prediccion[i][0], 1 - errores_prediccion[i][1]])
+
+## Hago la conversión a vector numpy
+precisiones = np.array(precisiones)
