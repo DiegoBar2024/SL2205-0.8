@@ -309,6 +309,9 @@ for i in range (tramos_actividades.shape[0]):
 ## Elimino el dummy vector inicial de la matriz de anomalias
 anomalias = anomalias[1:,:]
 
+## Elimino el dummy vector inicial de la matriz de anomalias no extremas
+anomalias_no_ext = anomalias_no_ext[1:,:]
+
 ## Grafico los datos. En mi caso las tres aceleraciones en el mismo eje
 plt.plot(tiempo, acel[:,0], color = 'r', label = '$a_x$')
 plt.plot(tiempo, acel[:,1], color = 'b', label = '$a_y$')
@@ -340,6 +343,17 @@ for i in range (ventanas.shape[0]):
                 acel[:, 1][ventanas[i, :][0] : ventanas[i, :][1]], color = 'r')
         plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
                 acel[:, 2][ventanas[i, :][0] : ventanas[i, :][1]], color = 'r')
+    
+    ## En caso de que la ventana haya sido categorizada como anómala no extrema
+    elif ventanas[i, :] in anomalias_no_ext:
+        
+        ## Hago la graficación en rojo de la ventana anómala detectada en los tres acelerómetros
+        plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
+                acel[:, 0][ventanas[i, :][0] : ventanas[i, :][1]], color = 'y', label = 'Anomalía no extrema')
+        plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
+                acel[:, 1][ventanas[i, :][0] : ventanas[i, :][1]], color = 'y')
+        plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
+                acel[:, 2][ventanas[i, :][0] : ventanas[i, :][1]], color = 'y')
 
     ## En caso de que dicha ventana no haya sido clasificada como anómala
     else:
