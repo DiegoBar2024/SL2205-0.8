@@ -156,7 +156,7 @@ scores_lda = cross_val_score(lda, comprimidos_total, vector_etiquetas, cv = k_fo
 errores_prediccion = []
 
 ## Genero una variable la cual especifique el modelo que voy a usar para hacer la validacion
-modelo = 'svm'
+modelo = 'lda'
 
 ## Itero para cada uno de los pacientes en el conjunto de IDs de entrenamiento y validacion
 for id_paciente in np.sort(ids_pacientes):
