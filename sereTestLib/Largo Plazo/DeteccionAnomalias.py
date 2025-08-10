@@ -24,7 +24,7 @@ from sklearn.covariance import EmpiricalCovariance, MinCovDet
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/MarchaLibre_Rodrigo.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Sabrina.txt'
 
 ##  Hago la lectura de los datos
 data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 299, lectura_datos_propios = True, ruta = ruta_registro)
@@ -338,7 +338,7 @@ for i in range (ventanas.shape[0]):
         
         ## Hago la graficación en rojo de la ventana anómala detectada en los tres acelerómetros
         plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
-                acel[:, 0][ventanas[i, :][0] : ventanas[i, :][1]], color = 'r', label = 'Anomalía')
+                acel[:, 0][ventanas[i, :][0] : ventanas[i, :][1]], color = 'r', label = 'Anomalía extrema')
         plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
                 acel[:, 1][ventanas[i, :][0] : ventanas[i, :][1]], color = 'r')
         plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
@@ -349,7 +349,7 @@ for i in range (ventanas.shape[0]):
         
         ## Hago la graficación en rojo de la ventana anómala detectada en los tres acelerómetros
         plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
-                acel[:, 0][ventanas[i, :][0] : ventanas[i, :][1]], color = 'y', label = 'Anomalía no extrema')
+                acel[:, 0][ventanas[i, :][0] : ventanas[i, :][1]], color = 'y', label = 'Anomalía leve')
         plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
                 acel[:, 1][ventanas[i, :][0] : ventanas[i, :][1]], color = 'y')
         plt.plot(tiempo[ventanas[i, :][0] : ventanas[i, :][1]],
