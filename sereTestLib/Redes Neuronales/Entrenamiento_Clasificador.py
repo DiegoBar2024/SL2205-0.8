@@ -133,7 +133,7 @@ comprimidos_total = np.concatenate((estables, inestables))
 vector_etiquetas =  np.concatenate((np.zeros(len(estables)), np.ones(len(inestables))))
 
 ## Hago la normalización por columna es decir por feature
-comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
+#comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
 
 ## -------------------------------- VALIDACIÓN CRUZADA DE LOS MODELOS ----------------------------------
 
@@ -243,7 +243,7 @@ errores_prediccion = np.array((errores_prediccion))
 precisiones = []
 
 ## Itero para cada una de las predicciones
-for i in range (len(errores_prediccion)):
+for i in range (len(errores_prediccion)):   
 
     ## Me quedo con el ID del paciente correspondiente y la precision que se calcula en base al error
     precisiones.append([errores_prediccion[i][0], 1 - errores_prediccion[i][1]])

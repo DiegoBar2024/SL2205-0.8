@@ -24,16 +24,16 @@ from sklearn.covariance import EmpiricalCovariance, MinCovDet
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Sabrina.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/Actividades_Rodrigo.txt'
 
 ##  Hago la lectura de los datos
-data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 299, lectura_datos_propios = True, ruta = ruta_registro)
+data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 114, lectura_datos_propios = False, ruta = ruta_registro)
 
 ## Defino la cantidad de muestras de la ventana que voy a tomar
-muestras_ventana = 200
+muestras_ventana = 400
 
 ## Defino la cantidad de muestras de solapamiento entre ventanas
-muestras_solapamiento = 100
+muestras_solapamiento = 200
 
 ## Hago el cálculo del vector de SMA para dicha persona
 vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad = None)
@@ -151,7 +151,7 @@ for i in range (len(suma_exp_varianza)):
     componentes += 1
 
     ## En caso de que la suma total de la varianza explicada sea mayor a 0.8
-    if suma_exp_varianza[i] > 0.8:
+    if suma_exp_varianza[i] > 0.9:
 
         ## Termino el bucle
         break
@@ -248,8 +248,8 @@ for i in range (tramos_actividades.shape[0]):
         ## Obtengo el centroide del clúster que está asociado al i-ésimo punto
         centroide = kmeans.cluster_centers_[kmeans.labels_[j]]
 
-        ## En caso de que el determinante de la matriz sea nulo (no exista la inversa)
-        if np.linalg.det(matrices_cov[kmeans.labels_[j]]) == 0:
+        ## En caso de que la matriz de covarianza no sea de rango completo (recuerdo que la matriz de covarianza es cuadrada)
+        if np.linalg.matrix_rank(matrices_cov[kmeans.labels_[j]]) < matrices_cov[kmeans.labels_[j]].shape[0]:
 
             ## Hago el cálculo de la distancia de Mahalanobis al cuadrado usando la preudoinversa de la matriz de covarianza
             distancia = np.dot((features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]][j] - centroide), 

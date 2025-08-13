@@ -131,32 +131,39 @@ etiqueta_ID = tk.Label(root, text = 'ID del paciente: ', font = ('calibre', 10, 
 entrada_ID = tk.Entry(root,textvariable = ID_var, font = ('calibre', 10, 'normal'))
 
 ## Variable de etiqueta para el nombre del paciente
-etiqueta_nombre = tk.Label(root, text = 'Nombre del paciente (<<Nombre>> <<Apellido>>): ', font = ('calibre',10, 'bold'))
+etiqueta_nombre = tk.Label(root, text = 'Nombre del paciente (<<Nombre>> <<Apellido>>): ', font = ('calibre', 10, 'bold'))
 
-entrada_nombre = tk.Entry(root,textvariable = nombre_var, font=('calibre', 10, 'normal'))
+## Variable de entrada para el nombre del paciente
+entrada_nombre = tk.Entry(root,textvariable = nombre_var, font = ('calibre', 10, 'normal'))
 
-etiqueta_nacimiento = tk.Label(root, text = 'Fecha de nacimiento del paciente: (<<DD/MM/YYYY>>): ', font=('calibre',10, 'bold'))
+## Variable de etiqueta para la fecha de nacimiento del paciente
+etiqueta_nacimiento = tk.Label(root, text = 'Fecha de nacimiento del paciente: (<<DD/MM/YYYY>>): ', font = ('calibre', 10, 'bold'))
 
-entrada_nacimiento = tk.Entry(root,textvariable = nacimiento_var, font=('calibre',10,'normal'))
+## Variable de entrada para la fecha de nacimiento del paciente
+entrada_nacimiento = tk.Entry(root,textvariable = nacimiento_var, font = ('calibre', 10,'normal'))
 
-etiqueta_pierna = tk.Label(root, text = 'Longitud de la pierna (m): ', font=('calibre',10, 'bold'))
+## Variable de etiqueta para la longitud de la pierna del paciente
+etiqueta_pierna = tk.Label(root, text = 'Longitud de la pierna (m): ', font = ('calibre', 10, 'bold'))
 
-entrada_pierna = tk.Entry(root,textvariable = pierna_var, font=('calibre',10,'normal'))
+## Variable de entrada para la longitud de la pierna del paciente
+entrada_pierna = tk.Entry(root,textvariable = pierna_var, font = ('calibre', 10, 'normal'))
 
-etiqueta_pie = tk.Label(root, text = 'Longitud del pie (cm): ', font=('calibre',10, 'bold'))
+## Variable de etiqueta para la longitud del pie del paciente
+etiqueta_pie = tk.Label(root, text = 'Longitud del pie (cm): ', font = ('calibre', 10, 'bold'))
 
-entrada_pie = tk.Entry(root,textvariable = pie_var, font=('calibre',10,'normal'))
+## Variable de entrada para la longitud del pie del paciente
+entrada_pie = tk.Entry(root,textvariable = pie_var, font = ('calibre', 10, 'normal'))
 
+## Botón que permite al usuario elegir el directorio en el cual se encuentra el registro de marcha a analizar
 boton_directorio = tk.Button(root, text = 'Seleccionar Archivo', command = PedirDirectorio)
 
-# creating a button using the widget 
-# Button that will call the submit function 
+## Botón que permite al usuario comenzar a realizar el análisis
 boton_comenzar = tk.Button(root,text = 'Comenzar Análisis', command = RealizarAnalisis)
 
 ## Configuro un botón para terminar la ejecución
 terminar = tk.Button(root, text = "Cerrar", command = root.destroy)
 
-## Botones
+## Configuro grilla de botones y de entradas en la interfaz gráfica
 etiqueta_ID.grid(row = 0,column = 0)
 entrada_ID.grid(row = 0,column = 1)
 etiqueta_nombre.grid(row = 1,column = 0)

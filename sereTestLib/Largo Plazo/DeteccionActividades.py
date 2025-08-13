@@ -126,7 +126,7 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
             if CalcFeatures:
 
                 ## Especifico la configuración predeterminada usando los features estadísticos, temporales y espectrales
-                cfg = tsfel.get_features_by_domain(domain = ['statistical', 'temporal'])
+                cfg = tsfel.get_features_by_domain(domain = ['statistical', 'temporal', 'spectral'])
 
                 ## ------------------------------ FEATURE EXTRACTION ------------------------------------------
 
@@ -311,29 +311,29 @@ if __name__== '__main__':
         
         ## ----------------------------- PROCESAMIENTO FEATURES -----------------------------------------
 
-        ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Parado.json", 'r') as openfile:
+        # ## Hago la lectura del archivo JSON previamente existente
+        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Parado.json", 'r') as openfile:
 
-            # Cargo el diccionario el cual va a ser un objeto JSON
-            features_parado = json.load(openfile)
+        #     # Cargo el diccionario el cual va a ser un objeto JSON
+        #     features_parado = json.load(openfile)
         
-        ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Sentado.json", 'r') as openfile:
+        # ## Hago la lectura del archivo JSON previamente existente
+        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Sentado.json", 'r') as openfile:
 
-            # Cargo el diccionario el cual va a ser un objeto JSON
-            features_sentado = json.load(openfile)
+        #     # Cargo el diccionario el cual va a ser un objeto JSON
+        #     features_sentado = json.load(openfile)
         
-        ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Caminando.json", 'r') as openfile:
+        # ## Hago la lectura del archivo JSON previamente existente
+        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Caminando.json", 'r') as openfile:
 
-            # Cargo el diccionario el cual va a ser un objeto JSON
-            features_caminando = json.load(openfile)
+        #     # Cargo el diccionario el cual va a ser un objeto JSON
+        #     features_caminando = json.load(openfile)
         
-        ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Escalera.json", 'r') as openfile:
+        # ## Hago la lectura del archivo JSON previamente existente
+        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Escalera.json", 'r') as openfile:
 
-            # Cargo el diccionario el cual va a ser un objeto JSON
-            features_escaleras = json.load(openfile)
+        #     # Cargo el diccionario el cual va a ser un objeto JSON
+        #     features_escaleras = json.load(openfile)
         
         ## ----------------------- CÁLCULO DE UMBRALES Y ENTRENAMIENTO -----------------------------------------
 
@@ -367,8 +367,8 @@ if __name__== '__main__':
             ## Concateno los SMAs del registro parado a la lista actual
             valores_SMA_parado += SMA_parado[id]
 
-            ## Concateno los features del registro de parado a la lista actual
-            vectores_features_parado += features_parado[id]
+        #     ## Concateno los features del registro de parado a la lista actual
+        #     vectores_features_parado += features_parado[id]
         
         ## Itero para cada una de las claves en el diccionario de SMA sentado
         for id in list(SMA_sentado.keys()):
@@ -376,8 +376,8 @@ if __name__== '__main__':
             ## Concateno los SMAs del registro sentado a la lista actual
             valores_SMA_sentado += SMA_sentado[id]
 
-            ## Concateno los features del registro de sentado a la lista actual
-            vectores_features_sentado += features_sentado[id]
+        #     ## Concateno los features del registro de sentado a la lista actual
+        #     vectores_features_sentado += features_sentado[id]
 
         ## Itero para cada una de las claves en el diccionario de SMA caminando
         for id in list(SMA_caminando.keys()):
@@ -385,8 +385,8 @@ if __name__== '__main__':
             ## Concateno los SMAs del registro caminando a la lista actual
             valores_SMA_caminando += SMA_caminando[id]
 
-            ## Concateno los features del registro de caminando a la lista actual
-            vectores_features_caminando += features_caminando[id]
+        #     ## Concateno los features del registro de caminando a la lista actual
+        #     vectores_features_caminando += features_caminando[id]
 
         ## Itero para cada una de las claves en el diccionario de SMA parado
         for id in list(SMA_escaleras.keys()):
@@ -394,8 +394,8 @@ if __name__== '__main__':
             ## Concateno los SMAs del registro parado a la lista actual
             valores_SMA_escaleras += SMA_escaleras[id]
             
-            ## Concateno los features del registro de escalera a la lista actual
-            vectores_features_escaleras += features_escaleras[id]
+        #     ## Concateno los features del registro de escalera a la lista actual
+        #     vectores_features_escaleras += features_escaleras[id]
 
         ## Defino el diccionario con los correspondientes valores de SMA para cada actividad para luego hacer el boxplot
         valores_SMA = {'Parado': valores_SMA_parado, 'Sentado': valores_SMA_sentado, 'Caminando': valores_SMA_caminando, 'Escaleras': valores_SMA_escaleras}
