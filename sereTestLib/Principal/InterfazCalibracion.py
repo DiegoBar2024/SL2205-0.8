@@ -13,8 +13,9 @@ from ContactosIniciales import *
 from ContactosTerminales import *
 from Segmentacion import *
 from LongitudPasoM1 import *
-from GeneracionReporte import *
+from LongitudPasoM2 import *
 from DeteccionActividades import DeteccionActividades
+from Optimizacion import *
 
 ## ------------------------------------- GENERACIÓN DE INTERFAZ --------------------------------------
 
@@ -29,17 +30,14 @@ root.geometry("600x400")
 ## Defino el objeto correspondiente a la ID de la persona
 ID_var = tk.StringVar()
 
-## Defino el objeto correspondiente al nombre de la persona
-nombre_var = tk.StringVar()
-
-## Defino el objeto correspondiente al nacimiento de la persona
-nacimiento_var = tk.StringVar()
-
 ## Defino el objeto correspondiente a la longitud de la pierna de la persona
 pierna_var = tk.StringVar()
 
 ## Defino el objeto correspondiente a la longitud del pie de la persona
 pie_var = tk.StringVar()
+
+## Defino el objeto correspondiente a la longitud de pasos de control del ensayo
+long_pasos_var = tk.StringVar()
 
 def PedirDirectorio():
 
@@ -52,17 +50,14 @@ def RealizarAnalisis():
     ## Obtengo el valor de la ID de la persona
     id_persona = ID_var.get()
 
-    ## Obtengo el nombre de la persona
-    nombre_persona = nombre_var.get()
-
-    ## Obtengo la fecha de nacimiento de la persona
-    nacimiento_persona = nacimiento_var.get()
-
     ## Obtengo la longitud de la pierna de la persona
     longitud_pierna = float(pierna_var.get())
 
     ## Obtengo la longitud del pie de la persona
     longitud_pie = float(pie_var.get())
+
+    ## Obtengo la longitud de los pasos de control en el ensayo
+    longitud_pasos = float(long_pasos_var.get())
 
     ## Hago la lectura del registro de datos asociados a la persona
     data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = None, lectura_datos_propios = True, ruta = ruta_registro)
@@ -110,8 +105,12 @@ def RealizarAnalisis():
     pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro_marcha)
 
     ## Cálculo de parámetros de marcha usando el método I
-    pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, longitud_pierna)
+    pasos_numerados_m1, frecuencias_m1, velocidades_m1, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, longitud_pierna)
 
+    ## Cálculo de parámetros de marcha usando el método II
+    pasos_numerados_m2, frecuencias_m2, velocidades_m2, long_pasos_m2, coeficientes_m2 = LongitudPasoM2(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, longitud_pierna)
+
+    ## Optimización de los parámetros de marcha usando mínimos cuadrados para la persona correspondiente
     Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2, longitud_pie, longitud_pasos, id_persona)
 
 ## Variable de etiqueta para la ID del paciente
@@ -119,18 +118,6 @@ etiqueta_ID = tk.Label(root, text = 'ID del paciente: ', font = ('calibre', 10, 
 
 ## Variable de entrada para la ID del paciente
 entrada_ID = tk.Entry(root,textvariable = ID_var, font = ('calibre', 10, 'normal'))
-
-## Variable de etiqueta para el nombre del paciente
-etiqueta_nombre = tk.Label(root, text = 'Nombre del paciente (<<Nombre>> <<Apellido>>): ', font = ('calibre', 10, 'bold'))
-
-## Variable de entrada para el nombre del paciente
-entrada_nombre = tk.Entry(root,textvariable = nombre_var, font = ('calibre', 10, 'normal'))
-
-## Variable de etiqueta para la fecha de nacimiento del paciente
-etiqueta_nacimiento = tk.Label(root, text = 'Fecha de nacimiento del paciente: (<<DD/MM/YYYY>>): ', font = ('calibre', 10, 'bold'))
-
-## Variable de entrada para la fecha de nacimiento del paciente
-entrada_nacimiento = tk.Entry(root,textvariable = nacimiento_var, font = ('calibre', 10,'normal'))
 
 ## Variable de etiqueta para la longitud de la pierna del paciente
 etiqueta_pierna = tk.Label(root, text = 'Longitud de la pierna (m): ', font = ('calibre', 10, 'bold'))
@@ -157,26 +144,22 @@ terminar = tk.Button(root, text = "Cerrar", command = root.destroy)
 etiqueta_paso = tk.Label(root, text = 'Longitud de paso (m): ', font=('calibre',10, 'bold'))
 
 ## Variable de entrada para la longitud del paso de la sesión de calibración
-entrada_paso = tk.Entry(root, textvariable = etiqueta_paso, font=('calibre', 10, 'normal'))
+entrada_paso = tk.Entry(root, textvariable = long_pasos_var, font=('calibre', 10, 'normal'))
 
 ## Botones
 etiqueta_ID.grid(row = 0,column = 0)
 entrada_ID.grid(row = 0,column = 1)
-etiqueta_nombre.grid(row = 1,column = 0)
-entrada_nombre.grid(row = 1,column = 1)
-etiqueta_nacimiento.grid(row = 2,column = 0)
-entrada_nacimiento.grid(row = 2,column = 1)
-etiqueta_pierna.grid(row = 3,column = 0)
-entrada_pierna.grid(row = 3,column = 1)
-etiqueta_pie.grid(row = 4,column = 0)
-entrada_pie.grid(row = 4,column = 1)
-etiqueta_pie.grid(row = 4,column = 0)
-entrada_pie.grid(row = 4,column = 1)
-etiqueta_paso.grid(row = 5,column = 0)
-entrada_paso.grid(row = 5,column = 1)
-boton_directorio.grid(row = 6, column = 0)
-boton_comenzar.grid(row = 6, column = 1)
-terminar.grid(row = 7, column = 0)
+etiqueta_pierna.grid(row = 1,column = 0)
+entrada_pierna.grid(row = 1,column = 1)
+etiqueta_pie.grid(row = 2,column = 0)
+entrada_pie.grid(row = 2,column = 1)
+etiqueta_pie.grid(row = 3,column = 0)
+entrada_pie.grid(row = 3,column = 1)
+etiqueta_paso.grid(row = 4,column = 0)
+entrada_paso.grid(row = 4,column = 1)
+boton_directorio.grid(row = 5, column = 0)
+boton_comenzar.grid(row = 5, column = 1)
+terminar.grid(row = 6, column = 0)
 
 ## Hago un bucle infinito para el display de la ventana
 root.mainloop()

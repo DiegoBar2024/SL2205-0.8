@@ -125,20 +125,20 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
             ## En caso de que quiera calcular features
             if CalcFeatures:
 
-                ## Especifico la configuración predeterminada usando los features estadísticos, temporales y espectrales
-                cfg = tsfel.get_features_by_domain(domain = ['statistical', 'temporal', 'spectral'])
+                ## Especifico la configuración predeterminada usando los features estadísticos y temporales
+                cfg = tsfel.get_features_by_domain(domain = ['statistical', 'temporal'])
 
                 ## ------------------------------ FEATURE EXTRACTION ------------------------------------------
 
                 ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)
                 #features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])
-                features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt))
+                features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt, fs = 1 / periodoMuestreo))
 
                 ## Hago la extracción de features de la señal de acelerómetro AP (Body Acceleration)
-                features_AP = np.array(tsfel.time_series_features_extractor(cfg, segmento_AP_filt))
+                features_AP = np.array(tsfel.time_series_features_extractor(cfg, segmento_AP_filt, fs = 1 / periodoMuestreo))
 
                 ## Hago la extracción de features de la señal de acelerómetro VT (Body Acceleration)
-                features_VT = np.array(tsfel.time_series_features_extractor(cfg, segmento_VT_filt))
+                features_VT = np.array(tsfel.time_series_features_extractor(cfg, segmento_VT_filt, fs = 1 / periodoMuestreo))
 
                 ## Obtengo el vector de features extraido con TSFEL concatenando los features de la ML, AP, VT
                 feature_vector = np.concatenate((features_ML, features_AP, features_VT), axis = 1)

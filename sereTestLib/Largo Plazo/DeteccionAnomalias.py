@@ -150,7 +150,7 @@ for i in range (len(suma_exp_varianza)):
     ## Aumento en una unidad la cantidad de componentes
     componentes += 1
 
-    ## En caso de que la suma total de la varianza explicada sea mayor a 0.8
+    ## En caso de que la suma total de la varianza explicada sea mayor a 0.9
     if suma_exp_varianza[i] > 0.9:
 
         ## Termino el bucle
@@ -162,7 +162,7 @@ pca = PCA(n_components = componentes)
 ## Ajusto el modelo a mis datos con la cantidad seleccionada de componentes
 pca.fit(features_norm)
 
-## Hago la selección de los features transformando según las componentes principales halladas
+## Hago la selección de los features transformando según las componentes principales halladas (que explican una varianza del 90% aproximadamente)
 features_norm = pca.transform(features_norm)
 
 ## ------------------------------------------- ANOMALÍAS ----------------------------------------------
