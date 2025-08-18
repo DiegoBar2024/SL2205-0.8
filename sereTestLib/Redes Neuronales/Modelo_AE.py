@@ -121,10 +121,7 @@ def ae_train_save_model(autoencoder_name, path_to_scalograms_train = dir_escalog
     validation_generator = DataGeneratorAuto(list_IDs = list_of_samples_number_validation, **paramsV)
 
     # Entrenamiento del modelo de autoencoder especificando todos los parámetros correspondientes
-    history = autoencoder.fit(x = training_generator,
-                    validation_data = validation_generator,
-                    epochs = number_epochs,
-                    verbose = 1)
+    autoencoder.fit(x = training_generator, validation_data = validation_generator, epochs = number_epochs, verbose = 1)
 
     # Genero el nombre de archivo del autoencoder y lo guardo
     # Ésto es lo que debo usar como entrada al clasificador

@@ -320,8 +320,6 @@ for i in range (len(etiquetas)):
         ## Me guardo la precisión de la predicción en el vector correspondiente
         precisiones.append(accuracy)
 
-print(precisiones)
-
 ## ---------------------------------------------- DTW ------------------------------------------------
 
 ## Construyo un tensor bidimensional de modo que guarde las distancias relativas
