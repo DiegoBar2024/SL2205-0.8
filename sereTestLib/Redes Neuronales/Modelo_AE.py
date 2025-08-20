@@ -1,10 +1,7 @@
 import sys
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
-sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/autoencoder')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/utils')
-from ae_train_save_model import *
 from parameters import *
-
 from tabnanny import verbose
 from numpy.core.fromnumeric import size
 import tensorflow as tf
@@ -14,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from keras import backend as K
 import os
-from GeneradorDatos import *
+#from GeneradorDatos import *
 
 from skimage.metrics import structural_similarity as ssim
 
@@ -215,7 +212,7 @@ def ae_model_builder(dim_input = inDim, filters = (32, 16, 8), latentDim = 256):
         x = layers.UpSampling2D((2, 2), data_format = 'channels_first')(x)
 
     ## Se aplica una única convolución con la transpuesta para volver a obtener la profundidad original
-    x = layers.Conv2DTranspose(depth, (3, 3), padding = "same", kernel_initializer = init, data_format = 'channels_first')(x)
+    x = layers.Conv2DTranspose(6, (3, 3), padding = "same", kernel_initializer = init, data_format = 'channels_first')(x)
 
     ## Especifico función de activación lineal
     decoded = layers.Activation("linear")(x)
@@ -227,13 +224,13 @@ def ae_model_builder(dim_input = inDim, filters = (32, 16, 8), latentDim = 256):
     if loss_name == "ssim_loss":
 
         ## Hago la compilación del modelo
-        model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate = base_learning_rate), loss = ssim_loss, metrics = [ssim_metric])
+        model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate = 0.0001), loss = ssim_loss, metrics = [ssim_metric])
     
     ## En caso de que la función de pérdida no sea la "SSIM LOSS"
     else:
 
         ## Hago la compilación del modelo
-        model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate = base_learning_rate), loss = loss_name)
+        model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate = 0.0001), loss = loss_name)
     
     ## Retorno el modelo de autoencoder resultante
     return model

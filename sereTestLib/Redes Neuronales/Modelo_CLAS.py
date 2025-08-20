@@ -45,36 +45,6 @@ from parameters import *
 from Extras_CLAS import *
 from GeneradorDatos import *
 
-## Función que me construye un modelo de red neuronal fully connected arbitrario (la voy a usar para el clasificador)
-## <<n_hidden>> me da el número de hidden layers que va a tener mi modelo
-## <<n_neurons>> me da el número de neuronas que va a tener cada hidden layer de mi modelo. Se asume en éste caso que todas las hidden layers tienen el mismo número <<n_neurons>> de neuronas 
-## <<input_shape>> me da la forma de la entrada que va a tener la red neuronal. Por defecto (None, 256) significa que la entrada va a ser un array unidimensional de tamaño 256 (256 características)
-def build_model(n_hidden, n_neurons, input_shape = (None, 256)):
-    
-    ## Inicializo un modelo Keras Secuencial inicialmente vacío
-    model = keras.models.Sequential()
-
-    ## Agrego al modelo una capa de entrada diciendole que la entrada a la red tiene una forma especificada por <<input_shape>> la cual en mi caso es por defecto (None, 256)
-    ## Dicho de otro modo le estoy diciendo a mi modelo que la entrada es un vector unidimensional de 256 elementos 
-    model.add(keras.layers.InputLayer(input_shape=input_shape))
-
-    ## Itero para cada uno de los hidden layers que especifiqué a la entrada. Es decir voy a tener layer = 0, 1, ..., n_hidden - 1
-    for layer in range(n_hidden):
-
-        ## Agrego primero una "Dense Layer" (fully connected) consistente de una cantidad <<n_neurons>> de neuronas y una función de activación ReLU
-        ## Recuerdo que una Dense Layer implementa la combinación lineal de las salidas de todas las neuronas del layer previo sumado a un termino de bias
-        model.add(keras.layers.Dense(n_neurons, activation="relu"))
-
-        ## Luego agrego una segunda "Dense Layer" (fully connected) consistente de una única neurona
-        ## Ésta neurona va a calcular una combinación lineal de las salidas <<n_neurons>> sumado a un término de bias 
-        model.add(keras.layers.Dense(1))
-
-        ## Se hace la compilación del modelo tomando como función de error la MSE ('Mean Squared Error') la cual es la función de error de MÍNIMOS CUADRADOS
-        ## Luego se toma como optimizador el SGD ('Stochastic Gradient Descent') el cual va a ser el método de optimización que va a usar la red neuronal para corregir sus parámetros luego de hacer el cálculo del MSE (se aplica backpropagation)
-        model.compile(loss = "mean_squared_error", optimizer = "sgd")
-
-    return model
-
 def entrenamiento_clasificador(clf_name, unstable_train, stable_train, unstable_validation, stable_validation, autoencoder_model, clasificador, scalogram_path, activities = act_clf):
     """
     Function that creates and fits the classifier with the training set and predicts the validation set.

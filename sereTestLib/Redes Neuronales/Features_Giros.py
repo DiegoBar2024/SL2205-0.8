@@ -2,15 +2,11 @@
 
 import sys
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
-sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/clasificador')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/utils')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 from parameters import *
-from Modelo_AE import *
-from Modelo_CLAS import *
 from Etiquetado import *
-from Modelo_CLAS import *
-from Extras_CLAS import *
+from Modelo_AE import *
 from LecturaDatosPacientes import *
 
 ## ------------------------------------- IMPORTACIÓN DEL MODELO ----------------------------------------
@@ -67,7 +63,7 @@ for id_persona in ids_existentes:
 
                 ## Se crea un modelo en base al autoencoder que toma como entrada la entrada al autoencoder y que toma como la salida las 256 características del autoencoder con los parámetros que ya tiene
                 intermediate_layer_model = keras.Model(inputs = modelo_autoencoder.input,
-                                        outputs = modelo_autoencoder.get_layer(layer_name).output)
+                                        outputs = modelo_autoencoder.get_layer('Dense_encoder').output)
 
                 ## Se realiza entonces la predicción del autoencoder a los datos del generador dando como resultado para cada muestra las 256 características a que correspondan a la salida
                 intermediate = intermediate_layer_model.predict(np.reshape(escalograma_segmento, (1, 6, 128, 800)))
