@@ -306,8 +306,17 @@ results_path = "C:/Yo/Tesis/sereData/sereData/Inferencias"
 ## Rutas donde se van a guardar los registros de las señales
 ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/'
 
-## Especifico la ruta donde va a estar la SVM de las actividades
+## Ruta donde va a estar la SVM de las actividades
 ruta_SVM = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib"
+
+## Ruta donde está el modelo de autoencoder
+ruta_ae = 'C:/Yo/Tesis/sereData/sereData/Modelos/autoencoder/ModeloAutoencoder/'
+
+## Ruta en la cual se encuentran los escalogramas de las señales sin giros
+ruta_escalogramas_sin_giros = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_sin_giros'
+
+## Especifico la ruta en donde voy a guardar las muestras comprimidas
+ruta_comprimidas_sin_giros = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_sin_giros"
 
 ## DIMENSIÓN TEMPORAL A LA QUE SE VA A REMUESTREAR
 ## Especifico la cantidad de pasos que quiero representar en mis escalogramas
