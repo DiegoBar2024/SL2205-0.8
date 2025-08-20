@@ -13,12 +13,8 @@ from sklearn.metrics import silhouette_score
 from sklearn.cluster import KMeans
 from matplotlib import pyplot as plt
 from scipy.stats import *
-from pyod.models.knn import KNN
-import numpy
 from matplotlib import pyplot as plt
-from sklearn.neighbors import NearestNeighbors
 from sklearn.decomposition import PCA
-from sklearn.covariance import EmpiricalCovariance, MinCovDet
 
 ## -------------------------------- DISCRIMINACIÓN REPOSO - ACTIVIDAD --------------------------------------
 

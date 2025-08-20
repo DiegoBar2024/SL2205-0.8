@@ -128,7 +128,6 @@ def entrenamiento_clasificador(clf_name, unstable_train, stable_train, unstable_
 
     ## Genero un vector con las etiquetas correspondientes para cada uno de los pacientes en función de su estabilidad o no para el conjunto de ENTRENAMIENTO
     ground_truth_train = np.concatenate([np.zeros(np.shape(stable_train_intermediate)[0]), np.ones(np.shape(unstable_train_intermediate)[0])])
-    # ground_truth_train = np.concatenate([- np.ones(np.shape(stable_train_intermediate)[0]), np.ones(np.shape(unstable_train_intermediate)[0])]) 
 
     ## <<train_values>> me va a contener las muestras que voy a usar para el entrenamiento del clasificador, según la etiqueta correspondiente
     ## Tiene la forma de (cantidad de muestras de entrenamiento, 256)
@@ -136,32 +135,13 @@ def entrenamiento_clasificador(clf_name, unstable_train, stable_train, unstable_
 
     ## Genero un vector con las etiquetas correspondientes para cada uno de los pacientes en función de su estabilidad o no para el conjunto de validación
     ground_truth_validate = np.concatenate([np.zeros(np.shape(stable_validate_intermediate)[0]), np.ones(np.shape(unstable_validate_intermediate)[0])]) 
-    # ground_truth_validate = np.concatenate([- np.ones(np.shape(stable_validate_intermediate)[0]), np.ones(np.shape(unstable_validate_intermediate)[0])]) 
 
     ## <<val_values>> me va a contener las muestras que voy a usar para el entrenamiento del clasificador, según la etiqueta correspondiente
     ## Tiene la forma de (cantidad de muestras de validación, 256)
     val_values = np.concatenate([stable_validate_intermediate, unstable_validate_intermediate], axis = 0)
     
     ## Obtengo el clasificador luego de realizar el entrenamiento
-    clf_trained = train_clasificador(train_values, ground_truth_train, clf_name + '.joblib', clasificador, val_values, ground_truth_validate)
-
-    ## Hago la predicción para el conjunto de entrenamiento inestable
-    unstable_predictions_train = predict_clf(clf_trained, unstable_train_intermediate, clasificador)
-
-    ## Hago la predicción para el conjunto de entrenamiento estable
-    stable_predictions_train = predict_clf(clf_trained, stable_train_intermediate, clasificador)
-
-    ## Etiquetas del conjunto de entrenamiento
-    labels_train = np.concatenate([stable_predictions_train, unstable_predictions_train], axis = 0)
-
-    ## Hago la predicción para el conjunto de validación inestable
-    unstable_predictions = predict_clf(clf_trained, unstable_validate_intermediate, clasificador)
-
-    ## Hago la predicción para el conjunto de validación estable
-    stable_predictions = predict_clf(clf_trained, stable_validate_intermediate, clasificador)
-
-    ## Etiquetas del conjunto de validación
-    labels_validate = np.concatenate([stable_predictions, unstable_predictions], axis = 0)
+    train_clasificador(train_values, ground_truth_train, clf_name + '.joblib', clasificador, val_values, ground_truth_validate)
 
 ## Función que lleva a cabo el entrenamiento del clasificador
 ## Como entrada debo colocarle el espacio codificado siendo éste la salida del autoencoder para cada escalograma
@@ -217,60 +197,12 @@ def train_clasificador(values, ground_truth, file_clf, clasificador, X_val = Non
 
         ## Llevo a cabo el entrenamiento del clasificador y especifico los diferentes parámetros de entrenamiento
         clf.fit(values, ground_truth, epochs = num_epochs, validation_data = (X_val, y_val), callbacks = [es])
-    
-    ## En caso de que el clasificador sea del tipo NN (Red Neuronal)
-    elif clasificador == "NN":
-
-        ## Impongo un tipo de regularización del tipo Early Stopping
-        es = EarlyStopping(monitor = 'val_loss', patience = 5, mode = 'min', verbose = 1)
-
-        ## Hago la construcción de la red neuronal correspondiente
-        clf = build_model(n_neurons = 40, n_hidden = 5)
-
-        ## Llevo a cabo el entrenamiento del clasificador
-        ## <<values>> es la secuencia de valores de entrada
-        ## <<ground_truth>> es la secuencia de valores de salida
-        clf.fit(values, ground_truth, epochs = num_epochs, validation_data = (X_val, y_val), callbacks = [es])
 
     ## En caso de que el clasificador sea del tipo SVM
     elif clasificador == 'svm':
         
-        ## Construyo la Support Vector Machine
+        ## Construyo la Support Vector Machine con los valores de sus hiperparámetros
         clf = SVC(C = 1, gamma = 1, kernel = 'rbf')
-
-        ## Llevo a cabo el entrenamiento del clasificador
-        ## <<values>> es la secuencia de valores de entrada
-        ## <<ground_truth>> es la secuencia de valores de salida
-        clf.fit(values, ground_truth)
-
-    ## En caso de que el clasificador sea del tipo HIERARCHICAL
-    elif clasificador == 'hierarchical':
-        
-        ## Especifico los parámetros del clasificador
-        clf = AgglomerativeClustering(compute_full_tree = True, n_clusters = 2, compute_distances = True)
-
-        ## Llevo a cabo el entrenamiento del clasificador
-        ## <<values>> es la secuencia de valores de entrada
-        ## <<ground_truth>> es la secuencia de valores de salida
-        clf.fit(values, ground_truth)
-
-    ## En caso de que el clasificador sea del tipo KMEANS
-    elif clasificador == 'kmeans':
-
-        ## Le indico al algoritmo KMEANS que tengo dos clusters
-        ## Recuerdo que KMEANS es un algoritmo de clustering de modo que él por su cuenta va a buscar y organizar los clústers
-        clf = KMeans(n_clusters = 2)
-
-        ## Llevo a cabo el entrenamiento del clasificador
-        ## <<values>> es la secuencia de valores de entrada
-        ## <<ground_truth>> es la secuencia de valores de salida
-        clf.fit(values, ground_truth)
-    
-    ## En caso de que el clasificador sea del tipo RF (Random Forest)
-    elif clasificador == 'RF':
-
-        ## Especifico los parámetros del clasificador Random Forest
-        clf = RandomForestClassifier(n_estimators = 100, min_samples_split = 10, max_depth = 5)
 
         ## Llevo a cabo el entrenamiento del clasificador
         ## <<values>> es la secuencia de valores de entrada
@@ -289,50 +221,11 @@ def predict_clf(clf, intermediate_layer, clasificador = "None"):
     the samples classification.
     """
 
-    ## En caso de que tenga un clasificador jerárquico (clustering)
-    if clasificador == "hierarchical":
+    ## Determino la predicción del clasificador ante mi muestra de entrada
+    pat_predictions = clf.predict(intermediate_layer)
 
-        ## Hago la predicción de los datos en base al espacio latente
-        pat_predictions = clf.fit_predict(intermediate_layer)
-    
-    ## En caso de que tenga un clasificador kmeans (clustering)
-    if clasificador == "kmeans":
-
-        ## Hago la predicción de los datos en base al espacio latente
-        pat_predictions = clf.predict(intermediate_layer)
-
-    ## En caso de que el clasificador no sea "hierarchical"
-    else:
-
-        ## Determino la predicción del clasificador ante mi muestra de entrada
-        pat_predictions = clf.predict(intermediate_layer)
-
-        ## En caso de que el clasificador usado sea un perceptron
-        if clasificador == "perceptron":
-
-            ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
-            ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
-            pat_predictions = pat_predictions > 0.5
-
-        ## En caso de que el clasificador sea una red neuronal
-        if clasificador == "NN":
-
-            ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
-            ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
-            pat_predictions = pat_predictions > 0.5
-
-        ## En caso de que el clasificador usado sea un LDA
-        if clasificador == "lda":
-
-            ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
-            ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
-            pat_predictions = pat_predictions > 0.5
-            
-        ## En caso de que el clasificador usado sea un SVM
-        if clasificador == "svm":
-
-            ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
-            ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
-            pat_predictions = pat_predictions > 0.5
-
+    ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
+    ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
+    pat_predictions = pat_predictions > 0.5
+        
     return pat_predictions
