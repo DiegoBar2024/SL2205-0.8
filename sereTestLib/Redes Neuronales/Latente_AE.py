@@ -15,9 +15,6 @@ from LecturaDatosPacientes import *
 
 ## ------------------------------------- IMPORTACIÓN DEL MODELO ----------------------------------------
 
-## Especifico la ruta de la cual yo voy a importar el modelo de autoencoder
-ruta_ae = 'C:/Yo/Tesis/sereData/sereData/Modelos/autoencoder/ModeloAutoencoder/'
-
 ## Especifico el nombre del autoencoder
 nombre_autoencoder = 'AutoencoderUCU_nuevo'
 
@@ -26,11 +23,9 @@ modelo_autoencoder = ae_load_model(ruta_ae, nombre_autoencoder)
 
 ## ------------------------------------- COMPRESIÓN Y GUARDADO  ----------------------------------------
 
+## ASÍ COMO ESTÁ ÉSTE FICHERO HACE LA COMPRESIÓN DE LOS SEGMENTOS DE MARCHA SIN GIROS
 ## Hago la lectura de los datos generales de los pacientes presentes en la base de datos
 pacientes, ids_existentes = LecturaDatosPacientes()
-
-## Especifico la ruta en la cual se encuentran los escalogramas que voy a comprimir
-ruta_escalogramas = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_sin_giros'
 
 ## Itero para cada uno de los identificadores de los pacientes. Hago la generación de escalogramas para cada paciente
 for id_persona in ids_existentes:
@@ -39,13 +34,14 @@ for id_persona in ids_existentes:
     try:
         
         ## Obtengo el conjunto de tramos de marcha sin giros detectados para el paciente
-        tramos = os.listdir(ruta_escalogramas + '/S{}'.format(id_persona))
+        ## En <<ruta_escalogramas>> voy a guardar la ruta hacia donde están los escalogramas que voy a comprimir
+        tramos = os.listdir(ruta_escalogramas_sin_giros + '/S{}'.format(id_persona))
 
         ## Itero para cada uno de los tramos listados anteriormente
         for i in range (len(tramos)):
     
             ## Especifico la ruta en donde voy a guardar las muestras comprimidas
-            ruta_comprimidas = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_sin_giros/S{}/{}/".format(id_persona, tramos[i])
+            ruta_comprimidas = ruta_comprimidas_sin_giros + "/S{}/{}/".format(id_persona, tramos[i])
 
             ## En caso de que el directorio no exista
             if not os.path.exists(ruta_comprimidas):
@@ -54,7 +50,7 @@ for id_persona in ids_existentes:
                 os.makedirs(ruta_comprimidas)
 
             ## Obtengo el conjunto de segmentos correspondientes a ese paciente a ese tramo
-            segmentos = sorted(os.listdir('C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_sin_giros/S{}/{}'.format(id_persona, tramos[i])), key = len)
+            segmentos = sorted(os.listdir(ruta_escalogramas_sin_giros + '/S{}/{}'.format(id_persona, tramos[i])), key = len)
             
             ## Construyo un vector vacío en el cual voy a almacenar los espacios latentes como matriz de ceros
             espacio_latente = np.zeros((len(segmentos), 256))
@@ -63,7 +59,7 @@ for id_persona in ids_existentes:
             for j in range (len(segmentos)):
 
                 ## Abro el archivo .npz correspondiente
-                escalograma_segmento = np.load(ruta_escalogramas + '/S{}/Tramo{}/{}'.format(id_persona, i, segmentos[j]))['X']
+                escalograma_segmento = np.load(ruta_escalogramas_sin_giros + '/S{}/Tramo{}/{}'.format(id_persona, i, segmentos[j]))['X']
 
                 ## Se crea un modelo en base al autoencoder que toma como entrada la entrada al autoencoder y que toma como la salida las 256 características del autoencoder con los parámetros que ya tiene
                 intermediate_layer_model = keras.Model(inputs = modelo_autoencoder.input,
