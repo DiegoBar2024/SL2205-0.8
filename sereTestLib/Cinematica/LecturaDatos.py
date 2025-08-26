@@ -80,7 +80,7 @@ def LecturaDatos(id_persona = None, lectura_datos_propios = False, ruta = None):
     ## En caso de que esté leyendo datos de la empresa, le doy el procesamiento correspondiente
     else:
 
-        ## --- Sistema de coordenadas usados en las medidas por los estudiantes ----------
+        ## --- Sistema de coordenadas usados en las medidas por la empresa --------------
         ##          EJE X: MEDIOLATERAL CON EJE POSITIVO HACIA LA DERECHA
         ##          EJE Y: VERTICAL CON EJE POSITIVO HACIA ARRIBA
         ##          EJE Z: ANTEROPOSTERIOR CON EJE POSITIVO HACIA ATRÁS

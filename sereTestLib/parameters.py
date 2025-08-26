@@ -293,8 +293,7 @@ filenameCE = 'C:/Yo/Tesis/sereData/sereData/Modelos/Actividad/regLin_caminandoEs
 dir_etiquetas=  'C:/Yo/Tesis/sereData/sereData/Etiquetas/'
 
 ## Rutas en donde van a estar los escalogramas finales que van a entrar a la red neuronal
-dir_escalogramas_nuevo_train = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/train'
-dir_escalogramas_nuevo_test = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo/test'
+ruta_escalogramas = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo'
 
 ## Rutas en donde van a estar los escalogramas individuales por cada canal
 dir_escalogramas_nuevo_ind_train = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_ind_nuevo/train'
@@ -312,11 +311,26 @@ ruta_SVM = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib
 ## Ruta donde está el modelo de autoencoder
 ruta_ae = 'C:/Yo/Tesis/sereData/sereData/Modelos/autoencoder/ModeloAutoencoder/'
 
+## Ruta donde está el modelo de clasificador
+ruta_clf = 'C:/Yo/Tesis/sereData/sereData/Modelos/clasificador/ModeloClasificador/'
+
+## Ruta donde se guardan los valores de los parámetros optimizados del modelo de marcha mediante el uso del método I
+ruta_optimizacion_m1 = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/OptimizacionM1.json"
+
+## Ruta donde se guardan los valores de los parámetros optimizados del modelo de marcha mediante el uso del método I
+ruta_optimizacion_m2 = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/OptimizacionM2.json"
+
 ## Ruta en la cual se encuentran los escalogramas de las señales sin giros
 ruta_escalogramas_sin_giros = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_sin_giros'
 
 ## Especifico la ruta en donde voy a guardar las muestras comprimidas
 ruta_comprimidas_sin_giros = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_sin_giros"
+
+## Ruta en la cual se encuentra el archivo .csv con los datos clínicos de los pacientes
+ruta_pacientes = "C:/Yo/Tesis/sereData/sereData/Etiquetas/clasificaciones_antropometricos.csv"
+
+## Ruta en la cual tengo el dataset de todos los pacientes
+ruta_dataset = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset"
 
 ## DIMENSIÓN TEMPORAL A LA QUE SE VA A REMUESTREAR
 ## Especifico la cantidad de pasos que quiero representar en mis escalogramas

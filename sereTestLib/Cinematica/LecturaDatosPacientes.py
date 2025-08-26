@@ -3,15 +3,16 @@
 import pandas as pd
 import os
 import numpy as np
+import pathlib
+import sys
+sys.path.append(str(pathlib.Path().resolve()).replace('\\','/') + '/sereTestLib')
+from parameters import *
 
 ## ----------------------------------- LECTURA DE DATOS DEL PACIENTE --------------------------------------
 
 def LecturaDatosPacientes():
 
     ## ----------------------------------------- LECTURA DE DATOS ------------------------------------------
-
-    ## Especifico la ruta de la cual voy a leer el archivo con los datos de los pacientes
-    ruta_pacientes = "C:/Yo/Tesis/sereData/sereData/Etiquetas/clasificaciones_antropometricos.csv"
 
     ## Hago la lectura del archivo .csv y lo convierto en un dataframe pandas
     datos_pacientes = pd.read_csv(ruta_pacientes)
@@ -20,10 +21,6 @@ def LecturaDatosPacientes():
     ids_existentes_info = np.array(datos_pacientes['sampleid'])
 
     ## ---------------------------------------- EXISTENCIA DE DATOS ----------------------------------------
-
-    ## La idea de ésto es poder filtrar todos aquellos pacientes cuyo dataset sea existente
-    ## Especifico la ruta en la cual tengo el dataset de todos los pacientes
-    ruta_dataset = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset"
 
     ## Obtengo una lista con todos los archivos de pacientes para los cuales existe el dataset
     files = os.listdir(ruta_dataset)

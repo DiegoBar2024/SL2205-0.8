@@ -12,9 +12,6 @@ from Modelo_CLAS import *
 
 ## ------------------------------------- SEPARACIÓN DE MUESTRAS ----------------------------------------
 
-## Especifico la ruta donde van a estar los escalogramas de entrenamiento
-ruta_escalogramas = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo'
-
 ## Obtengo una lista de todos los archivos presentes en la ruta donde se encuentran los escalogramas nuevos
 archivos_escalogramas = [archivo for archivo in os.listdir(ruta_escalogramas + '/')]
 
@@ -55,12 +52,6 @@ val_inestables = np.intersect1d(lista_pacientes_existentes, x_inestables_val_clf
 val_estables = np.intersect1d(lista_pacientes_existentes, x_estables_val_clf)
 
 ## ----------------------------------- ENTRENAMIENTO Y VALIDACIÓN --------------------------------------
-
-## Especifico la ruta de donde yo voy a cargar el modelo del autoencoder
-ruta_ae = 'C:/Yo/Tesis/sereData/sereData/Modelos/autoencoder/ModeloAutoencoder/'
-
-## Especifico la ruta de donde yo voy a guardar el modelo del clasificador
-ruta_clf = 'C:/Yo/Tesis/sereData/sereData/Modelos/clasificador/ModeloClasificador/'
 
 ## Especifico el nombre del modelo del autoencoder
 nombre_autoencoder = 'AutoencoderUCU_nuevo'

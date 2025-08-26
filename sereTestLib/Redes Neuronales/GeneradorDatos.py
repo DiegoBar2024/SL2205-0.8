@@ -33,6 +33,7 @@ class DataGeneratorAuto(keras.utils.Sequence):
         ## El atributo <<data_dir>> me va a almacenar el path a la carpeta global en donde se encuentran todas las muestras a procesar
         self.data_dir = data_dir
 
+        ## El atributo <<shuffle>> me dice si los datos van a ser mezclados como etapa previa al clasificado
         self.shuffle = shuffle
 
         ## El atributo <<list_IDs>> va a almacenar la lista de IDs de los pacientes que corresponden a las muestras de entrada
@@ -83,8 +84,7 @@ class DataGeneratorAuto(keras.utils.Sequence):
     def __get_files_lists(self, id_folder):
 
         ## Concateno primero los paths <<self.data_dir>> con <<id_folder>>
-        ## fullD = self.data_dir + '/' + id_folder
-        fullD = self.data_dir
+        fullD = self.data_dir + '/' + id_folder
 
         try:
 

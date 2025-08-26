@@ -5,8 +5,10 @@ import pywt
 from matplotlib import pyplot as plt
 from scipy.signal import *
 import numpy as np
+import pathlib
+sys.path.append(str(pathlib.Path().resolve()).replace('\\','/') + '/sereTestLib')
+from parameters import *
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
-sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
 
 ## -------------------------------------- CÁLCULO DE ESCALOGRAMAS --------------------------------------
 

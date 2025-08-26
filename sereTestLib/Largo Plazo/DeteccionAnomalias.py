@@ -4,6 +4,7 @@ import sys
 import pathlib
 sys.path.append(str(pathlib.Path().resolve()).replace('\\','/') + '/sereTestLib/Cinematica')
 sys.path.append(str(pathlib.Path().resolve()).replace('\\','/') + '/sereTestLib')
+from parameters import ruta_registro, ruta_SVM
 from LecturaDatos import *
 from Muestreo import *
 from LecturaDatosPacientes import *
@@ -17,7 +18,6 @@ from matplotlib import pyplot as plt
 from scipy.stats import *
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
-from parameters import ruta_registro, ruta_SVM
 
 ## -------------------------------- DISCRIMINACIÓN REPOSO - ACTIVIDAD --------------------------------------
 

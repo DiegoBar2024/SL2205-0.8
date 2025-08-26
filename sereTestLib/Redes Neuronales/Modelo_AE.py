@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from keras import backend as K
 import os
-#from GeneradorDatos import *
+from GeneradorDatos import *
 
 from skimage.metrics import structural_similarity as ssim
 
@@ -39,7 +39,7 @@ def ssim_metric(y_true, y_pred):
     return loss
 
 ## Función que genera el modelo del autoencoder y lo entrena según los parámetros de entrada
-def ae_train_save_model(autoencoder_name, path_to_scalograms_train = dir_escalogramas_nuevo_train, path_to_scalograms_val = dir_escalogramas_nuevo_test , model_path = model_path_ae, input_dimension = inDim, list_of_samples_number_train = [], 
+def ae_train_save_model(autoencoder_name, path_to_scalograms_train = ruta_escalogramas, path_to_scalograms_val = ruta_escalogramas , model_path = model_path_ae, input_dimension = inDim, list_of_samples_number_train = [], 
                         list_of_samples_number_validation = [], number_epochs = num_epochs, activities = act_ae, batch_size = batch_size, latent_dimension = latent_dimension, debug = False):
     """
         Function that generates the autoencoder model base on training datagroup. Validates it and saves it.

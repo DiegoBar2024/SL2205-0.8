@@ -16,9 +16,6 @@ from Escalado import *
 ## Hago la lectura de los datos generales de los pacientes
 pacientes, ids_existentes = LecturaDatosPacientes()
 
-## Especifico la ruta en la cual yo voy a hacer el guardado de los escalogramas
-ruta = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_nuevo'
-
 ## Itero para cada uno de los identificadores de los pacientes. Hago la generación de escalogramas para cada paciente
 for id_persona in ids_existentes:
 
@@ -41,7 +38,7 @@ for id_persona in ids_existentes:
         escalogramas_segmentos, directorio_muestra, nombre_base_segmento = Escalogramas(id_persona, tiempo, pasos, cant_muestras, acel, gyro, periodoMuestreo)
 
         ## Hago el escalado y el guardado correspondiente de los escalogramas
-        Escalado(escalogramas_segmentos, directorio_muestra, nombre_base_segmento, ruta)
+        Escalado(escalogramas_segmentos, directorio_muestra, nombre_base_segmento, ruta_escalogramas)
 
         ## Impresión en pantalla avisando el identificador del paciente que está siendo procesado
         print("ID del paciente que está siendo procesado: {}".format(id_persona))

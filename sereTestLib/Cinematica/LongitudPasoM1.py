@@ -2,6 +2,9 @@
 
 from Segmentacion import *
 from scipy.integrate import cumulative_trapezoid
+import pathlib
+sys.path.append(str(pathlib.Path().resolve()).replace('\\','/') + '/sereTestLib')
+from parameters import *
 import json
 
 ## ---------------------------------- CÁLCULO DE PARÁMETROS DE MARCHA ----------------------------------
@@ -80,7 +83,7 @@ def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
     ## ----------------------------- CARGADO DEL PARÁMETRO DE LONGITUD DE PASO -----------------------------
 
     ## Hago la lectura del archivo JSON previamente existente
-    with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/OptimizacionM1.json", 'r') as openfile:
+    with open(ruta_optimizacion_m1, 'r') as openfile:
 
         # Cargo el diccionario el cual va a ser un objeto JSON
         dicc_optimizacion = json.load(openfile)
