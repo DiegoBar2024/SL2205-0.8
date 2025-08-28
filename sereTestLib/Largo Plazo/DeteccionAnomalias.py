@@ -23,7 +23,7 @@ from sklearn.decomposition import PCA
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro_completa = ruta_registro + 'MarchaLibre_Rodrigo.txt'
+ruta_registro_completa = ruta_registro + 'Actividades_Rodrigo.txt'
 
 ##  Hago la lectura de los datos
 data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 69, lectura_datos_propios = True, ruta = ruta_registro_completa)

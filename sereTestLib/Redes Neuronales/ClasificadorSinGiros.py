@@ -1,7 +1,9 @@
 ## ------------------------------------- IMPORTACIÓN DE LIBRERÍAS --------------------------------------
 
-import keras
 import sys
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
+from parameters import *
+import keras
 from scipy.signal import *
 from sklearn.metrics import confusion_matrix
 import scipy.spatial
@@ -80,9 +82,6 @@ comprimidos_por_persona = []
 ## Genero una lista vacía que va a contener las etiquetas de los pacientes
 etiquetas = []
 
-## Especifico la ruta en la cual se encuentran los escalogramas comprimidos que voy a clasificar
-ruta_escalogramas = 'C:/Yo/Tesis/sereData/sereData/Dataset/latente_sin_giros'
-
 ## Itero para cada uno de los identificadores de los pacientes. Hago la generación de escalogramas para cada paciente
 for id_persona in ids_existentes:
 
@@ -90,13 +89,13 @@ for id_persona in ids_existentes:
     try:
 
         ## Obtengo el conjunto de tramos de marcha sin giros detectados para el paciente
-        tramos = os.listdir(ruta_escalogramas + '/S{}'.format(id_persona))
+        tramos = os.listdir(ruta_comprimidas_sin_giros + '/S{}'.format(id_persona))
 
         ## Itero para cada uno de los tramos listados anteriormente
         for i in range (len(tramos)):
 
             ## Hago la lectura del archivo con el espacio latente
-            archivo_comprimido = np.load(ruta_escalogramas + '/S{}/Tramo{}/S{}_latente.npz'.format(id_persona, i, id_persona))
+            archivo_comprimido = np.load(ruta_comprimidas_sin_giros + '/S{}/Tramo{}/S{}_latente.npz'.format(id_persona, i, id_persona))
 
             ## Almaceno el archivo comprimido en una variable como un array bidimensional
             ## La i-ésima fila representa el i-ésimo segmento

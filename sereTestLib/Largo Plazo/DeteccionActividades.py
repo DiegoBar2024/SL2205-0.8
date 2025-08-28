@@ -2,6 +2,8 @@
 
 import sys
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
+from parameters import *
 from LecturaDatos import *
 from Muestreo import *
 from LecturaDatosPacientes import *
@@ -11,6 +13,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from scipy import signal
 from scipy import *
+from scipy.stats import *
 import json
 import seaborn as sns
 from scipy.stats import *
@@ -29,6 +32,13 @@ class NumpyArrayEncoder(json.JSONEncoder):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
+    
+def RMS(data):
+    """Calculates the Root Mean Square of a list or array of numbers."""
+    squared_sum = sum(x**2 for x in data)
+    mean_squared = squared_sum / len(data)
+    rms = np.sqrt(mean_squared)
+    return rms
 
 ## -------------------------------------- DETECCIÓN DE ACTIVIDADES ------------------------------------------
 
@@ -130,15 +140,31 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
 
                 ## ------------------------------ FEATURE EXTRACTION ------------------------------------------
 
-                ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)
-                #features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt)[['0_Mean', '0_Standard deviation', '0_Max', '0_Min']])
-                features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt, fs = 1 / periodoMuestreo))
+                # ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)
+                # features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt, fs = 1 / periodoMuestreo))
+
+                # ## Hago la extracción de features de la señal de acelerómetro AP (Body Acceleration)
+                # features_AP = np.array(tsfel.time_series_features_extractor(cfg, segmento_AP_filt, fs = 1 / periodoMuestreo))
+
+                # ## Hago la extracción de features de la señal de acelerómetro VT (Body Acceleration)
+                # features_VT = np.array(tsfel.time_series_features_extractor(cfg, segmento_VT_filt, fs = 1 / periodoMuestreo))
+
+                ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)   
+                features_ML = np.array([np.mean(segmento_ML_filt), np.median(segmento_ML_filt), np.std(segmento_ML_filt), np.var(segmento_ML_filt), kurtosis(segmento_ML_filt), skew(segmento_ML_filt), iqr(segmento_ML_filt), 
+                                        RMS(segmento_ML_filt)])
 
                 ## Hago la extracción de features de la señal de acelerómetro AP (Body Acceleration)
-                features_AP = np.array(tsfel.time_series_features_extractor(cfg, segmento_AP_filt, fs = 1 / periodoMuestreo))
+                features_AP = np.array([np.mean(segmento_AP_filt), np.median(segmento_AP_filt), np.std(segmento_AP_filt), np.var(segmento_AP_filt), kurtosis(segmento_AP_filt), skew(segmento_AP_filt), iqr(segmento_AP_filt), 
+                                        RMS(segmento_AP_filt)])
 
                 ## Hago la extracción de features de la señal de acelerómetro VT (Body Acceleration)
-                features_VT = np.array(tsfel.time_series_features_extractor(cfg, segmento_VT_filt, fs = 1 / periodoMuestreo))
+                features_VT = np.array([np.mean(segmento_VT_filt), np.median(segmento_VT_filt), np.std(segmento_VT_filt), np.var(segmento_VT_filt), kurtosis(segmento_VT_filt), skew(segmento_VT_filt), iqr(segmento_VT_filt), 
+                                        RMS(segmento_VT_filt)])
+
+                ## Reformateo los vectores en caso que la extracción sea manual
+                features_AP = np.reshape(features_AP, (1, features_AP.shape[0]))
+                features_ML = np.reshape(features_ML, (1, features_ML.shape[0]))
+                features_VT = np.reshape(features_VT, (1, features_VT.shape[0]))
 
                 ## Obtengo el vector de features extraido con TSFEL concatenando los features de la ML, AP, VT
                 feature_vector = np.concatenate((features_ML, features_AP, features_VT), axis = 1)
@@ -286,25 +312,25 @@ if __name__== '__main__':
         ## ---------------------------------- PROCESAMIENTO SMA -----------------------------------------
 
         ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_Parado.json", 'r') as openfile:
+        with open(str(pathlib.Path().resolve()).replace('\\','/') + "/sereTestLib/Largo Plazo/SMA_Parado.json", 'r') as openfile:
 
             # Cargo el diccionario el cual va a ser un objeto JSON
             SMA_parado = json.load(openfile)
         
         ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_Sentado.json", 'r') as openfile:
+        with open(str(pathlib.Path().resolve()).replace('\\','/') + "/sereTestLib/Largo Plazo/SMA_Sentado.json", 'r') as openfile:
 
             # Cargo el diccionario el cual va a ser un objeto JSON
             SMA_sentado = json.load(openfile)
         
         ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_Caminando.json", 'r') as openfile:
+        with open(str(pathlib.Path().resolve()).replace('\\','/') + "/sereTestLib/Largo Plazo/SMA_Caminando.json", 'r') as openfile:
 
             # Cargo el diccionario el cual va a ser un objeto JSON
             SMA_caminando = json.load(openfile)
         
         ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SMA_Escalera.json", 'r') as openfile:
+        with open(str(pathlib.Path().resolve()).replace('\\','/') + "/sereTestLib/Largo Plazo/SMA_Escalera.json", 'r') as openfile:
 
             # Cargo el diccionario el cual va a ser un objeto JSON
             SMA_escaleras = json.load(openfile)
@@ -402,6 +428,7 @@ if __name__== '__main__':
 
         ## Hago el boxplot comparando los valores de SMA para las actividades consideradas
         plt.boxplot(valores_SMA.values(), tick_labels = valores_SMA.keys())
+        plt.ylabel('Valor SMA')
         plt.show()
 
         ## Defino un vector con todos los valores de SMA correspondientes a movimiento (caminando y escaleras)
@@ -470,7 +497,7 @@ if __name__== '__main__':
         svm_rep_mov.fit(np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))))
 
         # Guardo el modelo entrenado en la ruta de salida
-        dump(svm_rep_mov, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
+        dump(svm_rep_mov, ruta_SVM)
 
         ## Especifico la cantidad de folds que voy a utilizar para poder hacer la validación cruzada
         k_folds = KFold(n_splits = 10, shuffle = False)

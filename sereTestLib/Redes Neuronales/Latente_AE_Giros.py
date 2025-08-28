@@ -15,9 +15,6 @@ from LecturaDatosPacientes import *
 
 ## ------------------------------------- IMPORTACIÓN DEL MODELO ----------------------------------------
 
-## Especifico la ruta de la cual yo voy a importar el modelo de autoencoder
-ruta_ae = 'C:/Yo/Tesis/sereData/sereData/Modelos/autoencoder/ModeloAutoencoder/'
-
 ## Especifico el nombre del autoencoder
 nombre_autoencoder = 'AutoencoderUCU_nuevo'
 

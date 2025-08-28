@@ -24,6 +24,7 @@ modelo_autoencoder = ae_load_model(ruta_ae, nombre_autoencoder)
 ## ------------------------------------- COMPRESIÓN Y GUARDADO  ----------------------------------------
 
 ## ASÍ COMO ESTÁ ÉSTE FICHERO HACE LA COMPRESIÓN DE LOS SEGMENTOS DE MARCHA SIN GIROS
+## SI SE QUIEREN COMPRIMIR TODOS LOS SEGMENTOS DE MARCHA ENTEROS HAY QUE HACER ALGUNOS CAMBIOS
 ## Hago la lectura de los datos generales de los pacientes presentes en la base de datos
 pacientes, ids_existentes = LecturaDatosPacientes()
 

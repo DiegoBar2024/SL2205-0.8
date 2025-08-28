@@ -9,6 +9,8 @@ from Segmentacion import *
 from LongitudPasoM1 import *
 from LongitudPasoM2 import *
 import json
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
+from parameters import *
 
 ## ------------------------------------- OPTIMIZACIÓN DEL MODELO ---------------------------------------
 
@@ -50,7 +52,7 @@ def Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2,
     ## ----------------------------------- GUARDADO DE DATOS DEL MÉTODO I ----------------------------------------
 
     ## Hago la lectura del archivo JSON previamente existente
-    with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/OptimizacionM1.json", 'r') as openfile:
+    with open(ruta_optimizacion_m1, 'r') as openfile:
 
         # Cargo el valor existente del JSON
         dicc_optim_M1 = json.load(openfile)
@@ -67,7 +69,7 @@ def Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2,
         dicc_optim_M1[str(id_persona)] = [optimo_m1]
     
     ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
-    with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/OptimizacionM1.json", "w") as outfile:
+    with open(ruta_optimizacion_m1, "w") as outfile:
 
         ## Escribo el diccionario actualizado
         json.dump(dicc_optim_M1, outfile)
@@ -75,7 +77,7 @@ def Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2,
     ## ---------------------------------- GUARDADO DE DATOS DEL MÉTODO Ii ----------------------------------------
 
     ## Hago la lectura del archivo JSON previamente existente
-    with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/OptimizacionM2.json", 'r') as openfile:
+    with open(ruta_optimizacion_m2, 'r') as openfile:
 
         # Cargo el valor existente del JSON
         dicc_optim_M2 = json.load(openfile)
@@ -92,7 +94,7 @@ def Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2,
         dicc_optim_M2[str(id_persona)] = [optimo_m2]
     
     ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
-    with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/OptimizacionM2.json", "w") as outfile:
+    with open(ruta_optimizacion_m2, "w") as outfile:
 
         ## Escribo el diccionario actualizado
         json.dump(dicc_optim_M2, outfile)
