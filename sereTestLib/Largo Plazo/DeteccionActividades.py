@@ -151,15 +151,15 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
 
                 ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)   
                 features_ML = np.array([np.mean(segmento_ML_filt), np.median(segmento_ML_filt), np.std(segmento_ML_filt), np.var(segmento_ML_filt), kurtosis(segmento_ML_filt), skew(segmento_ML_filt), iqr(segmento_ML_filt), 
-                                        RMS(segmento_ML_filt)])
+                                        RMS(segmento_ML_filt), np.abs(max(segmento_ML_filt) - min(segmento_ML_filt)), np.sum(np.square(segmento_ML_filt))])
 
                 ## Hago la extracción de features de la señal de acelerómetro AP (Body Acceleration)
                 features_AP = np.array([np.mean(segmento_AP_filt), np.median(segmento_AP_filt), np.std(segmento_AP_filt), np.var(segmento_AP_filt), kurtosis(segmento_AP_filt), skew(segmento_AP_filt), iqr(segmento_AP_filt), 
-                                        RMS(segmento_AP_filt)])
+                                        RMS(segmento_AP_filt), np.abs(max(segmento_AP_filt) - min(segmento_AP_filt)), np.sum(np.square(segmento_AP_filt))])
 
                 ## Hago la extracción de features de la señal de acelerómetro VT (Body Acceleration)
                 features_VT = np.array([np.mean(segmento_VT_filt), np.median(segmento_VT_filt), np.std(segmento_VT_filt), np.var(segmento_VT_filt), kurtosis(segmento_VT_filt), skew(segmento_VT_filt), iqr(segmento_VT_filt), 
-                                        RMS(segmento_VT_filt)])
+                                        RMS(segmento_VT_filt), np.abs(max(segmento_VT_filt) - min(segmento_VT_filt)), np.sum(np.square(segmento_AP_filt))])
 
                 ## Reformateo los vectores en caso que la extracción sea manual
                 features_AP = np.reshape(features_AP, (1, features_AP.shape[0]))

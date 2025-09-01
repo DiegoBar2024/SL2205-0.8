@@ -167,92 +167,92 @@ comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
 
 ## ---------------------------------------------- LSTM ------------------------------------------------
 
-# ## Defino un factor de partición
-# ## Defino una variable donde guardo el error de prediccion
-# error_medio_lstm = 0
+## Defino un factor de partición
+## Defino una variable donde guardo el error de prediccion
+error_medio_lstm = 0
 
-# ## Construyo un vector donde guardo la precisión de cada una de las predicciones realizadas
-# precisiones = []
+## Construyo un vector donde guardo la precisión de cada una de las predicciones realizadas
+precisiones = []
 
-# ## Defino una variable donde especifico el numero de subsecuencias
-# nro_subsec = 1
+## Defino una variable donde especifico el numero de subsecuencias
+nro_subsec = 1
 
-# ## Algoritmo de validación cruzada Leave One Out
-# ## Itero para cada uno de los pacientes etiquetados para validar el modelo
-# for i in range (len(etiquetas)):
+## Algoritmo de validación cruzada Leave One Out
+## Itero para cada uno de los pacientes etiquetados para validar el modelo
+for i in range (len(etiquetas)):
 
-#     ## Construyo un modelo secuencial de Keras
-#     model = Sequential()
+    ## Construyo un modelo secuencial de Keras
+    model = Sequential()
 
-#     ## Agrego una capa de LSTM al modelo especificando la cantidad de hidden units
-#     model.add(LSTM(20, activation = 'tanh', input_shape = (None, 256)))
+    ## Agrego una capa de LSTM al modelo especificando la cantidad de hidden units
+    model.add(LSTM(20, activation = 'tanh', input_shape = (None, 256)))
 
-#     ## Agrego una neurona de salida para hacer la clasificacion
-#     model.add(Dense(1, activation = 'sigmoid'))
+    ## Agrego una neurona de salida para hacer la clasificacion
+    model.add(Dense(1, activation = 'sigmoid'))
 
-#     ## Compilo el modelo LSTM
-#     model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+    ## Compilo el modelo LSTM
+    model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
 
-#     ## Itero para cada uno de los pacientes etiquetados para entrenar el modelo
-#     for j in range (len(etiquetas)):
+    ## Itero para cada uno de los pacientes etiquetados para entrenar el modelo
+    for j in range (len(etiquetas)):
 
-#         ## En caso de que el paciente de entrenamiento coincida con el de validación
-#         if i == j:
+        ## En caso de que el paciente de entrenamiento coincida con el de validación
+        if i == j:
 
-#             ## Sigo con el siguiente paciente de entrenamiento
-#             continue
+            ## Sigo con el siguiente paciente de entrenamiento
+            continue
 
-#         ## Hago una partición de la serie del paciente j según el numero dado de subsecuencias
-#         comprimidos_particion_j = np.array_split(comprimidos_por_persona[j], nro_subsec)
+        ## Hago una partición de la serie del paciente j según el numero dado de subsecuencias
+        comprimidos_particion_j = np.array_split(comprimidos_por_persona[j], nro_subsec)
 
-#         ## Itero para cada uno de los segmentos comprimidos de la persona
-#         for segmento in comprimidos_particion_j:
+        ## Itero para cada uno de los segmentos comprimidos de la persona
+        for segmento in comprimidos_particion_j:
 
-#             ## Hago el ajuste del modelo LSTM para el j-ésimo paciente en su segmento
-#             model.fit(np.reshape(normalize(segmento, norm = "l2", axis = 0), (1, segmento.shape[0], segmento.shape[1])),
-#                     np.reshape(etiquetas[j], (1, 1)), epochs = 20)
+            ## Hago el ajuste del modelo LSTM para el j-ésimo paciente en su segmento
+            model.fit(np.reshape(normalize(segmento, norm = "l2", axis = 0), (1, segmento.shape[0], segmento.shape[1])),
+                    np.reshape(etiquetas[j], (1, 1)), epochs = 100)
     
-#     ## Hago una partición de la serie del paciente i según el numero dado de subsecuencias
-#     comprimidos_particion_i = np.array_split(comprimidos_por_persona[i], nro_subsec)
+    ## Hago una partición de la serie del paciente i según el numero dado de subsecuencias
+    comprimidos_particion_i = np.array_split(comprimidos_por_persona[i], nro_subsec)
 
-#     ## Itero para cada uno de los segmentos comprimidos de la persona
-#     for segmento in comprimidos_particion_i:
+    ## Itero para cada uno de los segmentos comprimidos de la persona
+    for segmento in comprimidos_particion_i:
 
-#         ## Evalúo la precisión de modelo en el paciente separado para la validación
-#         ## Si accuracy = 1 entonces el modelo clasifica correctamente a la muestra
-#         ## Si accuracy = 0 entonces el modelo clasifica incorrectamente a la muestra
-#         loss, accuracy = model.evaluate(np.reshape(normalize(segmento, norm = "l2", axis = 0), (1, segmento.shape[0], segmento.shape[1])),
-#                             np.reshape(etiquetas[i], (1, 1)))
+        ## Evalúo la precisión de modelo en el paciente separado para la validación
+        ## Si accuracy = 1 entonces el modelo clasifica correctamente a la muestra
+        ## Si accuracy = 0 entonces el modelo clasifica incorrectamente a la muestra
+        loss, accuracy = model.evaluate(np.reshape(normalize(segmento, norm = "l2", axis = 0), (1, segmento.shape[0], segmento.shape[1])),
+                            np.reshape(etiquetas[i], (1, 1)))
 
-#         ## Me guardo la precisión de la predicción en el vector correspondiente
-#         precisiones.append(accuracy)
+        ## Me guardo la precisión de la predicción en el vector correspondiente
+        precisiones.append(accuracy)
 
-# ## Construyo una lista que me guarde las predicciones
-# predicciones = []
+## Construyo una lista que me guarde las predicciones
+predicciones = []
 
-# ## Itero para cada uno de los subsegmentos
-# for i in range (len(precisiones)):
+## Itero para cada uno de los subsegmentos
+for i in range (len(precisiones)):
 
-#     ## En caso que la predicción haya sido realizada correctamente
-#     if precisiones[i] == 1:
+    ## En caso que la predicción haya sido realizada correctamente
+    if precisiones[i] == 1:
 
-#         ## Agrego la etiqueta correcta del segmento correspondiente
-#         predicciones.append(etiquetas[i])
+        ## Agrego la etiqueta correcta del segmento correspondiente
+        predicciones.append(etiquetas[i])
     
-#     ## En caso de que la predicción no haya sido realizada bien
-#     else:
+    ## En caso de que la predicción no haya sido realizada bien
+    else:
 
-#         ## En caso de que el segmento sea estable verdaderamente
-#         if etiquetas[i] == 0:
+        ## En caso de que el segmento sea estable verdaderamente
+        if etiquetas[i] == 0:
 
-#             ## Entonces la prediccion realizada es inestable
-#             predicciones.append(1)
+            ## Entonces la prediccion realizada es inestable
+            predicciones.append(1)
 
-#         ## En caso de que el segmento sea inestable verdaderamente
-#         else:
+        ## En caso de que el segmento sea inestable verdaderamente
+        else:
 
-#             ## Entonces la predicción realizada es estable
-#             predicciones.append(0)
+            ## Entonces la predicción realizada es estable
+            predicciones.append(0)
 
 ## ---------------------------------------------- DTW ------------------------------------------------
 
