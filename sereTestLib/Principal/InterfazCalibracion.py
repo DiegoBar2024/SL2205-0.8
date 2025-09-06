@@ -99,7 +99,19 @@ def RealizarAnalisis():
         ## Optimización de los parámetros de marcha usando mínimos cuadrados para la persona correspondiente
         Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2, longitud_pie, longitud_pasos, id_persona)
 
-    ## En caso de que ocurra alguna excepción
+    ## En caso de que ocurra algún error al ingresar los datos
+    except ValueError:
+
+        ## Despliego una ventana que me diga el error correspondiente
+        messagebox.showerror("Error", "Error al ingresar los datos. Asegurarse que el formato sea correcto")
+    
+    ## En caso de que no se haya seleccionado ningún archivo
+    except PermissionError:
+
+        ## Despliego una ventana que me diga el error correspondiente
+        messagebox.showerror("Error", "No se ha seleccionado ningún registro para el análisis")
+    
+    ## En caso de que ocurra alguna excepción distinta a la abarcada
     except Exception as e:
 
         ## Despliego una ventana que me muestre el mensaje de error correspondiente
