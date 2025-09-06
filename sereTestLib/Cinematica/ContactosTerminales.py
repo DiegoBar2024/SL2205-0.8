@@ -25,7 +25,7 @@ def ContactosTerminales(acel, cant_muestras, periodoMuestreo, graficar = False):
     ## A partir del armónico fundamental obtengo la cadencia promedio de la marcha
     filtro = signal.butter(N = 4, Wn = [0.5, 2.5], btype = 'bandpass', fs = 1 / periodoMuestreo, output = 'sos')
 
-    ## Aplico el filtro anterior a la aceleración anteroposterior
+    ## Aplico el filtro anterior a la aceleración vertical
     acel_filtrada = signal.sosfiltfilt(filtro, acc_VT)
 
     ## Hago la normalizacion de la aceleración vertical filtrada

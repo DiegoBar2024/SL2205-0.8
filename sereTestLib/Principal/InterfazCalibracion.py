@@ -16,11 +16,94 @@ from LongitudPasoM1 import *
 from LongitudPasoM2 import *
 from DeteccionActividades import DeteccionActividades
 from Optimizacion import *
+import tkinter as tk
+import tkinter.filedialog
+from tkinter import messagebox
 
 ## ------------------------------------- GENERACIÓN DE INTERFAZ --------------------------------------
 
-import tkinter as tk
-import tkinter.filedialog
+def PedirDirectorio():
+
+    global ruta_registro
+
+    ruta_registro = tkinter.filedialog.askopenfile().name
+
+def RealizarAnalisis():
+
+    ## Coloco un bloque try para poder cubrir cualquier excepción
+    try:
+
+        ## Obtengo el valor de la ID de la persona
+        id_persona = ID_var.get()
+
+        ## Obtengo la longitud de la pierna de la persona
+        longitud_pierna = float(pierna_var.get())
+
+        ## Obtengo la longitud del pie de la persona
+        longitud_pie = float(pie_var.get())
+
+        ## Obtengo la longitud de los pasos de control en el ensayo
+        longitud_pasos = float(long_pasos_var.get())
+
+        ## Hago la lectura del registro de datos asociados a la persona
+        data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = None, lectura_datos_propios = True, ruta = ruta_registro)
+
+        ## Especifico la cantidad de muestras que va a tener la ventana de analisis
+        muestras_ventana = 100
+
+        ## Especifico la cantidad de muestras de solapamiento entre ventanas
+        muestras_solapamiento = 50
+
+        ## Hago el cálculo del vector de SMA para dicha persona
+        vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad = None, CalcFeatures = False)
+
+        ## Cargo el modelo del clasificador ya entrenado según la ruta del clasificador
+        clf_entrenado = load("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
+
+        ## Determino la predicción del clasificador ante mi muestra de entrada
+        ## Etiqueta 0: Reposo
+        ## Etiqueta 1: Movimiento
+        pat_predictions = clf_entrenado.predict(np.array((vector_SMA)).reshape(-1, 1))
+
+        ## Me quedo sólo con las ventanas en las cuales se ha detectado marcha
+        ventanas_marcha = ventanas[np.where(pat_predictions == 1)]
+
+        ## Tomo la hipótesis de que el reposo puede estar al inicio y al final únicamente
+        ## Selecciono entonces el tramo de aceleración en la cual se ha detectado marcha
+        acel_marcha = acel[ventanas_marcha[0][0] : ventanas_marcha[-1][1], :]
+
+        ## Selecciono entonces el tramo de giroscopios en la cual se ha detectado marcha
+        gyro_marcha = gyro[ventanas_marcha[0][0] : ventanas_marcha[-1][1], :]
+
+        ## Obtengo la cantidad total de muestras únicamente del tramo de marcha
+        cant_muestras_marcha = acel_marcha.shape[0]
+
+        ## Obtengo el vector de tiempos correspondiente durante el tramo de marcha
+        tiempo_marcha = np.arange(start = 0, stop = cant_muestras_marcha * periodoMuestreo, step = periodoMuestreo)
+
+        ## Cálculo de contactos iniciales
+        contactos_iniciales, muestras_paso, acc_AP_norm, frec_fund = ContactosIniciales(acel_marcha, cant_muestras_marcha, periodoMuestreo, graficar = False)
+
+        ## Cálculo de contactos terminales
+        contactos_terminales = ContactosTerminales(acel_marcha, cant_muestras_marcha, periodoMuestreo, graficar = False)
+
+        ## Hago la segmentación de la marcha
+        pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro_marcha)
+
+        ## Cálculo de parámetros de marcha usando el método I
+        pasos_numerados_m1, frecuencias_m1, velocidades_m1, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, longitud_pierna)
+
+        ## Cálculo de parámetros de marcha usando el método II
+        pasos_numerados_m2, frecuencias_m2, velocidades_m2, long_pasos_m2, coeficientes_m2 = LongitudPasoM2(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, longitud_pierna)
+
+        ## Optimización de los parámetros de marcha usando mínimos cuadrados para la persona correspondiente
+        Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2, longitud_pie, longitud_pasos, id_persona)
+
+    ## En caso de que ocurra alguna excepción
+    except Exception as e:
+
+        ## Despliego una ventana que me muestre el mensaje de error correspondiente
+        messagebox.showerror("Error", "Ocurrió un error inesperado: \n {}".format(e))
 
 root = tk.Tk(baseName = "Programa")
 
@@ -38,80 +121,6 @@ pie_var = tk.StringVar()
 
 ## Defino el objeto correspondiente a la longitud de pasos de control del ensayo
 long_pasos_var = tk.StringVar()
-
-def PedirDirectorio():
-
-    global ruta_registro
-
-    ruta_registro = tkinter.filedialog.askopenfile().name
-
-def RealizarAnalisis():
-
-    ## Obtengo el valor de la ID de la persona
-    id_persona = ID_var.get()
-
-    ## Obtengo la longitud de la pierna de la persona
-    longitud_pierna = float(pierna_var.get())
-
-    ## Obtengo la longitud del pie de la persona
-    longitud_pie = float(pie_var.get())
-
-    ## Obtengo la longitud de los pasos de control en el ensayo
-    longitud_pasos = float(long_pasos_var.get())
-
-    ## Hago la lectura del registro de datos asociados a la persona
-    data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = None, lectura_datos_propios = True, ruta = ruta_registro)
-
-    ## Especifico la cantidad de muestras que va a tener la ventana de analisis
-    muestras_ventana = 100
-
-    ## Especifico la cantidad de muestras de solapamiento entre ventanas
-    muestras_solapamiento = 50
-
-    ## Hago el cálculo del vector de SMA para dicha persona
-    vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad = None, CalcFeatures = False)
-
-    ## Cargo el modelo del clasificador ya entrenado según la ruta del clasificador
-    clf_entrenado = load("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
-
-    ## Determino la predicción del clasificador ante mi muestra de entrada
-    ## Etiqueta 0: Reposo
-    ## Etiqueta 1: Movimiento
-    pat_predictions = clf_entrenado.predict(np.array((vector_SMA)).reshape(-1, 1))
-
-    ## Me quedo sólo con las ventanas en las cuales se ha detectado marcha
-    ventanas_marcha = ventanas[np.where(pat_predictions == 1)]
-
-    ## Tomo la hipótesis de que el reposo puede estar al inicio y al final únicamente
-    ## Selecciono entonces el tramo de aceleración en la cual se ha detectado marcha
-    acel_marcha = acel[ventanas_marcha[0][0] : ventanas_marcha[-1][1], :]
-
-    ## Selecciono entonces el tramo de giroscopios en la cual se ha detectado marcha
-    gyro_marcha = gyro[ventanas_marcha[0][0] : ventanas_marcha[-1][1], :]
-
-    ## Obtengo la cantidad total de muestras únicamente del tramo de marcha
-    cant_muestras_marcha = acel_marcha.shape[0]
-
-    ## Obtengo el vector de tiempos correspondiente durante el tramo de marcha
-    tiempo_marcha = np.arange(start = 0, stop = cant_muestras_marcha * periodoMuestreo, step = periodoMuestreo)
-
-    ## Cálculo de contactos iniciales
-    contactos_iniciales, muestras_paso, acc_AP_norm, frec_fund = ContactosIniciales(acel_marcha, cant_muestras_marcha, periodoMuestreo, graficar = False)
-
-    ## Cálculo de contactos terminales
-    contactos_terminales = ContactosTerminales(acel_marcha, cant_muestras_marcha, periodoMuestreo, graficar = False)
-
-    ## Hago la segmentación de la marcha
-    pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro_marcha)
-
-    ## Cálculo de parámetros de marcha usando el método I
-    pasos_numerados_m1, frecuencias_m1, velocidades_m1, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, longitud_pierna)
-
-    ## Cálculo de parámetros de marcha usando el método II
-    pasos_numerados_m2, frecuencias_m2, velocidades_m2, long_pasos_m2, coeficientes_m2 = LongitudPasoM2(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, longitud_pierna)
-
-    ## Optimización de los parámetros de marcha usando mínimos cuadrados para la persona correspondiente
-    Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2, longitud_pie, longitud_pasos, id_persona, giros)
 
 ## Variable de etiqueta para la ID del paciente
 etiqueta_ID = tk.Label(root, text = 'ID del paciente: ', font = ('calibre', 10, 'bold'))

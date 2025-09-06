@@ -2,6 +2,8 @@
 
 import sys
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
+from parameters import *
 from LecturaDatos import *
 from LecturaDatosPacientes import *
 from ContactosIniciales import *
@@ -22,8 +24,11 @@ for id_persona in ids_existentes:
     ## Creo un bloque try catch en caso de que ocurra algún error en el procesamiento
     try:
 
+        ## Especifico la ruta de donde voy a hacer la lectura de los datos
+        ruta = ruta_registro + 'MarchaLibre_Sabrina.txt'
+
         ## Hago la lectura de los datos del registro de marcha del paciente
-        data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona)
+        data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona, lectura_datos_propios = True, ruta = ruta)
 
         ## Cálculo de contactos iniciales
         contactos_iniciales, muestras_paso, acc_AP_norm, frec_fund = ContactosIniciales(acel, cant_muestras, periodoMuestreo, graficar = False)

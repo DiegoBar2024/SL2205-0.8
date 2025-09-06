@@ -29,28 +29,24 @@ def Segmentacion(picos_sucesivos, toe_offs, muestras_paso, periodoMuestreo, acc_
     ## Itero para cada uno de los picos detectados
     for i in range (len(picos_sucesivos) - 1):
 
-        ## En caso que la distancia entre picos esté en un rango aceptable, concluyo que ahí se habrá detectado un paso
-        ## Me aseguro que en la lista <<pasos>> únicamente se almacena información sobre pasos no defectuosos
-        if (0.7 * muestras_paso < picos_sucesivos[i + 1] - picos_sucesivos[i] < 1.3 * muestras_paso):
+        ## Genero la variable donde guardo el Toe Off a incluír por defecto en 0
+        toe_off = 0
 
-            ## Genero la variable donde guardo el Toe Off a incluír por defecto en 0
-            toe_off = 0
-
-            ## Busco el Toe Off que haya detectado para asociarlo al paso
-            for picoTO in toe_offs:
-                
-                ## En caso que el Toe Off esté entre los dos ICs
-                if picos_sucesivos[i] < picoTO < picos_sucesivos[i + 1]:
-
-                    ## Me lo guardo
-                    toe_off = picoTO
+        ## Busco el Toe Off que haya detectado para asociarlo al paso
+        for picoTO in toe_offs:
             
-            ## Entonces el par de picos me está diciendo que ahí hay un paso y entonces me lo guardo
-            ## Me guardo también el Toe Off que haya detectado entre los dos pasos
-            pasos.append({'IC': (picos_sucesivos[i], picos_sucesivos[i + 1]),'TC': toe_off})
+            ## En caso que el Toe Off esté entre los dos ICs
+            if picos_sucesivos[i] < picoTO < picos_sucesivos[i + 1]:
+
+                ## Me lo guardo
+                toe_off = picoTO
+        
+        ## Entonces el par de picos me está diciendo que ahí hay un paso y entonces me lo guardo
+        ## Me guardo también el Toe Off que haya detectado entre los dos pasos
+        pasos.append({'IC': (picos_sucesivos[i], picos_sucesivos[i + 1]),'TC': toe_off})
         
         ## En caso de que la distancia entre los picos sea mayor a la esperada
-        else:
+        if not (0.7 * muestras_paso < picos_sucesivos[i + 1] - picos_sucesivos[i] < 1.3 * muestras_paso):
 
             ## Agrego el paso a la lista de pasos defectuosos
             pasos_defectuosos.append({'IC': (picos_sucesivos[i], picos_sucesivos[i + 1])})
@@ -59,7 +55,8 @@ def Segmentacion(picos_sucesivos, toe_offs, muestras_paso, periodoMuestreo, acc_
         angulos_y = cumulative_trapezoid(gyro[:, 1][picos_sucesivos[i] : picos_sucesivos[i + 1]], dx = periodoMuestreo, initial = 0)
 
         ## En caso de que la diferencia entre el ángulo máximo y el mínimo sea mayor a 45 quiere decir que estoy en presencia de un giro
-        if np.max(np.abs(angulos_y)) - np.min(np.abs(angulos_y)) > 45:
+        ## Hay que tener cuidado porque el umbral está en rad/s
+        if np.max(np.abs(angulos_y)) - np.min(np.abs(angulos_y)) > 35:
 
             ## En caso de que el intervalo detectado anterior se trate del mismo giro
             if len(giros) > 0 and giros[-1][1] == picos_sucesivos[i]:

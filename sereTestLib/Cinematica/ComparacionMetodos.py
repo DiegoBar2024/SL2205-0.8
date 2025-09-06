@@ -19,7 +19,7 @@ from ParametrosGaitPy import *
 ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/MarchaLibre_Sabrina.txt'
 
 ##  Hago la lectura de los datos
-data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 299, lectura_datos_propios = False, ruta = ruta_registro)
+data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 299, lectura_datos_propios = True, ruta = ruta_registro)
 
 ## ------------------------------------- CÁLCULO DE ESTADÍSTICAS ---------------------------------------
 
@@ -35,6 +35,37 @@ pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_ter
 
 ## Cálculo de parámetros de marcha
 pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, id_persona = 1)
+
+## Hago la conversión de los giros a vector numpy para hacer el análisis
+giros = np.array(giros)
+
+## Para poder gráficar hago la inserción de un elemento adicional al inicio
+pasos = [{'IC' : (0, 0), 'TC' : 0}] + pasos
+
+## Itero para cada uno de los pasos detectados
+for i in range (1, len(pasos)):
+
+    ## REVISAR PORQUE FALTA UNA MUESTRA POR TRAMO
+    ## En caso de que en dicho paso se haya detectado un giro
+    if (pasos[i]['IC'][0] in giros[:, 0]) or (pasos[i]['IC'][1] in giros[:, 1]):
+
+        plt.plot(tiempo[pasos[i]['IC'][0] - 1 : pasos[i]['IC'][1]],
+                gyro[:, 1][pasos[i]['IC'][0] - 1 : pasos[i]['IC'][1]], color = 'r', label = 'Giros')
+
+    ## En caso de que en dicho tramo no se haya detectado un giro
+    else:
+
+        plt.plot(tiempo[pasos[i]['IC'][0] - 1 : pasos[i]['IC'][1]],
+                gyro[:, 1][pasos[i]['IC'][0] - 1: pasos[i]['IC'][1]], color = 'b', label = 'No giros')
+
+## Despliego la gráfica y configuro los parámetros de Leyendas
+handles, labels = plt.gca().get_legend_handles_labels()
+by_label = dict(zip(labels, handles))
+plt.xlabel('Tiempo(s)')
+plt.ylabel("Velocidad Angular Eje Vertical $(rad/s)$")
+plt.legend(by_label.values(), by_label.keys())
+plt.title('Deteccion Giros')
+plt.show()
 
 # ## MÉTODO II: USANDO GAITPY
 # ## Hago la lectura de los datos generales de los pacientes
@@ -61,8 +92,3 @@ pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1 = Long
 # ## Longitud de pasos
 # print("Longitud GP: {}".format(np.mean(np.array(features_gp['step_length']))))
 # print("Longitud metodo: {}".format(np.mean(long_pasos_m1)))
-
-print(giros)
-
-plt.plot(gyro[:, 1])
-plt.show()
