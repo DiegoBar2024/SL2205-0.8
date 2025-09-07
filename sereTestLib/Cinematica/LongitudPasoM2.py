@@ -10,7 +10,7 @@ import json
 
 ## ---------------------------------- CÁLCULO DE PARÁMETROS DE MARCHA ----------------------------------
 
-def LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, long_pierna = 1, long_pie = 0.03):
+def LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, giros, long_pierna = 1, long_pie = 0.3):
 
     ## -------------------------------------- FILTRADO ACELERACIÓN -----------------------------------------
 

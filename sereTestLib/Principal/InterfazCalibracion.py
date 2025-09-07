@@ -22,6 +22,12 @@ from tkinter import messagebox
 
 ## ------------------------------------- GENERACIÓN DE INTERFAZ --------------------------------------
 
+## Función que al cerrar la ventana termina la ejecución del programa
+def Terminar():
+    root.quit()
+    root.destroy()
+
+## Función que me permite pedir el directorio
 def PedirDirectorio():
 
     global ruta_registro
@@ -91,31 +97,34 @@ def RealizarAnalisis():
         pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro_marcha)
 
         ## Cálculo de parámetros de marcha usando el método I
-        pasos_numerados_m1, frecuencias_m1, velocidades_m1, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, longitud_pierna)
+        pasos_numerados_m1, frecuencias_m1, velocidades_m1, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, giros, longitud_pierna)
 
         ## Cálculo de parámetros de marcha usando el método II
-        pasos_numerados_m2, frecuencias_m2, velocidades_m2, long_pasos_m2, coeficientes_m2 = LongitudPasoM2(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, longitud_pierna)
+        pasos_numerados_m2, frecuencias_m2, velocidades_m2, long_pasos_m2, coeficientes_m2 = LongitudPasoM2(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, giros, longitud_pierna, longitud_pie)
 
         ## Optimización de los parámetros de marcha usando mínimos cuadrados para la persona correspondiente
-        Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2, longitud_pie, longitud_pasos, id_persona)
+        Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2, longitud_pie, longitud_pasos, id_persona, giros)
+
+        ## Despliego un mensaje comunicando que el análisis se terminó de realizar correctamente
+        messagebox.showinfo('Info', 'La optimización se ha realizado correctamente')
 
     ## En caso de que ocurra algún error al ingresar los datos
     except ValueError:
 
         ## Despliego una ventana que me diga el error correspondiente
-        messagebox.showerror("Error", "Error al ingresar los datos. Asegurarse que el formato sea correcto")
+        messagebox.showerror("Error", "Error al ingresar los datos. Asegurarse que el formato sea correcto.")
     
     ## En caso de que no se haya seleccionado ningún archivo
     except PermissionError:
 
         ## Despliego una ventana que me diga el error correspondiente
-        messagebox.showerror("Error", "No se ha seleccionado ningún registro para el análisis")
+        messagebox.showerror("Error", "No se ha seleccionado ningún registro para el análisis.")
     
     ## En caso de que ocurra alguna excepción distinta a la abarcada
     except Exception as e:
 
         ## Despliego una ventana que me muestre el mensaje de error correspondiente
-        messagebox.showerror("Error", "Ocurrió un error inesperado: \n {}".format(e))
+        messagebox.showerror("Error", "Ocurrió un error inesperado: \n {}.".format(e))
 
 root = tk.Tk(baseName = "Programa")
 
@@ -159,7 +168,7 @@ boton_directorio = tk.Button(root, text = 'Seleccionar Archivo', command = Pedir
 boton_comenzar = tk.Button(root,text = 'Comenzar Análisis', command = RealizarAnalisis)
 
 ## Configuro un botón para terminar la ejecución
-terminar = tk.Button(root, text = "Cerrar", command = root.destroy)
+terminar = tk.Button(root, text = "Cerrar", command = Terminar)
 
 ## Variable de etiqueta para la longitud del paso de la sesión de calibracion
 etiqueta_paso = tk.Label(root, text = 'Longitud de paso (m): ', font=('calibre',10, 'bold'))

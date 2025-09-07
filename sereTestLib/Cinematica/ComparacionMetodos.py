@@ -4,6 +4,7 @@ from ContactosIniciales import *
 from ContactosTerminales import *
 from ParametrosGaitPy import *
 from LongitudPasoM1 import LongitudPasoM1
+from LongitudPasoM2 import LongitudPasoM2
 from SegmentacionGaitPy import Segmentacion as SegmentacionGaitPy
 from Segmentacion import Segmentacion
 import sys
@@ -25,22 +26,22 @@ data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_perso
 
 ## MÉTODO I: ALGORITMO PROPIO
 ## Cálculo de contactos iniciales
-contactos_iniciales, muestras_paso, acc_AP_norm, frec_fund = ContactosIniciales(acel, cant_muestras, periodoMuestreo, graficar = True)
+contactos_iniciales, muestras_paso, acc_AP_norm, frec_fund = ContactosIniciales(acel, cant_muestras, periodoMuestreo, graficar = False)
 
 ## Cálculo de contactos terminales
-contactos_terminales = ContactosTerminales(acel, cant_muestras, periodoMuestreo, graficar = True)
+contactos_terminales = ContactosTerminales(acel, cant_muestras, periodoMuestreo, graficar = False)
 
 ## Hago la segmentación de la marcha
 pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro)
 
-## Cálculo de parámetros de marcha
-pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, id_persona = 1)
+## Cálculo de parámetros de marcha usando método de long paso I
+pasos_numerados, frecuencias_m1, velocidades_m1, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, 10, giros, long_pierna = 1)
 
-## Hago la conversión de los giros a vector numpy para hacer el análisis
+## Cálculo de parámetros de marcha usando método de long paso II
+pasos_numerados, frecuencias_m2, velocidades_m2, long_pasos_m2, coeficientes_m2 = LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, 10, giros, long_pierna = 1, long_pie = 0.275)
+
+## Hago la conversión de los giros a vector numpy para hacer la graficación
 giros = np.array(giros)
-
-## Para poder gráficar hago la inserción de un elemento adicional al inicio
-pasos = [{'IC' : (0, 0), 'TC' : 0}] + pasos
 
 ## Itero para cada uno de los pasos detectados
 for i in range (1, len(pasos)):
@@ -67,28 +68,28 @@ plt.legend(by_label.values(), by_label.keys())
 plt.title('Deteccion Giros')
 plt.show()
 
-# ## MÉTODO II: USANDO GAITPY
-# ## Hago la lectura de los datos generales de los pacientes
-# pacientes, ids_existentes = LecturaDatosPacientes()
+## MÉTODO II: USANDO GAITPY
+## Hago la lectura de los datos generales de los pacientes
+pacientes, ids_existentes = LecturaDatosPacientes()
 
-# ## Hago el cálculo de los parámetros de marcha usando GaitPy
-# features_gp, acc_VT = ParametrosMarcha(id_persona, data, periodoMuestreo, pacientes)
+## Hago el cálculo de los parámetros de marcha usando GaitPy
+features_gp, acc_VT = ParametrosMarcha(id_persona, data, periodoMuestreo, pacientes)
 
-# ## Hago la segmentación usando GaitPy
-# pasos_gp = SegmentacionGaitPy(features_gp, periodoMuestreo, acc_VT, plot = True)
+## Hago la segmentación usando GaitPy
+pasos_gp = SegmentacionGaitPy(features_gp, periodoMuestreo, acc_VT, plot = True)
 
-# ## Cantidad de pasos
-# print("Pasos GP: {}".format(len(pasos_gp)))
-# print("Pasos metodo: {}".format(len(pasos)))
+## Cantidad de pasos
+print("Pasos GP: {}".format(len(pasos_gp)))
+print("Pasos metodo: {}".format(len(pasos)))
 
-# ## Duración de pasos
-# print("Duracion GP: {}".format(np.mean(np.array(features_gp['step_duration']))))
-# print("Duración metodo: {}".format(np.mean(duraciones_pasos)))
+## Duración de pasos
+print("Duracion GP: {}".format(np.mean(np.array(features_gp['step_duration']))))
+print("Duración metodo: {}".format(np.mean(duraciones_pasos)))
 
-# ## Cadencia de pasos
-# print("Cadencia GP: {}".format(np.mean(np.array(features_gp['cadence'])) / 60))
-# print("Cadencia metodo: {}".format(np.mean(frecuencias)))
+## Cadencia de pasos
+print("Cadencia GP: {}".format(np.mean(np.array(features_gp['cadence'])) / 60))
+print("Cadencia metodo: {}".format(np.mean(frecuencias)))
 
-# ## Longitud de pasos
-# print("Longitud GP: {}".format(np.mean(np.array(features_gp['step_length']))))
-# print("Longitud metodo: {}".format(np.mean(long_pasos_m1)))
+## Longitud de pasos
+print("Longitud GP: {}".format(np.mean(np.array(features_gp['step_length']))))
+print("Longitud metodo: {}".format(np.mean(long_pasos_m1)))

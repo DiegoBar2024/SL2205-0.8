@@ -21,6 +21,12 @@ import tkinter.filedialog
 
 ## ------------------------------------- GENERACIÓN DE INTERFAZ --------------------------------------
 
+## Función que al cerrar la ventana termina la ejecución del programa
+def Terminar():
+    root.quit()
+    root.destroy()
+
+## Función que me permite pedir el directorio
 def PedirDirectorio():
 
     global ruta_registro
@@ -90,7 +96,7 @@ def RealizarAnalisis():
         pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro_marcha)
 
         ## Cálculo de parámetros de marcha usando el método I
-        pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, longitud_pierna)
+        pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, giros, longitud_pierna)
 
         ## Especifico la ruta en la cual se va a guardar el PDF con el reporte generado
         ruta_guardado = "C:/Yo/Tesis/sereData/sereData/Reportes/{}".format(id_persona)
@@ -107,23 +113,26 @@ def RealizarAnalisis():
         ## Hago la creación del reporte en PDF con los resultados del análisis de marcha
         CreacionReporte(id_persona, nombre_persona, nacimiento_persona, tiempo, long_pasos_m1, duraciones_pasos, velocidades, frecuencias, pasos_numerados, ruta_guardado + '/{}.pdf'.format(nombre_reporte))
 
+        ## Despliego un mensaje comunicando que el análisis se terminó de realizar correctamente
+        messagebox.showinfo('Info', 'El análisis se ha realizado correctamente. Resultados disponibles en la carpeta correspondiente.')
+
     ## En caso de que ocurra algún error al ingresar los datos
     except ValueError:
 
         ## Despliego una ventana que me diga el error correspondiente
-        messagebox.showerror("Error", "Error al ingresar los datos. Asegurarse que el formato sea correcto")
+        messagebox.showerror("Error", "Error al ingresar los datos. Asegurarse que el formato sea correcto.")
     
     ## En caso de que no se haya seleccionado ningún archivo
     except PermissionError:
 
         ## Despliego una ventana que me diga el error correspondiente
-        messagebox.showerror("Error", "No se ha seleccionado ningún registro para el análisis")
+        messagebox.showerror("Error", "No se ha seleccionado ningún registro para el análisis.")
     
     ## En caso de que ocurra alguna excepción
     except Exception as e:
 
         ## Despliego una ventana que me muestre el mensaje de error correspondiente
-        messagebox.showerror("Error", "Ocurrió un error inesperado: \n {}".format(e))
+        messagebox.showerror("Error", "Ocurrió un error inesperado: \n {}.".format(e))
 
 root = tk.Tk(baseName = "Programa")
 
@@ -182,7 +191,7 @@ boton_directorio = tk.Button(root, text = 'Seleccionar Archivo', command = Pedir
 boton_comenzar = tk.Button(root,text = 'Comenzar Análisis', command = RealizarAnalisis)
 
 ## Configuro un botón para terminar la ejecución
-terminar = tk.Button(root, text = "Cerrar", command = root.destroy)
+terminar = tk.Button(root, text = "Cerrar", command = Terminar)
 
 ## Configuro grilla de botones y de entradas en la interfaz gráfica
 etiqueta_ID.grid(row = 0, column = 0)
