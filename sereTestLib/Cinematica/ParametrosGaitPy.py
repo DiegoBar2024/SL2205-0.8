@@ -19,7 +19,7 @@ def ParametrosMarcha(id_persona, data, periodoMuestreo, pacientes):
     datos_paciente = pacientes[pacientes['sampleid'] == id_persona]
 
     ## Obtengo la altura del paciente en cm la cual va a ser utilizada como entrada en el algoritmo
-    altura_paciente = int(datos_paciente.iloc[0]['Talla'])
+    #altura_paciente = int(datos_paciente.iloc[0]['Talla'])
 
     ## -------------------------------------- PARÁMETROS DE MARCHA -----------------------------------------
 
@@ -45,7 +45,7 @@ def ParametrosMarcha(id_persona, data, periodoMuestreo, pacientes):
     ## Creo un nuevo objeto de la clase GaitPy pasando como parámetro la frecuencia de muestreo y los datos
     gait_py = Gaitpy(data = dataframe_vert, sample_rate = 1 / periodoMuestreo)
 
-    altura_paciente = 165
+    altura_paciente = 175
 
     ## Obtengo las características de la marcha del sujeto. Debo pasar como parámetro la altura del sujeto en centímetros
     features = gait_py.extract_features(subject_height = altura_paciente)

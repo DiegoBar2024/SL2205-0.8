@@ -103,7 +103,7 @@ def RealizarAnalisis():
         pasos_numerados_m2, frecuencias_m2, velocidades_m2, long_pasos_m2, coeficientes_m2 = LongitudPasoM2(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, giros, longitud_pierna, longitud_pie)
 
         ## Optimización de los parámetros de marcha usando mínimos cuadrados para la persona correspondiente
-        Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2, longitud_pie, longitud_pasos, id_persona, giros)
+        Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2, longitud_pie, longitud_pasos, id_persona, giros, pasos)
 
         ## Despliego un mensaje comunicando que el análisis se terminó de realizar correctamente
         messagebox.showinfo('Info', 'La optimización se ha realizado correctamente')

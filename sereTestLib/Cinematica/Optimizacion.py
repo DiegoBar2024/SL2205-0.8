@@ -14,7 +14,7 @@ from parameters import *
 
 ## ------------------------------------- OPTIMIZACIÓN DEL MODELO ---------------------------------------
 
-def Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2, long_pie, longitud_pasos, id_persona, giros):
+def Optimizacion(long_pasos_m1, coeficientes_m1, long_pasos_m2, coeficientes_m2, long_pie, longitud_pasos, id_persona, giros, pasos):
 
     ## ------------------------------------ CÁLCULO DE ERROR (MÉTODO I) ------------------------------------
 
