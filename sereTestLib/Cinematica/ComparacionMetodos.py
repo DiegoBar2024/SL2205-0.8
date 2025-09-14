@@ -17,7 +17,7 @@ from ParametrosGaitPy import *
 
 ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
 ## Especifico la ruta en la cual se encuentra el registro a leer
-ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/MarchaLibre_Rodrigo.txt'
+ruta_registro = 'C:/Yo/Tesis/sereData/sereData/Registros/MarchaEstandar_Rodrigo.txt'
 
 ##  Hago la lectura de los datos
 data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 299, lectura_datos_propios = True, ruta = ruta_registro)
@@ -35,10 +35,10 @@ contactos_terminales = ContactosTerminales(acel, cant_muestras, periodoMuestreo,
 pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro)
 
 ## Cálculo de parámetros de marcha usando método de long paso I
-pasos_numerados, frecuencias_m1, velocidades_m1, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, 10, giros, long_pierna = 1)
+pasos_numerados, frecuencias_m1, velocidades_m1, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, 10, giros, long_pierna = 1.035)
 
 ## Cálculo de parámetros de marcha usando método de long paso II
-pasos_numerados, frecuencias_m2, velocidades_m2, long_pasos_m2, coeficientes_m2 = LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, 10, giros, long_pierna = 1, long_pie = 0.275)
+pasos_numerados, frecuencias_m2, velocidades_m2, long_pasos_m2, coeficientes_m2 = LongitudPasoM2(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_pasos, 10, giros, long_pierna = 1.035, long_pie = 0.28)
 
 ## MÉTODO II: USANDO GAITPY
 ## Hago la lectura de los datos generales de los pacientes
@@ -48,23 +48,29 @@ pacientes, ids_existentes = LecturaDatosPacientes()
 features_gp, acc_VT = ParametrosMarcha(10, data, periodoMuestreo, pacientes)
 
 ## Hago la segmentación usando GaitPy
-pasos_gp = SegmentacionGaitPy(features_gp, periodoMuestreo, acc_VT, plot = False)
+pasos_gp = SegmentacionGaitPy(features_gp, periodoMuestreo, acc_VT, plot = True)
 
 ## Cantidad de pasos
 print("Pasos GP: {}".format(len(pasos_gp)))
 print("Pasos metodo: {}".format(len(pasos)))
 
 ## Duración de pasos
-print("Duracion GP: {}".format(np.mean(np.array(features_gp['step_duration']))))
-print("Duración metodo: {}".format(np.mean(duraciones_pasos)))
+print("\nDuracion GP media: {}".format(np.mean(np.array(features_gp['step_duration']))))
+print("Duración metodo media: {}".format(np.mean(duraciones_pasos)))
+print("Duración GP desv: {}".format(np.std(np.array(features_gp['step_duration']))))
+print("Duración metodo desv: {}".format(np.std(duraciones_pasos)))
 
 ## Cadencia de pasos
-print("Cadencia GP: {}".format(np.mean(np.array(features_gp['cadence'])) / 60))
-print("Cadencia metodo: {}".format(np.mean(frecuencias_m1)))
+print("\nCadencia GP media: {}".format(np.mean(np.array(features_gp['cadence'])) / 60))
+print("Cadencia metodo media: {}".format(np.mean(frecuencias_m1)))
+print("Cadencia GP desv: {}".format(np.std(np.array(features_gp['cadence'])) / 60))
+print("Cadencia metodo desv: {}".format(np.std(frecuencias_m1)))
 
 ## Longitud de pasos
-print("Longitud GP: {}".format(np.mean(np.array(features_gp['step_length']))))
-print("Longitud metodo: {}".format(np.mean(long_pasos_m1)))
+print("\nLongitud GP media: {}".format(np.mean(np.array(features_gp['step_length']))))
+print("Longitud metodo media: {}".format(np.mean(long_pasos_m1)))
+print("Longitud GP desv: {}".format(np.std(np.array(features_gp['step_length']))))
+print("Longitud metodo desv: {}".format(np.std(long_pasos_m1)))
 
 ## Hago la conversión de los giros a vector numpy para hacer la graficación
 giros = np.array(giros)

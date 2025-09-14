@@ -45,10 +45,12 @@ def ParametrosMarcha(id_persona, data, periodoMuestreo, pacientes):
     ## Creo un nuevo objeto de la clase GaitPy pasando como parámetro la frecuencia de muestreo y los datos
     gait_py = Gaitpy(data = dataframe_vert, sample_rate = 1 / periodoMuestreo)
 
-    altura_paciente = 175
+    altura_paciente = 185
 
     ## Obtengo las características de la marcha del sujeto. Debo pasar como parámetro la altura del sujeto en centímetros
     features = gait_py.extract_features(subject_height = altura_paciente)
+
+    gait_py.plot_contacts(features)
     
     ## Retorno la lista de características correspondientes al paciente
     return features, acc_VT
