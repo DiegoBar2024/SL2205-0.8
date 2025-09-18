@@ -25,13 +25,28 @@ s = np.arange(1, 201, 1)
 ## Creo una variable la cual almacene el ancho de banda de la wavelet
 ancho_banda = 1.5
 
+## Creo una variable la cual almacene la frecuencia central de la wavelet
+frec_central = 1
+
 ## Tipo de wavelet a utilizar. Wavelet de Morlet Compleja
 ## Parámetro B (Ancho de banda): 1.5 Hz (ajustable)
 ## Parámetro C (Frecuencia Central): 1 Hz
-wavelet = 'cmor{}-1'.format(ancho_banda)
+wavelet = 'cmor{}-{}'.format(ancho_banda, frec_central)
 
 ## Descomposición en CWT
 coef, scales_freq = pywt.cwt(data = x, scales = s, wavelet = wavelet, sampling_period = T)
+
+## Construyo un vector en el cual voy a almacenar las pseudo-frecuencias
+pseudo_frec = []
+
+## Itero para cada una de las escalas que tengo
+for escala in s:
+
+    ## Hago el cálculo de la pseudo-frecuencia asociado a la escala s y la agrego a la lista correspondiente
+    pseudo_frec.append(frec_central / (T * escala))
+
+## Hago el pasaje del vector de pseudo-frecuencias a numpy
+pseudo_frec = np.array(pseudo_frec)
 
 fig, axes = plt.subplots(nrows = 1, ncols = 2, figsize = (10, 4))
 

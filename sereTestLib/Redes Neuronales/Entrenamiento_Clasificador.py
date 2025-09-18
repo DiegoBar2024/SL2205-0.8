@@ -16,6 +16,24 @@ from dtwParallel import dtw_functions
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.preprocessing import normalize
 
+## Defino una función que me permita ver si dos matrices tienen al menos una fila en común
+def FilasEnComun(matriz1, matriz2):
+
+    ## Itero para todas las filas de matriz1
+    for i in range (matriz1.shape[0]):
+
+        ## Itero para todas las filas de matriz2
+        for j in range (matriz2.shape[0]):
+
+            ## En caso de que exista una fila en común
+            if (matriz1[i, :] == matriz2[j, :]).all():
+
+                ## Retorno True
+                return True
+    
+    ## En caso de que no haya filas en común, retorno False
+    return False
+
 ## ------------------------------------------- ETIQUETADOS ---------------------------------------------
 
 ## Importación de etiquetas (provenientes del fichero de ingesta_etiquetas())
@@ -132,8 +150,8 @@ comprimidos_total = np.concatenate((estables, inestables))
 ## Construyo una matriz con todas las etiquetas
 vector_etiquetas =  np.concatenate((np.zeros(len(estables)), np.ones(len(inestables))))
 
-## Hago la normalización por columna es decir por feature
-#comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
+# Hago la normalización por columna es decir por feature
+comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
 
 ## -------------------------------- VALIDACIÓN CRUZADA DE LOS MODELOS ----------------------------------
 
@@ -156,7 +174,7 @@ scores_lda = cross_val_score(lda, comprimidos_total, vector_etiquetas, cv = k_fo
 errores_prediccion = []
 
 ## Genero una variable la cual especifique el modelo que voy a usar para hacer la validacion
-modelo = 'svm'
+modelo = 'lda'
 
 ## Itero para cada uno de los pacientes en el conjunto de IDs de entrenamiento y validacion
 for id_paciente in np.sort(ids_pacientes):

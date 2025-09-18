@@ -15,6 +15,7 @@ from Segmentacion import *
 from LongitudPasoM1 import *
 from GeneracionReporte import *
 from DeteccionActividades import DeteccionActividades
+from EliminacionGirosTransitorios import *
 from tkinter import messagebox
 import tkinter as tk
 import tkinter.filedialog
@@ -94,6 +95,9 @@ def RealizarAnalisis():
 
         ## Hago la segmentación de la marcha
         pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro_marcha)
+
+        ## Elimino giros y transitorios
+        pasos, duraciones_pasos = EliminarGirosTransitorios(pasos, duraciones_pasos, giros)
 
         ## Cálculo de parámetros de marcha usando el método I
         pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, giros, longitud_pierna)

@@ -78,7 +78,6 @@ giros = np.array(giros)
 ## Itero para cada uno de los pasos detectados
 for i in range (1, len(pasos)):
 
-    ## REVISAR PORQUE FALTA UNA MUESTRA POR TRAMO
     ## En caso de que en dicho paso se haya detectado un giro
     if (pasos[i]['IC'][0] in giros[:, 0]) or (pasos[i]['IC'][1] in giros[:, 1]):
 
