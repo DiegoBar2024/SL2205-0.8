@@ -386,14 +386,14 @@ if __name__== '__main__':
 
     ## Opción 1: Hacer análisis de anomalías en base a un registro en particular
     ## Opción 2: Hacer análisis de duración de la detección de anomalías
-    opcion = 2
+    opcion = 1
 
     ## En caso de que quiera hacer un análisis de anomalías en un registro en concreto (opcion 1)
     if opcion == 1:
 
         ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
         ## Especifico la ruta en la cual se encuentra el registro a leer
-        ruta_registro_completa = ruta_registro + 'Actividades_Rodrigo.txt'
+        ruta_registro_completa = ruta_registro + 'MarchaLibre_Sabrina.txt'
 
         ## Defino la cantidad de muestras de la ventana que voy a tomar
         muestras_ventana = 400
