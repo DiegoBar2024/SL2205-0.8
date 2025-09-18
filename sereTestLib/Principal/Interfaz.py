@@ -96,8 +96,8 @@ def RealizarAnalisis():
         ## Hago la segmentación de la marcha
         pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro_marcha)
 
-        ## Elimino giros y transitorios
-        pasos, duraciones_pasos = EliminarGirosTransitorios(pasos, duraciones_pasos, giros)
+        ## Elimino giros y transitorios donde paso como parámetro la cantidad de pasos que tiene mi transitorio
+        pasos, duraciones_pasos = EliminarGirosTransitorios(pasos, duraciones_pasos, giros, cant_pasos_transitorio = 3)
 
         ## Cálculo de parámetros de marcha usando el método I
         pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, giros, longitud_pierna)

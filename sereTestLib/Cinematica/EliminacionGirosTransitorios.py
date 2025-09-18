@@ -9,7 +9,7 @@ import json
 
 ## ---------------------------------- ELIMINACIÓN DE GIROS Y TRANSITORIOS ----------------------------------
 
-def EliminarGirosTransitorios(pasos, duraciones_pasos, giros):
+def EliminarGirosTransitorios(pasos, duraciones_pasos, giros, cant_pasos_transitorio):
 
     ## Creo una lista vacía donde guardo los pasos de la marcha en régimen
     pasos_regimen = []
@@ -19,7 +19,7 @@ def EliminarGirosTransitorios(pasos, duraciones_pasos, giros):
 
     ## Itero para cada uno de los pasos detectados eliminando transitorios
     ## Tomo tres pasos como el transitorio para poder llegar a régimen
-    for i in range (3, len(pasos) - 2):
+    for i in range (cant_pasos_transitorio, len(pasos) - cant_pasos_transitorio):
 
         ## En caso de que en dicho paso haya un giro
         if (pasos[i]['IC'][0] in np.array(giros)[:, 0]) or (pasos[i]['IC'][1] in np.array(giros)[:, 1]):

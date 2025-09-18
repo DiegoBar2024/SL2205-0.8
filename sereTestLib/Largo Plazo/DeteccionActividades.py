@@ -203,8 +203,7 @@ if __name__== '__main__':
 
     ## Opción 1: Generar los ficheros JSON con los SMA y features para cada actividad
     ## Opción 2: Entrenamiento de modelos que permitan discriminar actividades usando SMA y otras features
-    ## Opción 3: Llevar a cabo la clasificación de actividades en reposo/actividad usando SMA
-    opcion = 2
+    opcion = 1
 
     ## Hago la lectura de los datos generales de los pacientes
     pacientes, ids_existentes = LecturaDatosPacientes()
@@ -543,76 +542,6 @@ if __name__== '__main__':
 
         # ## Guardo el modelo entrenado en la ruta de salida
         # dump(lda_act, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/LDA_Nuevo_Actividades.joblib")
-
-    ## En caso de que quiera realizar la clasificación actividad/reposo en base al valor del SMA
-    elif opcion == 3:
-
-        ## Hago la lectura del archivo JSON previamente existente
-        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", 'r') as openfile:
-
-            # Cargo el valor existente del JSON
-            dicc_umbral = json.load(openfile)
-
-        ## Especifico actividad de analisis
-        actividad = 'Caminando'
-
-        ## Especifico el ID de la persona
-        id_persona = 37
-
-        ## Ruta del archivo
-        ruta = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset/S{}/{}S{}.csv".format(id_persona, actividades[actividad], id_persona)
-
-        ## Selecciono las columnas deseadas
-        data = pd.read_csv(ruta)
-
-        ## Armamos una matriz donde las columnas sean las aceleraciones
-        acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(data['AC_z'])]).transpose()
-
-        ## Armamos una matriz donde las columnas sean los valores de los giros
-        gyro = np.array([np.array(data['GY_x']), np.array(data['GY_y']), np.array(data['GY_z'])]).transpose()
-
-        ## Separo el vector de tiempos del dataframe
-        tiempo = np.array(data['Time'])
-
-        ## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
-        tiempo = (tiempo - tiempo[0]) / 1000
-
-        ## Cantidad de muestras de la señal
-        cant_muestras = len(tiempo)
-
-        ## En caso de que no haya un período de muestreo bien definido debido al vector de tiempos de la entrada
-        if all([x == True for x in np.isnan(tiempo)]):
-
-            ## Asigno arbitrariamente una frecuencia de muestreo de 200Hz es decir período de muestreo de 0.005s
-            periodoMuestreo = 0.005
-
-        ## En caso de que el vector de tiempos contenga elementos numéricos
-        else:
-
-            ## Calculo el período de muestreo en base al vector correspondiente
-            periodoMuestreo = PeriodoMuestreo(data)
-        
-        ## Hago el cálculo del vector de SMA para dicha persona
-        vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
-
-        ## ---------------------------------- MÉTODO I -----------------------------------------
-        # ## Obtengo el valor del umbral para comparar
-        # umbral = dicc_umbral['U_{}_{}'.format(muestras_ventana, muestras_solapamiento)]
-
-        # ## Obtengo un vector con el resultado de la clasificación para el registro disponible de la actividad correspondiente
-        # ## El i-ésimo valor de dicho vector va a estar dado por:
-        # ## <<True>> si el i-ésimo segmento del registro se asocia con movimiento (caminar, subir/bajar escaleras)
-        # ## <<False>> si el i-ésimo segmento del registro se asocia con reposo (parado, sentado)
-        # clas_registro = np.array([vector_SMA]) > umbral
-
-        ## ---------------------------------- MÉTODO II -----------------------------------------
-        ## Cargo el modelo del clasificador ya entrenado según la ruta del clasificador
-        clf_trained = load("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
-
-        ## Determino la predicción del clasificador ante mi muestra de entrada
-        ## Etiqueta 0: Reposo
-        ## Etiqueta 1: Movimiento
-        pat_predictions = clf_trained.predict(np.array((vector_SMA)).reshape(-1, 1))
     
     ## En caso de que el valor de entrada no sea correcto
     else:

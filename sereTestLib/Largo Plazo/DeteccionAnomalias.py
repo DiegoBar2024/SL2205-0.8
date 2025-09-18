@@ -393,7 +393,7 @@ if __name__== '__main__':
 
         ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
         ## Especifico la ruta en la cual se encuentra el registro a leer
-        ruta_registro_completa = ruta_registro + 'MarchaLibre_Sabrina.txt'
+        ruta_registro_completa = ruta_registro + 'Actividades_Rodrigo.txt'
 
         ## Defino la cantidad de muestras de la ventana que voy a tomar
         muestras_ventana = 400
@@ -449,5 +449,3 @@ if __name__== '__main__':
 
             ## Imprimo un mensaje avisando el tamaño de muestra que estoy evaluando la duración
             print('Evaluando rendimiento de tamaño: {} muestras'.format(tamaño))
-        
-        print(tiempos_ejecucion)
