@@ -401,7 +401,7 @@ if __name__== '__main__':
         ## Defino la cantidad de muestras de solapamiento entre ventanas
         muestras_solapamiento = 200
 
-        ##  Hago la lectura de los datos
+        ## Hago la lectura de los datos
         data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 69, lectura_datos_propios = True, ruta = ruta_registro_completa)
 
         ## Ejecución de la detección de anomalías

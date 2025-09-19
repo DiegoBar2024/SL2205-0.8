@@ -30,9 +30,7 @@ def Terminar():
 
 ## Función que me permite pedir el directorio
 def PedirDirectorio():
-
     global ruta_registro
-
     ruta_registro = tkinter.filedialog.askopenfile().name
 
 def RealizarAnalisis():
