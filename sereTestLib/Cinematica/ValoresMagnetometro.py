@@ -2,6 +2,9 @@
 
 import sys
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
+from parameters import *
+from Muestreo import *
 import parameters
 from parameters import long_sample, dict_actividades
 import os
@@ -13,7 +16,7 @@ import scipy.integrate as it
 
 ## ----------------------------------- OBTENCIÓN VALORES MAGNETOMETRO ----------------------------------
 
-def LecturaDatos(id_persona = None, lectura_datos_propios = False, ruta = None):
+def ValoresMagnetometro(id_persona = None, lectura_datos_propios = False, ruta = None):
 
     ## --- Sistema de coordenadas usados en las medidas por los estudiantes ----------
     ##          EJE X: MEDIOLATERAL CON EJE POSITIVO A LA IZQUIERDA
@@ -47,11 +50,10 @@ def LecturaDatos(id_persona = None, lectura_datos_propios = False, ruta = None):
     data = pd.DataFrame(data, columns = headers)
 
     ## Creo una lista con las columnas deseadas
-    columnas_deseadas = ['Time', 'AC_x', 'AC_y', 'AC_z', 'GY_x', 'GY_y', 'GY_z']
+    columnas_deseadas = ['Time', 'Mag_x', 'Mag_y', 'Mag_z']
 
     ## Creo un diccionario con los nombres originales de las columnas y sus nombres nuevos
-    nombres_columnas = {'Timestamp': 'Time', 'Accel_LN_X_CAL' : 'AC_x', 'Accel_LN_Y_CAL' : 'AC_y', 'Accel_LN_Z_CAL' : 'AC_z'
-                        ,'Gyro_X_CAL' : 'GY_x', 'Gyro_Y_CAL' : 'GY_y', 'Gyro_Z_CAL' : 'GY_z'}
+    nombres_columnas = {'Timestamp': 'Time', 'Mag_X_CAL' : 'Mag_x', 'Mag_Y_CAL' : 'Mag_y', 'Mag_Z_CAL' : 'Mag_z'}
 
     ## Itero para cada una de las columnas del dataframe
     for columna in data.columns:
@@ -69,10 +71,7 @@ def LecturaDatos(id_persona = None, lectura_datos_propios = False, ruta = None):
     data = data[columnas_deseadas]
 
     ## Armamos una matriz donde las columnas sean las aceleraciones
-    acel = np.array([np.array(data['AC_x']), np.array(data['AC_y']), np.array(data['AC_z'])]).transpose()
-
-    ## Armamos una matriz donde las columnas sean los valores de los giros
-    gyro = np.array([np.array(data['GY_x']), np.array(data['GY_y']), np.array(data['GY_z'])]).transpose()
+    mag = np.array([np.array(data['Mag_x']), np.array(data['Mag_y']), np.array(data['Mag_z'])]).transpose()
 
     ## Separo el vector de tiempos del dataframe
     tiempo = np.array(data['Time'])
@@ -96,4 +95,13 @@ def LecturaDatos(id_persona = None, lectura_datos_propios = False, ruta = None):
         periodoMuestreo = PeriodoMuestreo(data)
     
     ## Retorno los resultados al realizar la lectura correspondiente
-    return data, acel, gyro, cant_muestras, periodoMuestreo, tiempo
+    return data, mag, cant_muestras, periodoMuestreo, tiempo
+
+## Ejecución principal del programa
+if __name__== '__main__':
+
+    ## Especifico la ruta en la cual se encuentra el registro a leer
+    ruta_registro_completa = ruta_registro + 'Actividades_Rodrigo.txt'
+
+    ## Hago la lectura de los datos
+    data, mag, cant_muestras, periodoMuestreo, tiempo = ValoresMagnetometro(id_persona = 69, lectura_datos_propios = True, ruta = ruta_registro_completa)

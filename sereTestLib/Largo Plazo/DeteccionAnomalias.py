@@ -195,7 +195,7 @@ def DeteccionAnomalias(acel, cant_muestras, periodoMuestreo, tiempo, muestras_ve
             if nro_clusters > features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]].shape[0] - 1:
 
                 ## Concateno la posicion de las anomalias detectadas en el tramo con las previas
-                anomalias = np.concatenate((anomalias, ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1],:]))
+                anomalias = np.concatenate((anomalias, ventanas[tramos_actividades[i, 0] : tramos_actividades[i, 1], :]))
 
                 ## Me salteo la iteración ya que clasifiqué el segmento como anómalo
                 continue
@@ -212,7 +212,8 @@ def DeteccionAnomalias(acel, cant_muestras, periodoMuestreo, tiempo, muestras_ve
         ## Aplico el clústering KMeans pasando como entrada el número óptimo de clústers determinado por el Silhouette Score
         kmeans = KMeans(n_clusters = clusters_optimo, random_state = 0, n_init = "auto").fit(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]])
 
-        ## Construyo un vector donde voy a guardar la distancia euclideana de cada punto a su respectivo centroide
+        ## Construyo un vector donde voy a guardar la distancia al cuadrado de cada punto a su respectivo centroide
+        ## En principio se usa Mahalanobis como métrica de distancia
         distancias_puntos = []
 
         ## Construyo un vector en donde voy a guardar las matrices de covarianza de los clusters
