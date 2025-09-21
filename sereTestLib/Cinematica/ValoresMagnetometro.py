@@ -72,36 +72,15 @@ def ValoresMagnetometro(id_persona = None, lectura_datos_propios = False, ruta =
 
     ## Armamos una matriz donde las columnas sean las aceleraciones
     mag = np.array([np.array(data['Mag_x']), np.array(data['Mag_y']), np.array(data['Mag_z'])]).transpose()
-
-    ## Separo el vector de tiempos del dataframe
-    tiempo = np.array(data['Time'])
-
-    ## Se arma el vector de tiempos correspondiente mediante la traslación al origen y el escalamiento
-    tiempo = (tiempo - tiempo[0]) / 1000
-
-    ## Cantidad de muestras de la señal
-    cant_muestras = len(tiempo)
-
-    ## En caso de que no haya un período de muestreo bien definido debido al vector de tiempos de la entrada
-    if all([x == True for x in np.isnan(tiempo)]):
-
-        ## Asigno arbitrariamente una frecuencia de muestreo de 200Hz es decir período de muestreo de 0.005s
-        periodoMuestreo = 0.005
-
-    ## En caso de que el vector de tiempos contenga elementos numéricos
-    else:
-
-        ## Calculo el período de muestreo en base al vector correspondiente
-        periodoMuestreo = PeriodoMuestreo(data)
     
     ## Retorno los resultados al realizar la lectura correspondiente
-    return data, mag, cant_muestras, periodoMuestreo, tiempo
+    return mag
 
 ## Ejecución principal del programa
 if __name__== '__main__':
 
     ## Especifico la ruta en la cual se encuentra el registro a leer
-    ruta_registro_completa = ruta_registro + 'Actividades_Rodrigo.txt'
+    ruta_registro_completa = ruta_registro + 'Actividades_Sabrina.txt'
 
     ## Hago la lectura de los datos
-    data, mag, cant_muestras, periodoMuestreo, tiempo = ValoresMagnetometro(id_persona = 69, lectura_datos_propios = True, ruta = ruta_registro_completa)
+    mag = ValoresMagnetometro(id_persona = 69, lectura_datos_propios = True, ruta = ruta_registro_completa)

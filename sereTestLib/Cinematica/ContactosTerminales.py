@@ -33,7 +33,7 @@ def ContactosTerminales(acel, cant_muestras, periodoMuestreo, graficar = False):
 
     ## Se obtiene el espectro de toda la señal completa aplicando la transformada de Fourier
     ## Ya que es una señal real se cumple la simetría conjugada
-    (frecuencias, transformada) = TransformadaFourier(acel_filtrada, periodoMuestreo, plot = False)
+    (frecuencias, transformada) = TransformadaFourier(acel_filtrada, periodoMuestreo, enventanar = True, plot = False)
 
     ## Cálculo de los coeficientes de Fourier en semieje positivo
     coefs = (2 / acel_filtrada.shape[0]) * np.abs(transformada)[:acel_filtrada.shape[0]//2]

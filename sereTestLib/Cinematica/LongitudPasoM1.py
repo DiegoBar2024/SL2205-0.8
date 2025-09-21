@@ -151,11 +151,6 @@ def LongitudPasoM1(pasos, acel, tiempo, periodoMuestreo, frec_fund, duraciones_p
     print("Velocidad de marcha (m/s): ", velocidad_marcha)
     print("Cadencia (pasos/s): ", frec_fund)
 
-    ## ----------------------------------- GRAFICACIÓN LONGITUD DE PASOS -----------------------------------
-
-    # plt.scatter(x = np.arange(start = 0, stop = len(long_pasos_m1)), y = long_pasos_m1)
-    # plt.show()
-
     ## --------------------------------- CÁLCULO DE VELOCIDAD INSTANTÁNEA ----------------------------------
 
     ## Creo un vector donde voy a almacenar las velocidades instantáneas con una resolución de un paso

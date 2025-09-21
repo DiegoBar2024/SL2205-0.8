@@ -185,6 +185,8 @@ def DeteccionAnomalias(acel, cant_muestras, periodoMuestreo, tiempo, muestras_ve
             ## Sigo con el siguiente segmento
             continue
 
+        ## ---------------------------------- ESTIMACIÓN CANTIDAD ÓPTIMA DE CLÚSTERS ----------------------------------------------
+
         ## Construyo un vector en donde voy a guardar los silhouette scores para cada una de las distribuciones de clusters
         silhouette_scores = []
 
@@ -211,6 +213,8 @@ def DeteccionAnomalias(acel, cant_muestras, periodoMuestreo, tiempo, muestras_ve
 
         ## Aplico el clústering KMeans pasando como entrada el número óptimo de clústers determinado por el Silhouette Score
         kmeans = KMeans(n_clusters = clusters_optimo, random_state = 0, n_init = "auto").fit(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]])
+
+        ## --------------------------------  CÁLCULO DE MATRICES DE COVARIANZA ----------------------------------------------
 
         ## Construyo un vector donde voy a guardar la distancia al cuadrado de cada punto a su respectivo centroide
         ## En principio se usa Mahalanobis como métrica de distancia
@@ -240,6 +244,8 @@ def DeteccionAnomalias(acel, cant_muestras, periodoMuestreo, tiempo, muestras_ve
             ## Agrego la matriz de covarianza a la lista correspondiente
             matrices_cov.append(matriz_cov)
 
+        ## -------------------------- CÁLCULO DE DISTANCIA DE CADA PUNTO AL CENTROIDE ----------------------------------------------
+
         ## Itero para cada uno de los puntos del dataset
         for j in range (len(features_norm[tramos_actividades[i, 0] : tramos_actividades[i, 1]])):
 
@@ -263,11 +269,12 @@ def DeteccionAnomalias(acel, cant_muestras, periodoMuestreo, tiempo, muestras_ve
             ## Agrego la distancia del punto a su centroide a la lista
             distancias_puntos.append(distancia)
 
+        ## ------------------------------------ DETECCIÓN DE PUNTOS ANÓMALOS ----------------------------------------------
+
         ## Hago la transformación del vector a numpy array
         distancias_puntos = np.array(distancias_puntos)
 
         ## Defino el umbral de distancia a partir del cual yo considero que van a ser anomalías
-        # umbral = np.percentile(distancias_puntos, 95)
         umbral = np.median(distancias_puntos) + 2 * np.std(distancias_puntos)
 
         ## Obtengo el valor de las distancias a los centroides de los puntos que considero anomalías
@@ -394,19 +401,19 @@ if __name__== '__main__':
 
         ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
         ## Especifico la ruta en la cual se encuentra el registro a leer
-        ruta_registro_completa = ruta_registro + 'Actividades_Rodrigo.txt'
+        ruta_registro_completa = ruta_registro + 'MarchaLibre_Sabrina.txt'
 
         ## Defino la cantidad de muestras de la ventana que voy a tomar
-        muestras_ventana = 400
+        muestras_ventana = 200
 
         ## Defino la cantidad de muestras de solapamiento entre ventanas
-        muestras_solapamiento = 200
+        muestras_solapamiento = 100
 
         ## Hago la lectura de los datos
         data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 69, lectura_datos_propios = True, ruta = ruta_registro_completa)
 
         ## Ejecución de la detección de anomalías
-        DeteccionAnomalias(acel, cant_muestras, periodoMuestreo, tiempo, muestras_ventana, muestras_solapamiento, graficar = True)
+        DeteccionAnomalias(acel, cant_muestras, periodoMuestreo, tiempo, muestras_ventana, muestras_solapamiento, graficar = False)
     
     ## En caso de que quiera evaluar el tiempo de ejecución de la detección de anomalías
     elif opcion == 2:
@@ -425,7 +432,7 @@ if __name__== '__main__':
         data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 69, lectura_datos_propios = True, ruta = ruta_registro_completa)
 
         ## Genero un vector con las cantidades de muestras que voy a usar para simular los tiempos de ejecución
-        tamaños_muestras = np.arange(start = 1, stop = 10, step = 1)
+        tamaños_muestras = np.arange(start = 1, stop = 20, step = 1)
 
         ## Construyo un vector para el cual voy a guardar los tiempos de ejecución
         tiempos_ejecucion = []
@@ -450,3 +457,10 @@ if __name__== '__main__':
 
             ## Imprimo un mensaje avisando el tamaño de muestra que estoy evaluando la duración
             print('Evaluando rendimiento de tamaño: {} muestras'.format(tamaño))
+        
+        ## Graficación de los resultados
+        plt.plot(tamaños_muestras * acel.shape[0], tiempos_ejecucion)
+        plt.xlabel('Cantidad de muestras')
+        plt.ylabel('Tiempo de Ejecución (s)')
+        plt.title('Gráfica de Rendimiento')
+        plt.show()

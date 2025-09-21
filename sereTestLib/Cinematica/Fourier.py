@@ -1,8 +1,9 @@
 from scipy.fft import fft, ifft, fftfreq
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.signal.windows import blackman
 
-def TransformadaFourier(señal, dt, plot = True):
+def TransformadaFourier(señal, dt, enventanar, plot = True):
     '''
     Función que realiza el cálculo de la FFT de una señal de entrada y su graficación.
     El eje de las frecuencias está por defecto en Hz.
@@ -13,12 +14,26 @@ def TransformadaFourier(señal, dt, plot = True):
         Vector de la señal x(t) a transformar
     dt : int
         Período de muestreo de la señal
+    enventanar : bool
+        En caso de que sea True se enventana la señal. En caso de que sea False no
     plot : bool
         En caso de que plot sea True me grafica. Si plot es False no me grafica
     '''
 
-    ## Por medio de la función <<fft>> calculo la transformada de Fourier de la señal de entrada
-    transformada = fft(señal)
+    ## En caso de que quiera enventanar
+    if enventanar:
+
+        ## Genero una ventana del tamaño de la señal a transformar
+        ventana = blackman(señal.shape[0])
+    
+    ## En caso de que no quiera enventanar
+    else:
+
+        ## Construyo una ventana de unos
+        ventana = np.ones(señal.shape[0])
+
+    ## Por medio de la función <<fft>> calculo la transformada de Fourier de la señal de entrada multiplicada por la ventana
+    transformada = fft(señal * ventana)
 
     ## Por medio de la función <<fftfreq>> calculo el eje de las frecuencias
     frecuencias = fftfreq(señal.shape[0], dt)
