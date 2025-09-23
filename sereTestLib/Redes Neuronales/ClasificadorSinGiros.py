@@ -121,7 +121,7 @@ etiquetas = []
 ## K: Hace referencia a la k-ésima feature
 secuencias_por_persona = [[]]
 
-## Itero para cada uno de los identificadores de los pacientes. Hago la generación de escalogramas para cada paciente
+## Itero para cada uno de los identificadores de los pacientes
 for id_persona in ids_existentes:
 
     ## Creo un bloque try catch en caso de que ocurra algún error en el procesamiento

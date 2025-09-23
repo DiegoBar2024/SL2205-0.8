@@ -44,7 +44,7 @@ def ContactosIniciales(acel, cant_muestras, periodoMuestreo, graficar = False):
     coefs[0] = 0
 
     ## Determino la posición en la que se da el máximo. 
-    ## ESTOY ASUMIENDO QUE EL MÁXIMO SE DA EN LA COMPONENTE FUNDAMNENTAL (no tiene porque ocurrir!)
+    ## ESTOY ASUMIENDO QUE EL MÁXIMO SE DA EN LA COMPONENTE FUNDAMENTAL (no tiene porque ocurrir!)
     ## Ésta será considerada como la frecuencia fundamental de la señal
     pos_maximo = np.argmax(coefs)
 

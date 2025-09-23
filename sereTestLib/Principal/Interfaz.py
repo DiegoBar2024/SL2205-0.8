@@ -5,6 +5,8 @@ import pandas as pd
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Presentacion')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo')
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
+from parameters import *
 import os
 from joblib import load
 import numpy as np
@@ -62,7 +64,7 @@ def RealizarAnalisis():
         vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad = None, CalcFeatures = False)
 
         ## Cargo el modelo del clasificador ya entrenado según la ruta del clasificador
-        clf_entrenado = load("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM.joblib")
+        clf_entrenado = load(ruta_SVM)
 
         ## Determino la predicción del clasificador ante mi muestra de entrada
         ## Etiqueta 0: Reposo

@@ -10,6 +10,7 @@ sys.path.append(str(pathlib.Path().resolve()).replace('\\','/') + '/sereTestLib'
 from parameters import *
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 from matplotlib import cm, colors
+from scipy import constants
 
 ## -------------------------------------- CÁLCULO DE ESCALOGRAMAS --------------------------------------
 
@@ -22,13 +23,16 @@ def Escalogramas(id_persona, tiempo, pasos, cant_muestras, acel, gyro, periodoMu
     ## Ésto me implica que a escalas más pequeñas tengo frecuencias más grandes y viceversa
     escalas = np.arange(8, 136, 1)
 
-    ## Creo una variable la cual almacene el ancho de banda de la wavelet
+    ## Creo una variable la cual almacene el parámetro de ancho de banda de la wavelet
     ancho_banda = 1.5
+
+    ## Creo una variable la cual almacene el parámetro de frecuencia central de la wavelet
+    frec_central = 1
 
     ## Tipo de wavelet a utilizar. Wavelet de Morlet Compleja
     ## Parámetro B (Ancho de banda): 1.5 Hz (ajustable)
     ## Parámetro C (Frecuencia Central): 1 Hz
-    wavelet = 'cmor{}-1'.format(ancho_banda)
+    wavelet = 'cmor{}-{}'.format(ancho_banda, frec_central)
 
     ## ------------------------------------- DIRECTORIOS Y NOMBRES BASE ------------------------------------
 
@@ -64,7 +68,7 @@ def Escalogramas(id_persona, tiempo, pasos, cant_muestras, acel, gyro, periodoMu
     for i in range (1, len(pasos) - (cantidad_pasos - 1)):
 
         ## Le doy a la extensión un valor predefinido de 400 muestras (aproximadamente 2 segundos)
-        extension = 400
+        extension = 0
 
         ## En caso de que la extensión sea mayor al tiempo que tengo en el limite izquierdo, lo seteo en el limite izquierdo
         if extension > pasos[i]['IC'][0]:
@@ -209,7 +213,7 @@ def Escalogramas(id_persona, tiempo, pasos, cant_muestras, acel, gyro, periodoMu
         plt.show()
 
         plt.plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
-        acel[:,1][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]])
+        acel[:,1][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - constants.g)
         plt.xlabel("Tiempo (s)")
         plt.ylabel("Aceleración Vertical $(m/s^{2})$")
         plt.show()
@@ -251,7 +255,7 @@ def Escalogramas(id_persona, tiempo, pasos, cant_muestras, acel, gyro, periodoMu
 
         # Plot the second graph on the second subplot (axes[1])
         axes[0].plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
-        acel[:,1][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]])
+        acel[:,1][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - constants.g)
         axes[0].set_xlabel("Tiempo (s)")
         axes[0].set_ylabel("Aceleración Vertical $(m/s^{2})$")
         axes[0].set_title("$a_{VT}(t)$")

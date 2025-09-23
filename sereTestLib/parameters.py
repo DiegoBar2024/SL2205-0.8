@@ -326,11 +326,23 @@ ruta_escalogramas_sin_giros = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalograma
 ## Especifico la ruta en donde voy a guardar las muestras comprimidas
 ruta_comprimidas_sin_giros = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_sin_giros"
 
+## Especifico la ruta donde se encuentran los escalogramas de los giros
+ruta_escalogramas_giros = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_giros_tot'
+
+## Especifico la ruta donde se guardan los espacios latentes de los giros
+ruta_comprimidas_giros = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae_giros_tot"
+
 ## Ruta en la cual se encuentra el archivo .csv con los datos clínicos de los pacientes
 ruta_pacientes = "C:/Yo/Tesis/sereData/sereData/Etiquetas/clasificaciones_antropometricos.csv"
 
 ## Ruta en la cual tengo el dataset de todos los pacientes
 ruta_dataset = "C:/Yo/Tesis/sereData/sereData/Dataset/dataset"
+
+## Ruta donde guardo todas las muestras juntas sin comprimir
+ruta_juntas_sin_comprimir = "C:/Yo/Tesis/sereData/sereData/Dataset/muestras_juntas_sin_comprimir"
+
+## Ruta donde guardo todos los escalogramas de giros juntos sin comprimir
+ruta_giros_juntos_sin_comprimir = "C:/Yo/Tesis/sereData/sereData/Dataset/giros_juntos_sin_comprimir"
 
 ## DIMENSIÓN TEMPORAL A LA QUE SE VA A REMUESTREAR
 ## Especifico la cantidad de pasos que quiero representar en mis escalogramas

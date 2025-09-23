@@ -26,6 +26,7 @@ from tsfel import *
 from tsfresh import *
 from tsfresh.feature_extraction import *
 from tsfresh.utilities.distribution import MultiprocessingDistributor
+from Fourier import *
 
 class NumpyArrayEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -131,6 +132,29 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
 
                 ## Me quedo con el segmento de la aceleración anteroposterior (componente BA)
                 segmento_AP_filt = acc_AP_BA[ubicacion_muestra : ubicacion_muestra + muestras_ventana]
+
+            # ## Se obtiene el espectro de toda la señal completa aplicando la transformada de Fourier
+            # ## Ya que es una señal real se cumple la simetría conjugada
+            # (frecuencias, transformada) = TransformadaFourier(segmento_VT_filt, periodoMuestreo, enventanar = True, plot = False)
+
+            # ## Cálculo de los coeficientes de Fourier en semieje positivo
+            # coefs = (2 / segmento_VT_filt.shape[0]) * np.abs(transformada)[:segmento_VT_filt.shape[0]//2]
+
+            # ## Calculo de las frecuencias en el semieje positivo
+            # frecs = frecuencias[:segmento_VT_filt.shape[0]//2]
+
+            # ## Elimino la componente de contínua de la señal
+            # coefs[0] = 0
+
+            # ## Determino la posición en la que se da el máximo. 
+            # ## ESTOY ASUMIENDO QUE EL MÁXIMO SE DA EN LA COMPONENTE FUNDAMENTAL (no tiene porque ocurrir!)
+            # ## Ésta será considerada como la frecuencia fundamental de la señal
+            # pos_maximo = np.argmax(coefs)
+
+            # ## Frecuencia fundamental de la señal
+            # ## La frecuencia fundamental de la señal en las aceleraciones CC (craneo-cervical) y AP (antero-posterior) son iguales.
+            # ## Se podría interpretar como la frecuencia fundamental de los pasos en la marcha de la persona
+            # frec_fund = frecs[pos_maximo]
 
             ## En caso de que quiera calcular features
             if CalcFeatures:

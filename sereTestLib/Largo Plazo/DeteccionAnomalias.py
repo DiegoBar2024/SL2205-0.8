@@ -388,6 +388,9 @@ def DeteccionAnomalias(acel, cant_muestras, periodoMuestreo, tiempo, muestras_ve
         plt.legend(by_label.values(), by_label.keys())
         plt.title('Deteccion Anomalias')
         plt.show()
+    
+    ## Retorno como salida las posiciones con las anomalías extremas y las leves
+    return anomalias, anomalias_no_ext
 
 ## Ejecución principal del programa
 if __name__== '__main__':
@@ -401,19 +404,19 @@ if __name__== '__main__':
 
         ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
         ## Especifico la ruta en la cual se encuentra el registro a leer
-        ruta_registro_completa = ruta_registro + 'MarchaLibre_Sabrina.txt'
+        ruta_registro_completa = ruta_registro + 'Actividades_Sabrina.txt'
 
         ## Defino la cantidad de muestras de la ventana que voy a tomar
-        muestras_ventana = 200
+        muestras_ventana = 400
 
         ## Defino la cantidad de muestras de solapamiento entre ventanas
-        muestras_solapamiento = 100
+        muestras_solapamiento = 200
 
         ## Hago la lectura de los datos
         data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 69, lectura_datos_propios = True, ruta = ruta_registro_completa)
 
         ## Ejecución de la detección de anomalías
-        DeteccionAnomalias(acel, cant_muestras, periodoMuestreo, tiempo, muestras_ventana, muestras_solapamiento, graficar = False)
+        anomalias, anomalias_no_ext = DeteccionAnomalias(acel, cant_muestras, periodoMuestreo, tiempo, muestras_ventana, muestras_solapamiento, graficar = True)
     
     ## En caso de que quiera evaluar el tiempo de ejecución de la detección de anomalías
     elif opcion == 2:
