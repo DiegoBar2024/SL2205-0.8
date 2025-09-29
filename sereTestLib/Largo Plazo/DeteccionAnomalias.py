@@ -4,6 +4,8 @@ import sys
 import pathlib
 sys.path.append(str(pathlib.Path().resolve()).replace('\\','/') + '/sereTestLib/Cinematica')
 sys.path.append(str(pathlib.Path().resolve()).replace('\\','/') + '/sereTestLib')
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
 from parameters import ruta_registro, ruta_SVM
 from LecturaDatos import *
 from Muestreo import *
@@ -26,8 +28,8 @@ def DeteccionAnomalias(acel, cant_muestras, periodoMuestreo, tiempo, muestras_ve
 
     ## -------------------------------- DISCRIMINACIÓN REPOSO - ACTIVIDAD --------------------------------------
 
-    ## Hago el cálculo del vector de SMA para dicha persona
-    vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad = None)
+    ## Hago el cálculo de las features para el registro de la persona
+    vector_SMA, features, ventanas, nombres_features = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad = None)
 
     ## Cargo el modelo del clasificador ya entrenado según la ruta del clasificador
     clf_entrenado = load(ruta_SVM)
@@ -404,7 +406,7 @@ if __name__== '__main__':
 
         ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
         ## Especifico la ruta en la cual se encuentra el registro a leer
-        ruta_registro_completa = ruta_registro + 'Actividades_Sabrina.txt'
+        ruta_registro_completa = ruta_registro + 'Actividades_Rodrigo.txt'
 
         ## Defino la cantidad de muestras de la ventana que voy a tomar
         muestras_ventana = 400

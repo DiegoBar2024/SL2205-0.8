@@ -20,13 +20,16 @@ from scipy.stats import *
 from sklearn.svm import SVC
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.feature_selection import SequentialFeatureSelector
-from sklearn.model_selection import cross_val_score, KFold
+from sklearn.model_selection import cross_val_score, KFold, cross_val_predict
 from joblib import dump, load
 from tsfel import *
 from tsfresh import *
 from tsfresh.feature_extraction import *
 from tsfresh.utilities.distribution import MultiprocessingDistributor
 from Fourier import *
+from sklearn.feature_selection import SequentialFeatureSelector
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.preprocessing import normalize, StandardScaler
 
 class NumpyArrayEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -183,7 +186,7 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
 
                 ## Hago la extracción de features de la señal de acelerómetro VT (Body Acceleration)
                 features_VT = np.array([np.mean(segmento_VT_filt), np.median(segmento_VT_filt), np.std(segmento_VT_filt), np.var(segmento_VT_filt), kurtosis(segmento_VT_filt), skew(segmento_VT_filt), iqr(segmento_VT_filt), 
-                                        RMS(segmento_VT_filt), np.abs(max(segmento_VT_filt) - min(segmento_VT_filt)), np.sum(np.square(segmento_AP_filt))])
+                                        RMS(segmento_VT_filt), np.abs(max(segmento_VT_filt) - min(segmento_VT_filt)), np.sum(np.square(segmento_VT_filt))])
 
                 ## Reformateo los vectores en caso que la extracción sea manual
                 features_AP = np.reshape(features_AP, (1, features_AP.shape[0]))
@@ -219,15 +222,21 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
     ## Hago la conversión del array de las ventanas a un numpy array
     ventanas = np.array(ventanas)
 
+    ## Genero una lista con los nombres de todas las features que calculo
+    nombres_features = ['MediaX', 'MedianaX', 'DesvEstandarX', 'VarianzaX', 'KurtosisX', 'SkewnessX', 'IQRX', 'RMSX', 'DPicoPicoX', 'EnergiaX',
+                        'MediaY', 'MedianaY', 'DesvEstandarY', 'VarianzaY', 'KurtosisY', 'SkewnessY', 'IQRY', 'RMSY', 'DPicoPicoY', 'EnergiaY',
+                        'MediaZ', 'MedianaZ', 'DesvEstandarZ', 'VarianzaZ', 'KurtosisZ', 'SkewnessZ', 'IQRZ', 'RMSZ', 'DPicoPicoZ', 'EnergiaZ']
+
     ## Retorno el vector con los valores de SMA y los features (que va a ser una matriz)
-    return vector_SMA, features, ventanas
+    return vector_SMA, features, ventanas, nombres_features
 
 ## Ejecución principal del programa
 if __name__== '__main__':
 
     ## Opción 1: Generar los ficheros JSON con los SMA y features para cada actividad
     ## Opción 2: Entrenamiento de modelos que permitan discriminar actividades usando SMA y otras features
-    opcion = 1
+    ## Opción 3: Validar modelos entrenados con los registros tomados por los estudiantes
+    opcion = 3
 
     ## Hago la lectura de los datos generales de los pacientes
     pacientes, ids_existentes = LecturaDatosPacientes()
@@ -236,10 +245,10 @@ if __name__== '__main__':
     actividades = {'Sentado':'1','Parado':'2','Caminando':'3','Escalera':'4'}
 
     ## Defino la cantidad de muestras de la ventana que voy a tomar
-    muestras_ventana = 200
+    muestras_ventana = 400
 
     ## Defino la cantidad de muestras de solapamiento entre ventanas
-    muestras_solapamiento = 100
+    muestras_solapamiento = 200
 
     ## En caso de que quiera generar y guardar la base de datos (es decir si tengo la opción 1)
     if opcion == 1:
@@ -287,7 +296,7 @@ if __name__== '__main__':
                             periodoMuestreo = PeriodoMuestreo(data)
 
                         ## Hago el cálculo del vector de SMA para dicha persona
-                        vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
+                        vector_SMA, features, ventanas, nombres_features = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad)
 
                         ## ---------------------------------- SMA ------------------------------------------
 
@@ -309,7 +318,7 @@ if __name__== '__main__':
                         ## -------------------------------- FEATURES -----------------------------------------
 
                         ## Hago la lectura del archivo JSON previamente existente
-                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_{}.json".format(actividad), 'r') as openfile:
+                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_{}.json".format(actividad), 'r') as openfile:
 
                             # Cargo el diccionario el cual va a ser un objeto JSON
                             dicc_features = json.load(openfile)
@@ -318,7 +327,7 @@ if __name__== '__main__':
                         dicc_features[str(id_persona)] = features
 
                         ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
-                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_{}.json".format(actividad), "w") as outfile:
+                        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_{}.json".format(actividad), "w") as outfile:
 
                             ## Escribo el diccionario actualizado
                             json.dump(dicc_features, outfile, cls = NumpyArrayEncoder)
@@ -329,7 +338,7 @@ if __name__== '__main__':
                     ## Que siga a la siguiente muestra
                     continue
 
-    ## En caso de que quiera procesar los JSON de SMA para poder calcular el umbral de clasificación (opción 2)
+    ## En caso de que quiera procesar los JSON de SMA para poder entrenar los modelos
     elif opcion == 2:
 
         ## ---------------------------------- PROCESAMIENTO SMA -----------------------------------------
@@ -360,31 +369,31 @@ if __name__== '__main__':
         
         ## ----------------------------- PROCESAMIENTO FEATURES -----------------------------------------
 
-        # ## Hago la lectura del archivo JSON previamente existente
-        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Parado.json", 'r') as openfile:
+        ## Hago la lectura del archivo JSON previamente existente
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_Parado.json", 'r') as openfile:
 
-        #     # Cargo el diccionario el cual va a ser un objeto JSON
-        #     features_parado = json.load(openfile)
+            # Cargo el diccionario el cual va a ser un objeto JSON
+            features_parado = json.load(openfile)
         
-        # ## Hago la lectura del archivo JSON previamente existente
-        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Sentado.json", 'r') as openfile:
+        ## Hago la lectura del archivo JSON previamente existente
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_Sentado.json", 'r') as openfile:
 
-        #     # Cargo el diccionario el cual va a ser un objeto JSON
-        #     features_sentado = json.load(openfile)
+            # Cargo el diccionario el cual va a ser un objeto JSON
+            features_sentado = json.load(openfile)
         
-        # ## Hago la lectura del archivo JSON previamente existente
-        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Caminando.json", 'r') as openfile:
+        ## Hago la lectura del archivo JSON previamente existente
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_Caminando.json", 'r') as openfile:
 
-        #     # Cargo el diccionario el cual va a ser un objeto JSON
-        #     features_caminando = json.load(openfile)
+            # Cargo el diccionario el cual va a ser un objeto JSON
+            features_caminando = json.load(openfile)
         
-        # ## Hago la lectura del archivo JSON previamente existente
-        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/FeaturesNuevo_Escalera.json", 'r') as openfile:
+        ## Hago la lectura del archivo JSON previamente existente
+        with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Features_Escalera.json", 'r') as openfile:
 
-        #     # Cargo el diccionario el cual va a ser un objeto JSON
-        #     features_escaleras = json.load(openfile)
+            # Cargo el diccionario el cual va a ser un objeto JSON
+            features_escaleras = json.load(openfile)
         
-        ## ----------------------- CÁLCULO DE UMBRALES Y ENTRENAMIENTO -----------------------------------------
+        ## ----------------------- ARMADO DE LISTAS DE FEATURES -----------------------------------------
 
         ## Creo un vector donde voy a guardar todos los valores de SMA de registros parado
         valores_SMA_parado = []
@@ -416,8 +425,8 @@ if __name__== '__main__':
             ## Concateno los SMAs del registro parado a la lista actual
             valores_SMA_parado += SMA_parado[id]
 
-        #     ## Concateno los features del registro de parado a la lista actual
-        #     vectores_features_parado += features_parado[id]
+            ## Concateno los features del registro de parado a la lista actual
+            vectores_features_parado += features_parado[id]
         
         ## Itero para cada una de las claves en el diccionario de SMA sentado
         for id in list(SMA_sentado.keys()):
@@ -425,8 +434,8 @@ if __name__== '__main__':
             ## Concateno los SMAs del registro sentado a la lista actual
             valores_SMA_sentado += SMA_sentado[id]
 
-        #     ## Concateno los features del registro de sentado a la lista actual
-        #     vectores_features_sentado += features_sentado[id]
+            ## Concateno los features del registro de sentado a la lista actual
+            vectores_features_sentado += features_sentado[id]
 
         ## Itero para cada una de las claves en el diccionario de SMA caminando
         for id in list(SMA_caminando.keys()):
@@ -434,17 +443,17 @@ if __name__== '__main__':
             ## Concateno los SMAs del registro caminando a la lista actual
             valores_SMA_caminando += SMA_caminando[id]
 
-        #     ## Concateno los features del registro de caminando a la lista actual
-        #     vectores_features_caminando += features_caminando[id]
+            ## Concateno los features del registro de caminando a la lista actual
+            vectores_features_caminando += features_caminando[id]
 
-        ## Itero para cada una de las claves en el diccionario de SMA parado
+        ## Itero para cada una de las claves en el diccionario de SMA escaleras
         for id in list(SMA_escaleras.keys()):
 
-            ## Concateno los SMAs del registro parado a la lista actual
+            ## Concateno los SMAs del registro escaleras a la lista actual
             valores_SMA_escaleras += SMA_escaleras[id]
             
-        #     ## Concateno los features del registro de escalera a la lista actual
-        #     vectores_features_escaleras += features_escaleras[id]
+            ## Concateno los features del registro de escalera a la lista actual
+            vectores_features_escaleras += features_escaleras[id]
 
         ## Defino el diccionario con los correspondientes valores de SMA para cada actividad para luego hacer el boxplot
         valores_SMA = {'Parado': valores_SMA_parado, 'Sentado': valores_SMA_sentado, 'Caminando': valores_SMA_caminando, 'Escaleras': valores_SMA_escaleras}
@@ -467,108 +476,154 @@ if __name__== '__main__':
         plt.boxplot(valores_SMA_actividad.values(), tick_labels = valores_SMA_actividad.keys())
         plt.show()
 
-        ## Test de Hipótesis de Anderson-Darling para la comprobación de normalidad de los valores de SMA en reposo
-        anderson_reposo = anderson(SMA_reposo, dist = 'norm')
+        ## ---------------------------- ENTRENAMIENTO MODELO REPOSO-MOVIMIENTO -----------------------------------------
 
-        ## Test de Hipótesis de Anderson-Darling para la comprobación de normalidad de los valores de SMA en movimiento
-        anderson_mov = anderson(SMA_movimiento, dist = 'norm')
+        # ## Construyo la Support Vector Machine
+        # svm_rep_mov = SVC(C = 1, gamma = 1, kernel = 'rbf')
 
-        ## Test de Hipótesis para la comprobación de la igualdad de las medianas entre ambas poblaciones
-        test_medianas = kruskal(SMA_movimiento, SMA_reposo)
+        # ## Llevo a cabo el entrenamiento del clasificador
+        # ## <<values>> es la secuencia de valores de entrada
+        # ## <<ground_truth>> es la secuencia de valores de salida
+        # ## Se etiquetan como 0 las actividades de reposo mientras que se etiquetan como 1 las actividades de movimiento
+        # svm_rep_mov.fit(np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))))
 
-        # ## ---------------------------------- MÉTODO I -----------------------------------------
-        
-        # ## El primer método de cálculo de umbral óptimo involucra el uso de estadísticas provenientes de la muestra
-        # ## Construyo un vector de indicadores estadísticos para los valores de SMA en movimiento
-        # stats_SMA_mov = [np.mean(SMA_movimiento), np.median(SMA_movimiento), np.std(SMA_movimiento)]
+        # # Guardo el modelo entrenado en la ruta de salida
+        # dump(svm_rep_mov, ruta_SVM)
 
-        # ## Construyo un vector de indicadores estadísticos para los valores de SMA en reposo
-        # stats_SMA_rep = [np.mean(SMA_reposo), np.median(SMA_reposo), np.std(SMA_reposo)]
+        # ## Especifico la cantidad de folds que voy a utilizar para poder hacer la validación cruzada
+        # k_folds = KFold(n_splits = 10, shuffle = False)
 
-        # ## El criterio que tomo para definir el umbral de SMA es el siguiente:
-        # ## Sea a = Media(SMA_movimiento) - Desv(SMA_movimiento)
-        # ## Sea b = Media(SMA_reposo) + Desv(SMA_reposo)
-        # ## Entonces el valor del umbral lo ajusto al punto medio de a y b para que quede margen: umbral = (a + b) / 2
-        # umbral = (stats_SMA_mov[0] - stats_SMA_mov[2] + stats_SMA_rep[0] + stats_SMA_rep[2]) / 2
-
-        # ## Hago la lectura del archivo JSON previamente existente
-        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", 'r') as openfile:
-
-        #     # Cargo el valor existente del JSON
-        #     dicc_umbral = json.load(openfile)
-        
-        # ## Genero el diccionario conteniendo el valor del umbral calculado
-        # ## La clave estará generada por la cantidad de muestras por ventana y la cantidad de muestras de solapamiento
-        # dicc_umbral = {'U_{}_{}'.format(muestras_ventana, muestras_solapamiento): umbral}
-        
-        # ## Especifico la ruta del archivo JSON sobre la cual voy a reescribir
-        # with open("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/Umbrales.json", "w") as outfile:
-
-        #     ## Escribo el diccionario actualizado
-        #     json.dump(dicc_umbral, outfile)
-
-        # ## ---------------------------------- MÉTODO II -----------------------------------------
-        
-        ## El segundo método de cálculo de umbral óptimo involucra el entrenamiento de un SVM con los datos etiquetados por actividad
-        ## Construyo la Support Vector Machine
-        svm_rep_mov = SVC(C = 1, gamma = 1, kernel = 'rbf')
-
-        ## Llevo a cabo el entrenamiento del clasificador
-        ## <<values>> es la secuencia de valores de entrada
-        ## <<ground_truth>> es la secuencia de valores de salida
-        ## Se etiquetan como 0 las actividades de reposo mientras que se etiquetan como 1 las actividades de movimiento
-        svm_rep_mov.fit(np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))))
-
-        # Guardo el modelo entrenado en la ruta de salida
-        dump(svm_rep_mov, ruta_SVM)
-
-        ## Especifico la cantidad de folds que voy a utilizar para poder hacer la validación cruzada
-        k_folds = KFold(n_splits = 10, shuffle = False)
-
-        ## Hago la validación cruzada del modelo
-        scores_svm = cross_val_score(svm_rep_mov, np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))), cv = k_folds)
-
-        ## Construyo el clasificador LDA
-        lda_rep_mov = LinearDiscriminantAnalysis()
-
-        ## Hago la validación cruzada del modelo
-        scores_lda = cross_val_score(lda_rep_mov, np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))), cv = k_folds)
-
-        ## ---------------------------------- MÉTODO III -----------------------------------------
-        
-        # ## Construyo un tensor bimensional para el entrenamiento donde:
-        # ## La i-ésima fila identifica a la i-ésima instancia de entrenamiento
-        # ## La j-ésima columna identifica a la j-ésima feature tomada
-        # features_total = np.concatenate((np.array(vectores_features_escaleras), np.array(vectores_features_parado), np.array(vectores_features_sentado), np.array(vectores_features_caminando)))
-
-        # ## Construyo el vector de etiquetas correspondiente con el siguiente significado:
-        # ## Etiqueta 0: Escaleras
-        # ## Etiqueta 1: Parado
-        # ## Etiqueta 2: Sentado
-        # ## Etiqueta 3: Caminando
-        # etiquetas = np.concatenate((np.zeros(len(vectores_features_escaleras)), np.ones(len(vectores_features_parado)), 
-        #                             2 * np.ones(len(vectores_features_sentado)), 3 * np.ones(len(vectores_features_caminando)))).astype(int)
-        
-        # ## Construyo una support vector machine especificando una opción 'One Versus One'
-        # clf_act = SVC(decision_function_shape = 'ovo')
-
-        # ## Hago el entrenamiento del clasificador
-        # clf_act.fit(features_total, etiquetas)
-
-        # ## Guardo el modelo entrenado en la ruta de salida
-        # dump(clf_act, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/SVM_Nuevo_Actividades.joblib")
+        # ## Hago la validación cruzada del modelo
+        # scores_svm = cross_val_score(svm_rep_mov, np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))), cv = k_folds)
 
         # ## Construyo el clasificador LDA
-        # lda_act = LinearDiscriminantAnalysis()
+        # lda_rep_mov = LinearDiscriminantAnalysis()
 
-        # ## Hago el entrenamiento del clasificador LDA
-        # lda_act.fit(features_total, etiquetas)
+        # ## Hago la validación cruzada del modelo
+        # scores_lda = cross_val_score(lda_rep_mov, np.array((SMA_movimiento + SMA_reposo)).reshape(-1, 1), np.concatenate((np.ones(len(SMA_movimiento)), np.zeros(len(SMA_reposo)))), cv = k_folds)
 
-        # ## Guardo el modelo entrenado en la ruta de salida
-        # dump(lda_act, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/LDA_Nuevo_Actividades.joblib")
-    
-    ## En caso de que el valor de entrada no sea correcto
-    else:
+        ## ------------------------------- ENTRENAMIENTO MODELOS ACTIVIDADES -----------------------------------------
+        
+        ## Construyo un tensor bimensional para el entrenamiento donde:
+        ## La i-ésima fila identifica a la i-ésima instancia de entrenamiento
+        ## La j-ésima columna identifica a la j-ésima feature tomada
+        features_total = np.concatenate((np.array(vectores_features_escaleras), np.array(vectores_features_parado), np.array(vectores_features_sentado), 
+                                        np.array(vectores_features_caminando)))
+        
+        ## Cambio las dimensiones para que me quede la matriz con las coordenadas que dije antes
+        features_total = np.reshape(features_total, (features_total.shape[0], features_total.shape[2]))
 
-        ## Quiero que arroje un mensaje de error
-        print("Opción incorrecta")
+        ## Obtengo aquellas filas en las cuales tengo valores NaN
+        filas_nan = np.unique(np.where(np.isnan(features_total) == True)[0])
+
+        ## Elimino aquellas filas que tengan valores NaN
+        features_total = np.delete(features_total, filas_nan, axis = 0)
+
+        ## Construyo el vector de etiquetas correspondiente con el siguiente significado:
+        ## Etiqueta 0: Escaleras
+        ## Etiqueta 1: Parado
+        ## Etiqueta 2: Sentado
+        ## Etiqueta 3: Caminando
+        etiquetas = np.concatenate((np.zeros(len(vectores_features_escaleras)), np.ones(len(vectores_features_parado)), 
+                                    2 * np.ones(len(vectores_features_sentado)), 3 * np.ones(len(vectores_features_caminando)))).astype(int)
+        
+        ## Elimino aquellas filas que tengan valores NaN también para las etiquetas
+        etiquetas = np.delete(etiquetas, filas_nan, axis = 0)
+        
+        ## Especifico el modelo de clasificación que yo quiero
+        modelo = 'lda'
+
+        ## En caso de que tenga un modelo LDA
+        if modelo == 'lda':
+
+            ## Construyo el clasificador LDA
+            clf_act = LinearDiscriminantAnalysis()
+
+        ## En caso de que tenga un modelo SVM
+        elif modelo == 'svm':
+
+            ## Construyo una support vector machine especificando una opción 'One Versus One'
+            clf_act = SVC(decision_function_shape = 'ovr')
+
+        ## Construyo un selector de features. La cantidad de features óptima se selecciona automáticamente
+        selector_features = SequentialFeatureSelector(clf_act)
+
+        ## Hago el ajuste del selector de features
+        selector_features.fit(features_total, etiquetas)
+
+        ## Obtengo las columnas de los features que fueron seleccionados por SFFS
+        columnas_features = np.where(selector_features.get_support() == True)
+
+        ## Filtro la matriz de features con aquellas columnas que fueron seleccionados
+        features_filt = features_total[:, columnas_features]
+
+        ## Ajusto las dimensiones de lo anterior para que quede una matriz
+        features_filt = np.reshape(features_filt, (features_filt.shape[0], features_filt.shape[2]))
+
+        ## Especifico la cantidad de folds que voy a utilizar para poder hacer la validación cruzada
+        k_folds = KFold(n_splits = 10, shuffle = True)
+
+        ## Hago la validación cruzada del modelo
+        predicciones = cross_val_predict(clf_act, features_filt, etiquetas, cv = k_folds)
+
+        ## Construyo y despliego la matriz de confusión
+        cm = confusion_matrix(etiquetas, predicciones)
+        disp = ConfusionMatrixDisplay(confusion_matrix = cm,  display_labels = ['Escaleras', 'Parado', 'Sentado', 'Caminando'])
+        disp.plot()
+        plt.show()
+
+        ## Entreno el modeo a guardar con todos los datos
+        modelo_entrenado = clf_act.fit(features_filt, etiquetas)
+
+        ## Guardo el modelo entrenado en la ruta de salida
+        dump(modelo_entrenado, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/{}_Actividades.joblib".format(modelo.upper()))
+
+        ## Guardo el selector de features de forma aparte
+        dump(selector_features, "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/{}_Selector.joblib".format(modelo.upper()))
+
+    ## En caso de querer hacer la validación del detector de actividades con los registros tomados por los estudiantes
+    elif opcion == 3:
+
+        ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
+        ## Especifico la ruta en la cual se encuentra el registro a leer
+        ruta_registro_completa = ruta_registro + 'Actividades_Rodrigo.txt'
+
+        ## Defino la cantidad de muestras de la ventana que voy a tomar
+        muestras_ventana = 400
+
+        ## Defino la cantidad de muestras de solapamiento entre ventanas
+        muestras_solapamiento = 200
+
+        ## Hago la lectura de los datos
+        data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 69, lectura_datos_propios = True, ruta = ruta_registro_completa)
+
+        ## Hago el cálculo del vector de SMA para dicha persona
+        vector_SMA, features, ventanas, nombres_features = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad = None)
+        
+        ## Especifico el modelo de clasificación que yo quiero
+        modelo = 'lda'
+        
+        ## Cargo el modelo del clasificador ya entrenado con actividades según la ruta del clasificador
+        clf_entrenado = load("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/{}_Actividades.joblib".format(modelo.upper()))
+
+        ## Cargo el modelo del selector de features asociado al clasificador anterior
+        selector_features = load("C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo/{}_Selector.joblib".format(modelo.upper()))
+
+        ## Actualizo dimensiones de la matriz de features
+        features = np.reshape(features, (np.array(features).shape[0], np.array(features).shape[2]))
+
+        ## Obtengo las columnas de los features que fueron seleccionados por SFFS
+        columnas_features = np.where(selector_features.get_support() == True)
+
+        ## Filtro la matriz de features con aquellas columnas que fueron seleccionados
+        features_filt = features[:, columnas_features]
+
+        ## Ajusto las dimensiones de lo anterior para que quede una matriz
+        features_filt = np.reshape(features_filt, (features_filt.shape[0], features_filt.shape[2]))
+
+        ## Hago las predicciones de las actividades del registro
+        ## Etiqueta 0: Escaleras
+        ## Etiqueta 1: Parado
+        ## Etiqueta 2: Sentado
+        ## Etiqueta 3: Caminando
+        predicciones = clf_entrenado.predict(features_filt)

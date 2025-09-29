@@ -320,6 +320,9 @@ ruta_optimizacion_m1 = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica
 ## Ruta donde se guardan los valores de los parámetros optimizados del modelo de marcha mediante el uso del método I
 ruta_optimizacion_m2 = "C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica/OptimizacionM2.json"
 
+## Especifico la ruta en la cual se encuentran las muestras comprimidas
+ruta_comprimidas = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae"
+
 ## Ruta en la cual se encuentran los escalogramas de las señales sin giros
 ruta_escalogramas_sin_giros = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_sin_giros'
 
@@ -357,3 +360,19 @@ dimension_temporal = cantidad_pasos * int(tiempo_maximo_paso * 200)
 
 ## Especifico las dimensiones temporales del tensor tridimensional de entrada al autoencoder
 inDim = (6, 128, dimension_temporal)
+
+## Construyo una lista con todos aquellos pacientes denominados estables no añosos
+id_estables_no_añosos = np.array([114, 127, 128, 129, 130, 133, 213, 224, 226, 44, 294])
+
+## Construyo una lista con todos aquellos pacientes denominados estables añosos
+## En principio estos pacientes se consideran como estables pero se van a mantener por separado del análisis
+id_estables_añosos = np.array([67, 77, 111, 112, 115, 216, 229, 271, 273])
+
+## Obtengo una lista con los identificadores de todos los pacientes estables
+id_estables = np.concatenate([id_estables_añosos, id_estables_no_añosos])
+
+## Construyo una lista con aquellos pacientes denominados inestables
+id_inestables = np.array([69, 72, 90, 122, 137, 139, 142, 144, 148, 149, 158, 167, 178, 221, 223, 232, 256])
+
+## Construyo una lista con los IDs de aquellos pacientes los cuales yo sé que están etiquetados
+id_etiquetados = np.concatenate([id_estables, id_inestables])

@@ -13,8 +13,10 @@ from Modelo_CLAS import *
 from LecturaDatosPacientes import *
 from mlxtend.preprocessing import MeanCenterer
 from dtwParallel import dtw_functions
-from sklearn.model_selection import cross_val_score, KFold
+from sklearn.model_selection import cross_val_score, KFold, cross_val_predict
 from sklearn.preprocessing import normalize
+from sklearn.linear_model import Perceptron
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 ## Defino una función que me permita ver si dos matrices tienen al menos una fila en común
 def FilasEnComun(matriz1, matriz2):
@@ -34,237 +36,272 @@ def FilasEnComun(matriz1, matriz2):
     ## En caso de que no haya filas en común, retorno False
     return False
 
-## ------------------------------------------- ETIQUETADOS ---------------------------------------------
+## Construyo una función que me haga el cargado de todos los segmentos comprimidos estables
+def CargarComprimidosEstables():
 
-## Importación de etiquetas (provenientes del fichero de ingesta_etiquetas())
-(x_inestables_train_clf, x_estables_train_clf, x_inestables_val_clf, x_estables_val_clf, x_ae_train, x_ae_val) = ingesta_etiquetas() 
+    ## Construyo una lista donde voy a guardar las muestras etiquetadas como estables
+    estables = np.zeros((1, 256))
 
-## <<train>> va a tener el conjunto de IDs de pacientes que se van a usar para el entrenamiento
-train = np.concatenate((x_inestables_train_clf, x_estables_train_clf), axis = None)
+    ## Inicializo un diccionario cuya clave va a ser el ID del paciente y el valor una tupla con las posiciones de sus objetos en la matriz en estables
+    ids_posiciones_estables = {}
 
-## <<val_test>> va a tener el conjunto de IDs de pacientes que se van a usar para la validación
-val_test = np.concatenate((x_inestables_val_clf, x_estables_val_clf), axis = None)
+    ## Itero para cada uno de los IDs considerados como estables
+    for estable in id_estables:
 
-## ------------------------------------- SELECCIÓN DE MUESTRAS -----------------------------------------
+        ## Construyo un bloque try except para atrapar errores
+        try:
 
-## Obtengo la lista de todos los pacientes para los que se cuentan registros en la base de datos
-pacientes, ids_existentes = LecturaDatosPacientes()
+            ## Abro el archivo donde tengo la muestra comprimida
+            comprimida_estable = np.load(ruta_comprimidas + '/S{}/S{}_latente.npz'.format(estable, estable))
 
-## Obtengo la lista de los pacientes inestables para el entrenamiento del clasificador
-train_inestables = np.intersect1d(ids_existentes, x_inestables_train_clf)
+            ## Selecciono la representación en espacio latente de los segmentos de marcha
+            latente_estable = comprimida_estable['X']
 
-## Obtengo la lista de los pacientes estables para el entrenamiento del clasificador
-train_estables = np.intersect1d(ids_existentes, x_estables_train_clf)
+            ## Guardo en el diccionario la ID del paciente con sus posiciones
+            ids_posiciones_estables[str(estable)] = (len(estables) - 1, len(estables) + len(latente_estable) - 2)
 
-## Obtengo la lista de los pacientes inestables para la validación del clasificador
-val_inestables = np.intersect1d(ids_existentes, x_inestables_val_clf)
+            ## Agrego dicho espacio latente a la lista de estables
+            estables = np.concatenate((estables, latente_estable), axis = 0)
 
-## Obtengo la lista de los pacientes estables para la validación del clasificador
-val_estables = np.intersect1d(ids_existentes, x_estables_val_clf)
+        ## En caso de que haya algún error
+        except:
 
-## Obtengo el conjunto de estables
-id_estables = np.concatenate((train_estables, val_estables))
+            ## Que continúe con la siguiente muestra
+            continue
+    
+    ## Selecciono únicamente aquellas muestras no nulas (elimino el dummy vector) para estables
+    estables = estables[1:,:]
 
-## Obtengo el conjunto de inestables
-id_inestables = np.concatenate((train_inestables, val_inestables))
+    ## Retorno los segmentos comprimidos estables y los ids de las posiciones
+    return estables, ids_posiciones_estables
 
-## Obtengo el conjunto de los IDs de todos los pacientes
-ids_pacientes = np.concatenate((id_estables, id_inestables))
+## Construyo una función que me haga el cargado de todos los segmentos comprimidos inestables
+def CargarComprimidosInestables():
 
-## ---------------------------------- CARGADO DE COMPRIMIDAS ESTABLES ----------------------------------
+    ## Construyo una lista donde voy a guardar las muestras etiquetadas como inestables
+    inestables = np.zeros((1, 256))
 
-## Especifico la ruta en la cual se encuentran las muestras comprimidas
-ruta_comprimidas = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae"
+    ## Inicializo un diccionario cuya clave va a ser el ID del paciente y el valor una tupla con las posiciones de sus objetos en la matriz en inestables
+    ids_posiciones_inestables = {}
 
-## Construyo una lista donde voy a guardar las muestras etiquetadas como estables
-estables = np.zeros((1, 256))
+    ## Itero para cada uno de los IDs considerados como inestables
+    for inestable in id_inestables:
 
-## Construyo una lista donde voy a guardar las muestras etiquetadas como inestables
-inestables = np.zeros((1, 256))
+        ## Construyo un bloque try except para atrapar errores
+        try:
 
-## Inicializo un diccionario cuya clave va a ser el ID del paciente y el valor una tupla con las posiciones de sus objetos en la matriz en estables
-ids_posiciones_estables = {}
+            ## Abro el archivo donde tengo la muestra comprimida
+            comprimida_inestable = np.load(ruta_comprimidas + '/S{}/S{}_latente.npz'.format(inestable, inestable))
 
-## Inicializo un diccionario cuya clave va a ser el ID del paciente y el valor una tupla con las posiciones de sus objetos en la matriz en inestables
-ids_posiciones_inestables = {}
+            ## Selecciono la representación en espacio latente de los segmentos de marcha
+            latente_inestable = comprimida_inestable['X']
 
-## Itero para cada uno de los IDs considerados como estables
-for estable in id_estables:
+            ## Guardo en el diccionario la ID del paciente con sus posiciones
+            ids_posiciones_inestables[str(inestable)] = (len(inestables) - 1, len(inestables) + len(latente_inestable) - 2)
 
-    ## Construyo un bloque try except para atrapar errores
-    try:
+            ## Agrego dicho espacio latente a la lista de estables
+            inestables = np.concatenate((inestables, latente_inestable), axis = 0)
 
-        ## Abro el archivo donde tengo la muestra comprimida
-        comprimida_estable = np.load(ruta_comprimidas + '/S{}/S{}_latente.npz'.format(estable, estable))
+        ## En caso de que haya algún error
+        except:
 
-        ## Selecciono la representación en espacio latente de los segmentos de marcha
-        latente_estable = comprimida_estable['X']
+            ## Que continúe con la siguiente muestra
+            continue
 
-        ## Guardo en el diccionario la ID del paciente con sus posiciones
-        ids_posiciones_estables[str(estable)] = (len(estables) - 1, len(estables) + len(latente_estable) - 2)
+    ## Selecciono únicamente aquellas muestras no nulas (elimino el dummy vector) para inestables
+    inestables = inestables[1:,:]
 
-        ## Agrego dicho espacio latente a la lista de estables
-        estables = np.concatenate((estables, latente_estable), axis = 0)
+    ## Retorno los segmentos comprimidos estables y los ids de las posiciones
+    return inestables, ids_posiciones_inestables
 
-    ## En caso de que haya algún error
-    except:
+## Construyo una función que me combine todos los datos estables e inestables y me los normalice
+def CombinarNormalizar(estables, inestables):
 
-        ## Que continúe con la siguiente muestra
-        continue
+    ## Construyo una matriz con todos los segmentos comprimidos
+    comprimidos_total = np.concatenate((estables, inestables))
 
-## -------------------------------- CARGADO DE COMPRIMIDAS INESTABLES ----------------------------------
+    ## Construyo una matriz con todas las etiquetas
+    vector_etiquetas =  np.concatenate((np.zeros(len(estables)), np.ones(len(inestables))))
 
-## Itero para cada uno de los IDs considerados como inestables
-for inestable in id_inestables:
+    # Hago la normalización por columna es decir por feature
+    comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
 
-    ## Construyo un bloque try except para atrapar errores
-    try:
+    ## Retorno el vector de etiquetas y la matriz de comprimidos
+    return comprimidos_total, vector_etiquetas
 
-        ## Abro el archivo donde tengo la muestra comprimida
-        comprimida_inestable = np.load(ruta_comprimidas + '/S{}/S{}_latente.npz'.format(inestable, inestable))
+## Defino una función que me haga la validación cruzada individual aleatorio
+def KFoldIndividualAleatoria(comprimidos_total, vector_etiquetas, folds, clasificador):
 
-        ## Selecciono la representación en espacio latente de los segmentos de marcha
-        latente_inestable = comprimida_inestable['X']
+    ## Especifico la cantidad de folds que voy a utilizar para poder hacer la validación cruzada
+    k_folds = KFold(n_splits = folds, shuffle = True)
 
-        ## Guardo en el diccionario la ID del paciente con sus posiciones
-        ids_posiciones_inestables[str(inestable)] = (len(inestables) - 1, len(inestables) + len(latente_inestable) - 2)
+    ## En caso de que el clasificador elegido sea la SVM
+    if clasificador == 'svm':
 
-        ## Agrego dicho espacio latente a la lista de estables
-        inestables = np.concatenate((inestables, latente_inestable), axis = 0)
+        ## Construyo la Support Vector Machine
+        clas = SVC(C = 1, gamma = 1, kernel = 'rbf')
 
-    ## En caso de que haya algún error
-    except:
+    ## En caso de que el clasificador elegido sea LDA
+    elif clasificador == 'lda':
 
-        ## Que continúe con la siguiente muestra
-        continue
+        ## Construyo el clasificador LDA
+        clas = LinearDiscriminantAnalysis()
 
-## Selecciono únicamente aquellas muestras no nulas (elimino el dummy vector) para estables
-estables = estables[1:,:]
+    ## Hago la validación cruzada del modelo
+    scores = cross_val_score(clas, comprimidos_total, vector_etiquetas, cv = k_folds)
 
-## Selecciono únicamente aquellas muestras no nulas (elimino el dummy vector) para inestables
-inestables = inestables[1:,:]
+    ## Retorno los scores de LDA y SVM
+    return scores
 
-## Construyo una matriz con todos los segmentos comprimidos
-comprimidos_total = np.concatenate((estables, inestables))
+## Defino una función que me construya la matriz de confusión para el desempeño K-Fold de los modelos
+def KFoldAleatoriaMatrizConf(comprimidos_total, vector_etiquetas, folds, clasificador):
 
-## Construyo una matriz con todas las etiquetas
-vector_etiquetas =  np.concatenate((np.zeros(len(estables)), np.ones(len(inestables))))
+    ## Especifico la cantidad de folds que voy a utilizar para poder hacer la validación cruzada
+    k_folds = KFold(n_splits = folds, shuffle = True)
 
-# Hago la normalización por columna es decir por feature
-comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
+    ## En caso de que el clasificador elegido sea la SVM
+    if clasificador == 'svm':
 
-## -------------------------------- VALIDACIÓN CRUZADA DE LOS MODELOS ----------------------------------
+        ## Construyo la Support Vector Machine
+        clas = SVC(C = 1, gamma = 1, kernel = 'rbf')
 
-## Construyo la Support Vector Machine
-svm = SVC(C = 1, gamma = 1, kernel = 'rbf')
+    ## En caso de que el clasificador elegido sea LDA
+    elif clasificador == 'lda':
 
-## Especifico la cantidad de folds que voy a utilizar para poder hacer la validación cruzada
-k_folds = KFold(n_splits = 10, shuffle = True)
+        ## Construyo el clasificador LDA
+        clas = LinearDiscriminantAnalysis()
+    
+    ## Obtengo las predicciones del clasificador mediante validación cruzada
+    vector_predicciones = cross_val_predict(clas, comprimidos_total, vector_etiquetas, cv = k_folds)
 
-## Hago la validación cruzada del modelo
-scores_svm = cross_val_score(svm, comprimidos_total, vector_etiquetas, cv = k_folds)
+    ## Construyo y despliego la matriz de confusión
+    cm = confusion_matrix(vector_etiquetas, vector_predicciones)
+    disp = ConfusionMatrixDisplay(confusion_matrix = cm)
+    disp.plot()
+    plt.show()
 
-## Construyo el clasificador LDA
-lda = LinearDiscriminantAnalysis()
+## Hago una función que me haga la LOO donde cada validation set son los registros de un paciente
+def LOOPorPaciente(estables, inestables, ids_posiciones_estables, ids_posiciones_inestables, clasificador):
 
-## Hago la validación cruzada del modelo
-scores_lda = cross_val_score(lda, comprimidos_total, vector_etiquetas, cv = k_folds)
+    ## Obtengo una lista de identificadores con todos los pacientes, ya sean estables o inestables
+    ids_pacientes = np.concatenate((id_estables, id_inestables), axis = 0)
 
-## Inicializo una lista en la cual voy a guardar los errores de predicción para el modelo
-errores_prediccion = []
+    ## Inicializo una lista en la cual voy a guardar los errores de predicción para el modelo
+    errores_prediccion = []
 
-## Genero una variable la cual especifique el modelo que voy a usar para hacer la validacion
-modelo = 'lda'
+    ## Itero para cada uno de los pacientes en el conjunto de IDs de entrenamiento y validacion
+    for id_paciente in np.sort(ids_pacientes):
 
-## Itero para cada uno de los pacientes en el conjunto de IDs de entrenamiento y validacion
-for id_paciente in np.sort(ids_pacientes):
+        ## Construyo un bloque try except para atrapar errores
+        try:
 
-    ## Construyo un bloque try except para atrapar errores
-    try:
+            ## Asigno por defecto el conjunto de entrenamiento de los estables al vector total de estables
+            train_estables = normalize(estables, norm = "l2", axis = 0)
 
-        ## Asigno por defecto el conjunto de entrenamiento de los estables al vector total de estables
-        train_estables = normalize(estables, norm = "l2", axis = 0)
+            ## Asigno por defecto el conjunto de entrenamiento de los inestables al vector total de inestables
+            train_inestables = normalize(inestables, norm = "l2", axis = 0)
 
-        ## Asigno por defecto el conjunto de entrenamiento de los inestables al vector total de inestables
-        train_inestables = normalize(inestables, norm = "l2", axis = 0)
+            ## En caso de que el paciente sea estable
+            if id_paciente in id_estables:
 
-        ## En caso de que el paciente sea estable
-        if id_paciente in id_estables:
+                ## Selecciono los segmentos asociados al paciente como conjunto de validacion
+                validation_set = train_estables[ids_posiciones_estables[str(id_paciente)][0] : ids_posiciones_estables[str(id_paciente)][1] + 1, :]
 
-            ## Selecciono los segmentos asociados al paciente como conjunto de validacion
-            validation_set = train_estables[ids_posiciones_estables[str(id_paciente)][0] : ids_posiciones_estables[str(id_paciente)][1] + 1, :]
+                ## Saco el conjunto de validación del conjunto de entrenamiento de estables
+                train_estables = np.concatenate((train_estables[ : ids_posiciones_estables[str(id_paciente)][0], :], train_estables[ids_posiciones_estables[str(id_paciente)][1] + 1 :, :]))
 
-            ## Saco el conjunto de validación del conjunto de entrenamiento de estables
-            train_estables = np.concatenate((train_estables[ : ids_posiciones_estables[str(id_paciente)][0], :], train_estables[ids_posiciones_estables[str(id_paciente)][1] + 1 :, :]))
+                ## Genero el vector de etiquetas para el conjunto de validación correspondiente
+                etiquetas_val = np.zeros(len(validation_set))
 
-            ## Genero el vector de etiquetas para el conjunto de validación correspondiente
-            etiquetas_val = np.zeros(len(validation_set))
+            ## En caso de que el paciente sea inestable
+            elif id_paciente in id_inestables:
 
-        ## En caso de que el paciente sea inestable
-        elif id_paciente in id_inestables:
+                ## Selecciono los segmentos asociados al paciente como conjunto de validacion
+                validation_set = train_inestables[ids_posiciones_inestables[str(id_paciente)][0] : ids_posiciones_inestables[str(id_paciente)][1] + 1, :]
 
-            ## Selecciono los segmentos asociados al paciente como conjunto de validacion
-            validation_set = train_inestables[ids_posiciones_inestables[str(id_paciente)][0] : ids_posiciones_inestables[str(id_paciente)][1] + 1, :]
+                ## Saco el conjunto de validación del conjunto de entrenamiento de inestables
+                train_inestables = np.concatenate((train_inestables[ : ids_posiciones_inestables[str(id_paciente)][0], :], train_inestables[ids_posiciones_inestables[str(id_paciente)][1] + 1 :, :]))
 
-            ## Saco el conjunto de validación del conjunto de entrenamiento de inestables
-            train_inestables = np.concatenate((train_inestables[ : ids_posiciones_inestables[str(id_paciente)][0], :], train_inestables[ids_posiciones_inestables[str(id_paciente)][1] + 1 :, :]))
+                ## Genero el vector de etiquetas para el conjunto de validación correspondiente
+                etiquetas_val = np.ones(len(validation_set))
 
-            ## Genero el vector de etiquetas para el conjunto de validación correspondiente
-            etiquetas_val = np.ones(len(validation_set))
+            ## Obtengo el vector de etiquetas según estabilidad (0 es estable, 1 es inestable)
+            etiquetas = np.concatenate((np.zeros(train_estables.shape[0]), np.ones(train_inestables.shape[0])))
 
-        ## Obtengo el vector de etiquetas según estabilidad (0 es estable, 1 es inestable)
-        etiquetas = np.concatenate((np.zeros(train_estables.shape[0]), np.ones(train_inestables.shape[0])))
+            ## Hago la concatenación de las matrices para obtener el conjunto de entrenamiento total
+            train_set = np.concatenate((train_estables, train_inestables))
 
-        ## Hago la concatenación de las matrices para obtener el conjunto de entrenamiento total
-        train_set = np.concatenate((train_estables, train_inestables))
+            ## En caso de que el modelo elegido sea LDA
+            if clasificador == 'lda':
 
-        ## En caso de que el modelo elegido sea LDA
-        if modelo == 'lda':
+                ## Construyo el modelo inicial
+                clas = LinearDiscriminantAnalysis()
 
-            ## Construyo el modelo inicial
-            lda_model = LinearDiscriminantAnalysis()
+            ## En caso de que el modelo elegido sea SVM
+            elif clasificador == 'svm':
 
-            ## Hago el entrenamiento del modelo usando el conjunto de entrenamiento y sus etiquetas
-            lda_model.fit(train_set, etiquetas)
+                ## Construyo el modelo inicial
+                clas = SVC(C = 1, gamma = 1, kernel = 'rbf')
 
-            ## Hago la prediccion del modelo para el validation set
-            val_predict = lda_model.predict(validation_set)
-        
-        ## En caso de que el modelo elegido sea SVM
-        elif modelo == 'svm':
+            ## En caso de que el modelo elegido sea PERCEPTRON
+            elif clasificador == 'perceptron':
 
-            ## Construyo el modelo inicial
-            svm_model = SVC(C = 1, gamma = 1, kernel = 'rbf')
+                ## Defino el perceptrón
+                clas = Perceptron()
 
-            ## Hago el entrenamiento del modelo usando el conjunto de entrenamiento y sus etiquetas
-            svm_model.fit(train_set, etiquetas)
+            ## Hago el ajuste del perceptrón para el conjunto de validación
+            clas.fit(train_set, etiquetas)
 
-            ## Hago la prediccion del modelo para el validation set
-            val_predict = svm_model.predict(validation_set)
-        
-        ## Calculo el error correspondiente al modelo como el cociente entre los segmentos mal clasificados del paciente y los segmentos totales
-        error = np.logical_xor(val_predict, etiquetas_val)[np.logical_xor(val_predict, etiquetas_val) == True].shape[0] / np.logical_xor(val_predict, etiquetas_val).shape[0]
+            ## Hago la predicción para el conjunto de validación
+            val_predict = clas.predict(validation_set)
+            
+            ## Calculo el error correspondiente al modelo como el cociente entre los segmentos mal clasificados del paciente y los segmentos totales
+            error = np.logical_xor(val_predict, etiquetas_val)[np.logical_xor(val_predict, etiquetas_val) == True].shape[0] / np.logical_xor(val_predict, etiquetas_val).shape[0]
 
-        ## Agrego el error de predicción junto con el ID del paciente usado para la validación
-        errores_prediccion.append([id_paciente, error])
+            ## Agrego el error de predicción junto con el ID del paciente usado para la validación
+            errores_prediccion.append([id_paciente, error])
 
-    ## En caso de que haya algún error
-    except:
+        ## En caso de que haya algún error
+        except:
 
-        ## Que continúe con la siguiente muestra
-        continue
+            ## Que continúe con la siguiente muestra
+            continue
 
-## Hago la conversión de la matriz de errores de predicción a precisiones
-errores_prediccion = np.array((errores_prediccion))
+    ## Hago la conversión de la matriz de errores de predicción a precisiones
+    errores_prediccion = np.array((errores_prediccion))
 
-## Inicializo un vector en donde voy a guardar las precisiones de las predicciones
-precisiones = []
+    ## Inicializo un vector en donde voy a guardar las precisiones de las predicciones
+    precisiones = []
 
-## Itero para cada una de las predicciones
-for i in range (len(errores_prediccion)):   
+    ## Itero para cada una de las predicciones
+    for i in range (len(errores_prediccion)):   
 
-    ## Me quedo con el ID del paciente correspondiente y la precision que se calcula en base al error
-    precisiones.append([errores_prediccion[i][0], 1 - errores_prediccion[i][1]])
+        ## Me quedo con el ID del paciente correspondiente y la precision que se calcula en base al error
+        precisiones.append([errores_prediccion[i][0], 1 - errores_prediccion[i][1]])
 
-## Hago la conversión a vector numpy
-precisiones = np.array(precisiones)
+    ## Hago la conversión a vector numpy
+    precisiones = np.array(precisiones)
+
+    ## Retorno la matriz con la ID de cada paciente y la precisión asociada
+    return precisiones
+
+## Ejecución principal del programa
+if __name__== '__main__':
+
+    ## Cargado de comprimidos estables
+    estables, ids_posiciones_estables = CargarComprimidosEstables()
+
+    ## Cargado de comprimidos inestables
+    inestables, ids_posiciones_inestables = CargarComprimidosInestables()
+
+    ## Hago la combinación de estables e inestables y normalizacion
+    comprimidos_total, vector_etiquetas = CombinarNormalizar(estables, inestables)
+
+    ## Obtengo la matriz de confusión con validación KFold
+    KFoldAleatoriaMatrizConf(comprimidos_total, vector_etiquetas, 10, 'lda')
+
+    ## Hago la validación LOO individual aleatoria
+    scores = KFoldIndividualAleatoria(comprimidos_total, vector_etiquetas, 10, 'lda')
+
+    ## Hago la validación LOO por paciente
+    precisiones = LOOPorPaciente(estables, inestables, ids_posiciones_estables, ids_posiciones_inestables, 'lda')
