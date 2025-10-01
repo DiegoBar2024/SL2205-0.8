@@ -73,349 +73,301 @@ def SecuenciasMismaPersona(sec1, sec2, secuencias_por_persona):
     ## En caso de que las secuencias pertenezcan a personas distintas, devuelvo False
     return False
 
-## ------------------------------------- SELECCIÓN DE MUESTRAS ----------------------------------------------
+## Creo una función que me haga el cargado de datos comprimidos
+def CargadoComprimidos(filtrar_etiquetados):
 
-## Construyo una variable booleana de modo de poder filtrar aquellos pacientes etiquetados
-filtrar_etiquetados = True
+    ## Hago la lectura de los datos generales de los pacientes presentes en la base de datos
+    pacientes, ids_existentes = LecturaDatosPacientes()
 
-## Construyo una lista con todos aquellos pacientes denominados estables no añosos
-id_estables_no_añosos = np.array([114, 127, 128, 129, 130, 133, 213, 224, 226, 44, 294])
+    ## Creo un vector donde voy a guardar las etiquetas asociadas a cada uno de los pacientes etiquetados, respetando el orden
+    vector_etiquetas = []
 
-## Construyo una lista con todos aquellos pacientes denominados estables añosos
-## En principio estos pacientes se consideran como estables pero se van a mantener por separado del análisis
-id_estables_añosos = np.array([67, 77, 111, 112, 115, 216, 229, 271, 273])
+    ## Genero una lista vacía que va a contener las etiquetas de los pacientes
+    etiquetas = []
 
-## Obtengo una lista con los identificadores de todos los pacientes estables
-id_estables = np.concatenate([id_estables_añosos, id_estables_no_añosos])
+    ## Genero un vector vacío para poder concatenar los vectores con todas las representaciones latentes
+    comprimidos_total = np.zeros((1, 256))
 
-## Construyo una lista con aquellos pacientes denominados inestables
-id_inestables = np.array([69, 72, 90, 122, 137, 139, 142, 144, 148, 149, 158, 167, 178, 221, 223, 232, 256])
+    ## Genero una lista una lista donde el elemento i es una matriz (j, k) donde:
+    ## i: Hace referencia a la i-ésima secuencia de marcha
+    ## j: Hace referencia a la j-ésima observación temporal de dicha secuencia de marcha
+    ## K: Hace referencia a la k-ésima feature
+    secuencias_individuales = []
 
-## Construyo una lista con los IDs de aquellos pacientes los cuales yo sé que están etiquetados
-id_etiquetados = np.concatenate([id_estables, id_inestables])
+    ## Genero una lista una lista donde el elemento i es un tensor (j, k, l) donde:
+    ## i: Hace referencia a la i-ésima persona
+    ## j: Hace referencia a la j-ésima secuencia de la persona
+    ## k: Hace referencia a la k-ésima observación temporal de dicha secuencia
+    ## K: Hace referencia a la k-ésima feature
+    secuencias_por_persona = [[]]
 
-## ----------------------------------- CARGADO DE DATOS COMPRIMIDOS ----------------------------------------------
+    ## Itero para cada uno de los identificadores de los pacientes
+    for id_persona in ids_existentes:
 
-## Hago la lectura de los datos generales de los pacientes presentes en la base de datos
-pacientes, ids_existentes = LecturaDatosPacientes()
+        ## Creo un bloque try catch en caso de que ocurra algún error en el procesamiento
+        try:
 
-## Creo un vector donde voy a guardar las etiquetas asociadas a cada uno de los pacientes etiquetados, respetando el orden
-vector_etiquetas = []
+            ## Obtengo el conjunto de tramos de marcha sin giros detectados para el paciente
+            tramos = os.listdir(ruta_comprimidas_sin_giros + '/S{}'.format(id_persona))
 
-## Genero un vector vacío para poder concatenar los vectores con todas las representaciones latentes
-comprimidos_total = np.zeros((1, 256))
+            ## Itero para cada uno de los tramos listados anteriormente
+            for i in range (len(tramos)):
 
-## Genero una lista una lista donde el elemento i es una matriz (j, k) donde:
-## i: Hace referencia a la i-ésima secuencia de marcha
-## j: Hace referencia a la j-ésima observación temporal de dicha secuencia de marcha
-## K: Hace referencia a la k-ésima feature
-secuencias_individuales = []
+                ## Hago la lectura del archivo con el espacio latente
+                archivo_comprimido = np.load(ruta_comprimidas_sin_giros + '/S{}/Tramo{}/S{}_latente.npz'.format(id_persona, i, id_persona))
 
-## Genero una lista vacía que va a contener las etiquetas de los pacientes
-etiquetas = []
+                ## Almaceno el archivo comprimido en una variable como un array bidimensional
+                ## La i-ésima fila representa el i-ésimo segmento
+                ## La j-ésima columna representa el j-ésimo feature
+                espacio_comprimido = archivo_comprimido['X']
 
-## Genero una lista una lista donde el elemento i es un tensor (j, k, l) donde:
-## i: Hace referencia a la i-ésima persona
-## j: Hace referencia a la j-ésima secuencia de la persona
-## k: Hace referencia a la k-ésima observación temporal de dicha secuencia
-## K: Hace referencia a la k-ésima feature
-secuencias_por_persona = [[]]
+                ## En caso de que el segmento detectado tenga la cantidad necesaria de muestras
+                if espacio_comprimido.shape[0] > 2:
 
-## Itero para cada uno de los identificadores de los pacientes
-for id_persona in ids_existentes:
+                    ## Recorto muestras al principio y al final
+                    espacio_comprimido = espacio_comprimido[1: -1, :]
 
-    ## Creo un bloque try catch en caso de que ocurra algún error en el procesamiento
-    try:
+                    ## En caso de que no haya ningun archivo comprimido
+                    if len(espacio_comprimido) == 0:
 
-        ## Obtengo el conjunto de tramos de marcha sin giros detectados para el paciente
-        tramos = os.listdir(ruta_comprimidas_sin_giros + '/S{}'.format(id_persona))
-
-        ## Itero para cada uno de los tramos listados anteriormente
-        for i in range (len(tramos)):
-
-            ## Hago la lectura del archivo con el espacio latente
-            archivo_comprimido = np.load(ruta_comprimidas_sin_giros + '/S{}/Tramo{}/S{}_latente.npz'.format(id_persona, i, id_persona))
-
-            ## Almaceno el archivo comprimido en una variable como un array bidimensional
-            ## La i-ésima fila representa el i-ésimo segmento
-            ## La j-ésima columna representa el j-ésimo feature
-            espacio_comprimido = archivo_comprimido['X']
-
-            ## En caso de que el segmento detectado tenga la cantidad necesaria de muestras
-            if espacio_comprimido.shape[0] > 2:
-
-                ## Recorto muestras al principio y al final
-                espacio_comprimido = espacio_comprimido[1: -1, :]
-
-                ## En caso de que no haya ningun archivo comprimido
-                if len(espacio_comprimido) == 0:
-
-                    ## Continúo al siguiente paciente
-                    continue
-
-                ## En caso de que yo quiera filtrar los pacientes etiquetados en mi muestra
-                if filtrar_etiquetados:
-
-                    ## En caso de que el ID del paciente que está siendo analizado no corresponde a un paciente etiquetado, me lo salteo y no lo proceso
-                    if id_persona not in id_etiquetados:
-
+                        ## Continúo al siguiente paciente
                         continue
 
-                    ## En caso de que el paciente haya sido clasificado como estable
-                    if id_persona in id_estables:
+                    ## En caso de que yo quiera filtrar los pacientes etiquetados en mi muestra
+                    if filtrar_etiquetados:
 
-                        ## Concateno un vector de ceros con la cantidad de segmentos que tengo para el registro del paciente
-                        vector_etiquetas = np.concatenate((np.array(vector_etiquetas), np.zeros((espacio_comprimido.shape[0])))).astype(int)
-                    
-                        ## Asigno la etiqueta numérica 0 al paciente estable
-                        etiquetas.append(0)
+                        ## En caso de que el ID del paciente que está siendo analizado no corresponde a un paciente etiquetado, me lo salteo y no lo proceso
+                        if id_persona not in id_etiquetados:
 
-                    ## En caso de que el paciente haya sido clasificado como inestable
-                    else:
+                            continue
 
-                        ## Concateno un vector de ceros con la cantidad de segmentos que tengo para el registro del paciente
-                        vector_etiquetas = np.concatenate((np.array(vector_etiquetas), np.ones((espacio_comprimido.shape[0])))).astype(int)
+                        ## En caso de que el paciente haya sido clasificado como estable
+                        if id_persona in id_estables:
 
-                        ## Asigno la etiqueta numérica 1 al paciente inestable
-                        etiquetas.append(1)
+                            ## Concateno un vector de ceros con la cantidad de segmentos que tengo para el registro del paciente
+                            vector_etiquetas = np.concatenate((np.array(vector_etiquetas), np.zeros((espacio_comprimido.shape[0])))).astype(int)
+                        
+                            ## Asigno la etiqueta numérica 0 al paciente estable
+                            etiquetas.append(0)
 
-                ## Concateno el espacio comprimido por filas a la matriz donde guardo los espacios latentes totales
-                comprimidos_total = np.concatenate((comprimidos_total, espacio_comprimido), axis = 0)
+                        ## En caso de que el paciente haya sido clasificado como inestable
+                        else:
 
-                ## Agrego la secuencia individual a la lista de secuencias individuales
-                secuencias_individuales.append(espacio_comprimido)
+                            ## Concateno un vector de ceros con la cantidad de segmentos que tengo para el registro del paciente
+                            vector_etiquetas = np.concatenate((np.array(vector_etiquetas), np.ones((espacio_comprimido.shape[0])))).astype(int)
 
-                ## Agrego el espacio comprimido a la lista correspondiente
-                secuencias_por_persona[-1].append(espacio_comprimido)
+                            ## Asigno la etiqueta numérica 1 al paciente inestable
+                            etiquetas.append(1)
 
-        ## Impresión en pantalla avisando el identificador del paciente que está siendo procesado
-        print("ID del paciente que está siendo procesado: {}".format(id_persona))
+                    ## Concateno el espacio comprimido por filas a la matriz donde guardo los espacios latentes totales
+                    comprimidos_total = np.concatenate((comprimidos_total, espacio_comprimido), axis = 0)
 
-        ## Agrego una lista al final de las secuencias por persona
-        secuencias_por_persona.append([])
+                    ## Agrego la secuencia individual a la lista de secuencias individuales
+                    secuencias_individuales.append(espacio_comprimido)
 
-    ## En caso de que ocurra un error en el procesamiento
-    except:
+                    ## Agrego el espacio comprimido a la lista correspondiente
+                    secuencias_por_persona[-1].append(espacio_comprimido)
 
-        ## Sigo con el paciente que sigue
-        continue
+            ## Impresión en pantalla avisando el identificador del paciente que está siendo procesado
+            print("ID del paciente que está siendo procesado: {}".format(id_persona))
 
-## Selecciono únicamente aquellas muestras no nulas (elimino el dummy vector)
-## Se obtiene entonces una matriz de datos bidimensional donde:
-## La i-ésima fila representa el i-ésimo segmento
-## La j-ésima columna representa el j-ésimo feature
-comprimidos_total = comprimidos_total[1:,:]
+            ## Agrego una lista al final de las secuencias por persona
+            secuencias_por_persona.append([])
 
-## Normalización de la matriz de datos de entrada al algoritmo de clustering
-## Hago la normalización por columna es decir por feature
-comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
+        ## En caso de que ocurra un error en el procesamiento
+        except:
 
-## Elimino el úlimo elemento de la lista de secuencias por personas, que es una lista vacía
-secuencias_por_persona = secuencias_por_persona[:-1]
+            ## Sigo con el paciente que sigue
+            continue
 
-## ---------------------------------------------- LSTM ------------------------------------------------
+    ## Selecciono únicamente aquellas muestras no nulas (elimino el dummy vector)
+    ## Se obtiene entonces una matriz de datos bidimensional donde:
+    ## La i-ésima fila representa el i-ésimo segmento
+    ## La j-ésima columna representa el j-ésimo feature
+    comprimidos_total = comprimidos_total[1:,:]
 
-# ## Defino un factor de partición
-# ## Defino una variable donde guardo el error de prediccion
-# error_medio_lstm = 0
+    ## Normalización de la matriz de datos de entrada al algoritmo de clustering
+    ## Hago la normalización por columna es decir por feature
+    comprimidos_total = normalize(comprimidos_total, norm = "l2", axis = 0)
 
-# ## Construyo un vector donde guardo la precisión de cada una de las predicciones realizadas
-# precisiones = []
+    ## Elimino el úlimo elemento de la lista de secuencias por personas, que es una lista vacía
+    secuencias_por_persona = secuencias_por_persona[:-1]
 
-# ## Defino una variable donde especifico el numero de subsecuencias
-# nro_subsec = 1
+    ## Retorno el vector de secuencias individuales, las etiquetas asociadas y las secuencias por persona
+    return etiquetas, secuencias_individuales, secuencias_por_persona
 
-# ## Algoritmo de validación cruzada Leave One Out
-# ## Itero para cada uno de los pacientes etiquetados para validar el modelo
-# for i in range (len(etiquetas)):
+## Creo una función que me haga el entrenamiento y validación de la red LSTM con LOO por paciente
+def ValidacionLSTM(etiquetas, secuencias_individuales):
 
-#     ## Construyo un modelo secuencial de Keras
-#     model = Sequential()
+    ## Construyo un vector donde guardo la precisión de cada una de las predicciones realizadas
+    ## El i-ésimo elemento de dicho vector va a ser la precisión en el i-ésimo fold
+    precisiones = []
 
-#     ## Agrego una capa de LSTM al modelo especificando la cantidad de hidden units
-#     model.add(LSTM(20, activation = 'tanh', input_shape = (None, 256)))
+    ## Defino una variable donde especifico el numero de subsecuencias
+    nro_subsec = 1
 
-#     ## Agrego una neurona de salida para hacer la clasificacion
-#     model.add(Dense(1, activation = 'sigmoid'))
+    ## Algoritmo de validación cruzada Leave One Out
+    ## Itero para cada uno de los pacientes etiquetados para validar el modelo
+    for i in range (len(etiquetas)):
 
-#     ## Compilo el modelo LSTM
-#     model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+        ## Construyo un modelo secuencial de Keras
+        model = Sequential()
 
-#     ## Itero para cada uno de los pacientes etiquetados para entrenar el modelo
-#     for j in range (len(etiquetas)):
+        ## Agrego una capa de LSTM al modelo especificando la cantidad de hidden units
+        model.add(LSTM(20, activation = 'tanh', input_shape = (None, 256)))
 
-#         ## En caso de que el paciente de entrenamiento coincida con el de validación
-#         if i == j:
+        ## Agrego una neurona de salida para hacer la clasificacion
+        model.add(Dense(1, activation = 'sigmoid'))
 
-#             ## Sigo con el siguiente paciente de entrenamiento
-#             continue
+        ## Compilo el modelo LSTM
+        model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
 
-#         ## Hago una partición de la serie del paciente j según el numero dado de subsecuencias
-#         comprimidos_particion_j = np.array_split(secuencias_individuales[j], nro_subsec)
+        ## Itero para cada uno de los pacientes etiquetados para entrenar el modelo
+        for j in range (len(etiquetas)):
 
-#         ## Itero para cada uno de los segmentos comprimidos de la persona
-#         for segmento in comprimidos_particion_j:
+            ## En caso de que el paciente de entrenamiento coincida con el de validación
+            if i == j:
 
-#             ## Hago el ajuste del modelo LSTM para el j-ésimo paciente en su segmento
-#             model.fit(np.reshape(normalize(segmento, norm = "l2", axis = 0), (1, segmento.shape[0], segmento.shape[1])),
-#                     np.reshape(etiquetas[j], (1, 1)), epochs = 20)
+                ## Sigo con el siguiente paciente de entrenamiento
+                continue
+
+            ## Hago una partición de la serie del paciente j según el numero dado de subsecuencias
+            comprimidos_particion_j = np.array_split(secuencias_individuales[j], nro_subsec)
+
+            ## Itero para cada uno de los segmentos comprimidos de la persona
+            for segmento in comprimidos_particion_j:
+
+                ## Hago el ajuste del modelo LSTM para el j-ésimo paciente en su segmento
+                model.fit(np.reshape(normalize(segmento, norm = "l2", axis = 0), (1, segmento.shape[0], segmento.shape[1])),
+                        np.reshape(etiquetas[j], (1, 1)), epochs = 20)
+        
+        ## Hago una partición de la serie del paciente i según el numero dado de subsecuencias
+        comprimidos_particion_i = np.array_split(secuencias_individuales[i], nro_subsec)
+
+        ## Itero para cada uno de los segmentos comprimidos de la persona
+        for segmento in comprimidos_particion_i:
+
+            ## Evalúo la precisión de modelo en el paciente separado para la validación
+            ## Si accuracy = 1 entonces el modelo clasifica correctamente a la muestra
+            ## Si accuracy = 0 entonces el modelo clasifica incorrectamente a la muestra
+            loss, accuracy = model.evaluate(np.reshape(normalize(segmento, norm = "l2", axis = 0), (1, segmento.shape[0], segmento.shape[1])),
+                                np.reshape(etiquetas[i], (1, 1)))
+
+            ## Me guardo la precisión de la predicción en el vector correspondiente
+            precisiones.append(accuracy)
+
+    ## Construyo una lista que me guarde las predicciones
+    predicciones_lstm = []
+
+    ## Itero para cada uno de los subsegmentos
+    for i in range (len(precisiones)):
+
+        ## En caso que la predicción haya sido realizada correctamente
+        if precisiones[i] == 1:
+
+            ## Agrego la etiqueta correcta del segmento correspondiente
+            predicciones_lstm.append(etiquetas[i])
+
+        ## En caso de que la predicción no haya sido realizada bien
+        else:
+
+            ## En caso de que el segmento sea estable verdaderamente
+            if etiquetas[i] == 0:
+
+                ## Entonces la prediccion realizada es inestable
+                predicciones_lstm.append(1)
+
+            ## En caso de que el segmento sea inestable verdaderamente
+            else:
+
+                ## Entonces la predicción realizada es estable
+                predicciones_lstm.append(0)
     
-#     ## Hago una partición de la serie del paciente i según el numero dado de subsecuencias
-#     comprimidos_particion_i = np.array_split(secuencias_individuales[i], nro_subsec)
+    ## Retorno las predicciones realizadas haciendo la validación LSTM
+    return predicciones_lstm
 
-#     ## Itero para cada uno de los segmentos comprimidos de la persona
-#     for segmento in comprimidos_particion_i:
+## Creo una función que me haga la validación con DTW 1NN
+def ValidacionDTW(etiquetas, secuencias_individuales, secuencias_por_persona):
 
-#         ## Evalúo la precisión de modelo en el paciente separado para la validación
-#         ## Si accuracy = 1 entonces el modelo clasifica correctamente a la muestra
-#         ## Si accuracy = 0 entonces el modelo clasifica incorrectamente a la muestra
-#         loss, accuracy = model.evaluate(np.reshape(normalize(segmento, norm = "l2", axis = 0), (1, segmento.shape[0], segmento.shape[1])),
-#                             np.reshape(etiquetas[i], (1, 1)))
+    ## Construyo un tensor bidimensional de modo que guarde las distancias relativas
+    distancias_series = np.zeros((len(secuencias_individuales), len(secuencias_individuales)))
 
-#         ## Me guardo la precisión de la predicción en el vector correspondiente
-#         precisiones.append(accuracy)
+    ## Itero para cada uno de las series temporales por persona
+    for i in range (len(secuencias_individuales)):
 
-# ## Construyo una lista que me guarde las predicciones
-# predicciones = []
+        ## Itero para las series temporales que no corresponden a la persona (se puede optimizar)
+        for j in range (i + 1, len(secuencias_individuales)):
 
-# ## Itero para cada uno de los subsegmentos
-# for i in range (len(precisiones)):
+            ## Obtengo la serie asociada al paciente actual y la normalizo por feature
+            serie_i = normalize(secuencias_individuales[i], norm = "l2", axis = 0)
 
-#     ## En caso que la predicción haya sido realizada correctamente
-#     if precisiones[i] == 1:
+            ## Obtengo la serie asociada al paciente a comparar y la normalizo por feature
+            serie_j = normalize(secuencias_individuales[j], norm = "l2", axis = 0)
 
-#         ## Agrego la etiqueta correcta del segmento correspondiente
-#         predicciones.append(etiquetas[i])
+            ## CÁLCULO DE LA DTW entre ambas series
+            ## Recuerdo que las filas de la matriz son las observaciones
+            ## Recuerdo que las columnas de la matriz son las variables
+            ## Para que la DTW esté bien definida los tensores deben tener mismo numero de variables (o sea de columnas)
+            ## El DTW se encuentra bien definido incluso cuando los tensores tienen distinto número de filas
+            dist = dtw_functions.dtw(serie_i, serie_j, type_dtw = "d", local_dissimilarity = d.euclidean, MTS = True)
 
-#     ## En caso de que la predicción no haya sido realizada bien
-#     else:
+            ## Asigno la distancia a la posición de la matriz correspondiente
+            distancias_series[i, j] = dist
+            
+            ## Como la matriz de distancias es simétrica hago lo mismo con la otra posicion
+            distancias_series[j, i] = dist
 
-#         ## En caso de que el segmento sea estable verdaderamente
-#         if etiquetas[i] == 0:
+    ## Genero un vector donde me guardo las predicciones
+    predicciones_dtw = []
 
-#             ## Entonces la prediccion realizada es inestable
-#             predicciones.append(1)
+    ## Genero una lista donde el i-ésimo valor será True si la secuencia más próxima a la secuencia i
+    ## pertenece a la misma persona. Lo veo como un indicador de variabilidad intra-persona
+    secuencias_misma_persona = []
 
-#         ## En caso de que el segmento sea inestable verdaderamente
-#         else:
+    ## Itero para cada uno de las series temporales por persona
+    for i in range (len(secuencias_individuales)):
 
-#             ## Entonces la predicción realizada es estable
-#             predicciones.append(0)
+        ## Obtengo la posición del argumento minimo no nulo en donde se presenta la distancia deseada
+        posicion_minimo = np.argmin(distancias_series[i, :][distancias_series[i, :] != 0])
 
-## ---------------------------------------------- DTW ------------------------------------------------
+        ## Agrego la prediccion como la etiqueta del más cercano
+        predicciones_dtw.append(etiquetas[posicion_minimo + 1])
 
-## Construyo un tensor bidimensional de modo que guarde las distancias relativas
-distancias_series = np.zeros((len(secuencias_individuales), len(secuencias_individuales)))
+        ## Obtengo la secuencia de distancia mínima a la secuencia actual
+        secuencia_mas_proxima = secuencias_individuales[posicion_minimo + 1]
 
-## Itero para cada uno de las series temporales por persona
-for i in range (len(secuencias_individuales)):
+        ## Miro a ver si la secuencia de distancia mínima pertenece a la misma persona
+        misma_persona = SecuenciasMismaPersona(secuencias_individuales[i], secuencia_mas_proxima, secuencias_por_persona)
 
-    ## Itero para las series temporales que no corresponden a la persona (se puede optimizar)
-    for j in range (i + 1, len(secuencias_individuales)):
+        ## Me guardo el valor booleano si la secuencia es la misma persona, en la lista dada
+        secuencias_misma_persona.append(misma_persona)
 
-        ## Obtengo la serie asociada al paciente actual
-        serie_i = normalize(secuencias_individuales[i], norm = "l2", axis = 0)
+    ## Hago la conversión a vector numpy de los valores booleanos de las secuencias pertenecientes a la misma persona
+    secuencias_misma_persona = np.array(secuencias_misma_persona)
 
-        ## Obtengo la serie asociada al paciente a comparar
-        serie_j = normalize(secuencias_individuales[j], norm = "l2", axis = 0)
+    ## Convierto el vector de predicciones en vector numpy
+    predicciones_dtw = np.array(predicciones_dtw)
 
-        ## CÁLCULO DE LA DTW entre ambas series
-        ## Recuerdo que las filas de la matriz son las observaciones
-        ## Recuerdo que las columnas de la matriz son las variables
-        ## Para que la DTW esté bien definida los tensores deben tener mismo numero de variables (o sea de columnas)
-        ## El DTW se encuentra bien definido incluso cuando los tensores tienen distinto número de filas
-        dist = dtw_functions.dtw(serie_i, serie_j, type_dtw = "d", local_dissimilarity = d.euclidean, MTS = True)
+    ## Retorno las predicciones realizadas por la validación DTW
+    return predicciones_dtw
 
-        ## Asigno la distancia a la posición de la matriz correspondiente
-        distancias_series[i, j] = dist
-        
-        ## Como la matriz de distancias es simétrica hago lo mismo con la otra posicion
-        distancias_series[j, i] = dist
+## Creo una función la cual me construya automáticamente la matriz de confusión dadas las etiqetas y predicciones
+def MatrizConfusion(etiquetas, predicciones):
 
-## ---------------------------------------- VALIDACIÓN ------------------------------------------------
+    ## Instrucciones de construcción y display de la matriz de confusion
+    cm = confusion_matrix(np.array(etiquetas), predicciones)
+    disp = ConfusionMatrixDisplay(confusion_matrix = cm, display_labels = ['Estable', 'Inestable'])
+    disp.plot()
+    plt.show()
 
-## POSITIVO = PACIENTE INESTABLE
-## NEGATIVO = PACIENTE ESTABLE
-## Variable que contabiliza los Falsos Positivos
-falsos_positivos = 0
+## Ejecución principal del programa
+if __name__== '__main__':
 
-## Variable que contabiliza los Falsos Negativos
-falsos_negativos = 0
+    ## Hago el cargado de datos comprimidos
+    etiquetas, secuencias_individuales, secuencias_por_persona = CargadoComprimidos(filtrar_etiquetados = True)
 
-## Variable que contabiliza los Verdaderos Positivos
-verdaderos_positivos = 0
+    ## Hago la validación del algoritmo de clasificacion DTW 1NN
+    predicciones = ValidacionDTW(etiquetas, secuencias_individuales, secuencias_por_persona)
 
-## Genero un vector donde me guardo las predicciones
-predicciones_dtw = []
-
-## Genero una lista donde el i-ésimo valor será True si la secuencia más próxima a la secuencia i
-## pertenece a la misma persona. Lo veo como un indicador de variabilidad intra-persona
-secuencias_misma_persona = []
-
-## Itero para cada uno de las series temporales por persona
-for i in range (len(secuencias_individuales)):
-
-    ## Obtengo la posición del argumento minimo no nulo en donde se presenta la distancia deseada
-    posicion_minimo = np.argmin(distancias_series[i, :][distancias_series[i, :] != 0])
-
-    ## Agrego la prediccion como la etiqueta del más cercano
-    predicciones_dtw.append(etiquetas[posicion_minimo + 1])
-
-    ## Obtengo la secuencia de distancia mínima a la secuencia actual
-    secuencia_mas_proxima = secuencias_individuales[posicion_minimo + 1]
-
-    ## Miro a ver si la secuencia de distancia mínima pertenece a la misma persona
-    misma_persona = SecuenciasMismaPersona(secuencias_individuales[i], secuencia_mas_proxima, secuencias_por_persona)
-
-    ## Me guardo el valor booleano si la secuencia es la misma persona, en la lista dada
-    secuencias_misma_persona.append(misma_persona)
-
-    ## En caso de que el paciente esté mal clasificado
-    if etiquetas[posicion_minimo + 1] != etiquetas[i]:
-
-        ## Si el paciente estaba etiquetado con 1 (positivo)
-        if etiquetas[i] == 1:
-
-            ## Este es un falso negativo
-            falsos_negativos += 1
-        
-        ## Si el paciente estaba etiquetado con 0 (negativo)
-        elif etiquetas[i] == 0:
-
-            ## Este es un falso positivo
-            falsos_positivos += 1
-        
-    ## En caso de que el paciente esté bien clasificado
-    else:
-
-        ## En caso de esté etiquetado con 1
-        if etiquetas[i] == 1:
-
-            ## Este es un verdadero positivo
-            verdaderos_positivos += 1
-
-## Hago la conversión a vector numpy de los valores booleanos de las secuencias pertenecientes a la misma persona
-secuencias_misma_persona = np.array(secuencias_misma_persona)
-
-## Convierto el vector de predicciones en vector numpy
-predicciones_dtw = np.array(predicciones_dtw)
-
-## Obtengo los verdaderos negativos como los restantes
-verdaderos_negativos = len(etiquetas) - (verdaderos_positivos + falsos_negativos + falsos_positivos)
-
-## ---------------------------------------- SEPARADO ------------------------------------------------
-
-## Construyo la Support Vector Machine
-svm = SVC(C = 1, gamma = 1, kernel = 'rbf')
-
-## Especifico la cantidad de folds que voy a utilizar para poder hacer la validación cruzada
-k_folds = KFold(n_splits = 10, shuffle = True)
-
-## Hago la validación cruzada del modelo
-scores_svm = cross_val_score(svm, comprimidos_total, vector_etiquetas, cv = k_folds)
-
-## Construyo el clasificador LDA
-lda = LinearDiscriminantAnalysis()
-
-## Hago la validación cruzada del modelo
-scores_lda = cross_val_score(lda, comprimidos_total, vector_etiquetas, cv = k_folds)
+    ## Construyo la matriz de confusión correspondiente
+    MatrizConfusion(etiquetas, predicciones)

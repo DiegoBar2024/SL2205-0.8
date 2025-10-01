@@ -8,8 +8,6 @@ import sys
 sys.path.append(str(pathlib.Path().resolve()).replace('\\','/') + '/sereTestLib')
 from parameters import *
 
-## ----------------------------------- LECTURA DE DATOS DEL PACIENTE --------------------------------------
-
 ## Construyo una función la cual me permita leer los datos de los pacientes que están ingresados en la base de datos
 def LecturaDatosPacientes():
 
