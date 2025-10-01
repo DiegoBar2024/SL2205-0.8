@@ -88,33 +88,9 @@ def classify_patient_aelda(patient_number, clf_model, modelo, clasificador, resu
             ## Determino la predicción del clasificador ante mi muestra de entrada
             pat_predictions = clf_model.predict(pat_intermediate)
 
-            ## En caso de que el clasificador usado sea un perceptron
-            if clasificador == "perceptron":
-
-                ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
-                ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
-                pat_predictions = pat_predictions > 0.5
-            
-        ## En caso de que el clasificador usado sea un LDA
-        if clasificador == "lda":
-
             ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
             ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
-            pat_predictions = pat_predictions > 0.5    
-
-            ## En caso de que el clasificador sea una red neuronal
-            if clasificador == "NN":
-
-                ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
-                ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
-                pat_predictions = pat_predictions > 0.5
-
-            ## En caso de que el clasificador usado sea un SVM
-            if clasificador == "svm":
-
-                ## En caso que el valor de la predicción numérica sea mayor a 0.5, asigno la variable <<pat_predictions>> a True (escalograma inestable)
-                ## En caso que el valor de la predicción numérica sea menor a 0.5, asigno la variable <<pat_predictions>> a False (escalograma estable)
-                pat_predictions = pat_predictions > 0.5
+            pat_predictions = pat_predictions > 0.5
 
         ## <<activity_str>> va a contener una cadena con el nombre de la actividad que se está estudiando
         ## Por ejemplo, para el caso que tenemos de la marcha, se obtiene <<activity_str>> = 'Caminando'

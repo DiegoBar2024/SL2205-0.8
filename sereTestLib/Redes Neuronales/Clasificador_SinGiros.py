@@ -193,8 +193,8 @@ def CargadoComprimidos(filtrar_etiquetados):
     ## Elimino el úlimo elemento de la lista de secuencias por personas, que es una lista vacía
     secuencias_por_persona = secuencias_por_persona[:-1]
 
-    ## Retorno el vector de secuencias individuales, las etiquetas asociadas y las secuencias por persona
-    return etiquetas, secuencias_individuales, secuencias_por_persona
+    ## Retorno el vector de secuencias individuales, las etiquetas asociadas, las secuencias por persona y los comprimidos totales
+    return etiquetas, secuencias_individuales, secuencias_por_persona, comprimidos_total
 
 ## Creo una función que me haga el entrenamiento y validación de la red LSTM con LOO por paciente
 def ValidacionLSTM(etiquetas, secuencias_individuales):
