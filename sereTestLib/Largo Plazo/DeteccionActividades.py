@@ -236,7 +236,7 @@ if __name__== '__main__':
     ## Opción 1: Generar los ficheros JSON con los SMA y features para cada actividad
     ## Opción 2: Entrenamiento de modelos que permitan discriminar actividades usando SMA y otras features
     ## Opción 3: Validar modelos entrenados con los registros tomados por los estudiantes
-    opcion = 3
+    opcion = 1
 
     ## Hago la lectura de los datos generales de los pacientes
     pacientes, ids_existentes = LecturaDatosPacientes()

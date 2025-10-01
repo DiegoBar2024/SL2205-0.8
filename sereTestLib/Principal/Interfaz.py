@@ -61,7 +61,7 @@ def RealizarAnalisis():
         muestras_solapamiento = 50
 
         ## Hago el cálculo del vector de SMA para dicha persona
-        vector_SMA, features, ventanas = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad = None, CalcFeatures = False)
+        vector_SMA, features, ventanas, nombres_features = DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, periodoMuestreo, cant_muestras, actividad = None, CalcFeatures = False)
 
         ## Cargo el modelo del clasificador ya entrenado según la ruta del clasificador
         clf_entrenado = load(ruta_SVM)

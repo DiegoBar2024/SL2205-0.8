@@ -1,0 +1,26 @@
+# See: https://git-scm.com/docs/gitignore
+__pycache__/
+projects/
+/kielmat.egg-info
+# from before the package was renamed
+/ngmt.egg-info 
+
+my_messy_code/mytestconde.py
+
+/my_messy_code/*
+kielmat/examples_gait_sqeuence.py
+
+.vscode/
+
+*.pyc
+/site/*
+/dist
+/.venv
+
+# local changelog generator
+create_changelog.py
+changelog.yml
+
+# example data
+kielmat/datasets/_*
+ngmt/datasets/_*
