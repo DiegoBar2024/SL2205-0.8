@@ -17,6 +17,7 @@ from sklearn.model_selection import cross_val_score, KFold, cross_val_predict
 from sklearn.preprocessing import normalize
 from sklearn.linear_model import Perceptron
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.feature_selection import SequentialFeatureSelector
 
 ## Defino una función que me permita ver si dos matrices tienen al menos una fila en común
 def FilasEnComun(matriz1, matriz2):
@@ -180,6 +181,45 @@ def KFoldAleatoriaMatrizConf(comprimidos_total, vector_etiquetas, folds, clasifi
     disp.plot()
     plt.show()
 
+## Defino una función que me haga una feature selection para poder hacer la clasificacion
+def FeatureSelection(comprimidos_total, etiquetas, clasificador):
+
+    ## En caso de que el modelo elegido sea LDA
+    if clasificador == 'lda':
+
+        ## Construyo el modelo de análisis en discriminante lineal
+        clas = LinearDiscriminantAnalysis()
+
+    ## En caso de que el modelo elegido sea SVM
+    elif clasificador == 'svm':
+
+        ## Construyo el modelo de Support Vector Machine
+        clas = SVC(C = 1, gamma = 1, kernel = 'rbf')
+
+    ## En caso de que el modelo elegido sea PERCEPTRON
+    elif clasificador == 'perceptron':
+
+        ## Construyo el modelo del perceptron
+        clas = Perceptron()
+
+    ## Construyo un selector de features. La cantidad de features óptima se selecciona automáticamente
+    selector_features = SequentialFeatureSelector(clas)
+
+    ## Hago el ajuste del selector de features
+    selector_features.fit(comprimidos_total, etiquetas)
+
+    ## Obtengo las columnas de los features que fueron seleccionados por SFFS
+    columnas_features = np.where(selector_features.get_support() == True)
+
+    ## Filtro la matriz de features con aquellas columnas que fueron seleccionados
+    features_filt = comprimidos_total[:, columnas_features]
+
+    ## Ajusto las dimensiones de lo anterior para que quede una matriz
+    features_filt = np.reshape(features_filt, (features_filt.shape[0], features_filt.shape[2]))
+
+    ## Retorno la matriz de datos luego de hacer el filtrado
+    return features_filt
+
 ## Hago una función que me haga la LOO donde cada validation set son los registros de un paciente
 def LOOPorPaciente(estables, inestables, ids_posiciones_estables, ids_posiciones_inestables, clasificador):
 
@@ -234,19 +274,19 @@ def LOOPorPaciente(estables, inestables, ids_posiciones_estables, ids_posiciones
             ## En caso de que el modelo elegido sea LDA
             if clasificador == 'lda':
 
-                ## Construyo el modelo inicial
+                ## Construyo el modelo de análisis en discriminante lineal
                 clas = LinearDiscriminantAnalysis()
 
             ## En caso de que el modelo elegido sea SVM
             elif clasificador == 'svm':
 
-                ## Construyo el modelo inicial
+                ## Construyo el modelo de Support Vector Machine
                 clas = SVC(C = 1, gamma = 1, kernel = 'rbf')
 
             ## En caso de que el modelo elegido sea PERCEPTRON
             elif clasificador == 'perceptron':
 
-                ## Defino el perceptrón
+                ## Construyo el modelo del perceptron
                 clas = Perceptron()
 
             ## Hago el ajuste del perceptrón para el conjunto de validación
@@ -297,11 +337,17 @@ if __name__== '__main__':
     ## Hago la combinación de estables e inestables y normalizacion
     comprimidos_total, vector_etiquetas = CombinarNormalizar(estables, inestables)
 
+    ## Especifico el modelo de clasificador que voy a usar
+    clasificador = 'lda'
+
+    ## Hago la selección de features usando SFFS
+    comprimidos_total = FeatureSelection(comprimidos_total, vector_etiquetas, clasificador)
+
     ## Obtengo la matriz de confusión con validación KFold
-    KFoldAleatoriaMatrizConf(comprimidos_total, vector_etiquetas, 10, 'lda')
+    KFoldAleatoriaMatrizConf(comprimidos_total, vector_etiquetas, 10, clasificador)
 
     ## Hago la validación LOO individual aleatoria
-    scores = KFoldIndividualAleatoria(comprimidos_total, vector_etiquetas, 10, 'lda')
+    scores = KFoldIndividualAleatoria(comprimidos_total, vector_etiquetas, 10, clasificador)
 
     ## Hago la validación LOO por paciente
-    precisiones = LOOPorPaciente(estables, inestables, ids_posiciones_estables, ids_posiciones_inestables, 'lda')
+    precisiones = LOOPorPaciente(estables, inestables, ids_posiciones_estables, ids_posiciones_inestables, clasificador)

@@ -81,19 +81,3 @@ while ubicacion_muestra < cant_muestras:
 
     ## Actualizo el valor de la ubicación de la muestra para que me guarde la posición en la que debe comenzar la siguiente ventana
     ubicacion_muestra += muestras_ventana - muestras_solapamiento
-
-## ---------------------------------------- MÉTODO KIELMAT -----------------------------------------
-
-## Creo un objeto detector de giros
-pham = PhamTurnDetection()
-
-## Hago la detección de giros
-pham.detect(
-        accel_data = pd.DataFrame(acel),
-        gyro_data = pd.DataFrame(gyro),
-        gyro_vertical ="pelvis_GYRO_y",
-        sampling_freq_Hz = 200,
-        tracking_system = "imu",
-        tracked_point ="LowerBack",
-        plot_results = False
-        )
