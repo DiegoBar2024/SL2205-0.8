@@ -7,19 +7,80 @@ from parameters import *
 from Muestreo import *
 from ValoresMagnetometro import *
 from LecturaDatos import *
-import parameters
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.spatial.transform import Rotation as R
-import imumaster
+import pandas as pd
 import ahrs
-from skinematics import imus
+from ahrs.common.quaternion import *
+import numpy as np
+from matplotlib import pyplot as plt
+from skinematics.imus import *
+from pyquaternion import *
+from vqf import VQF
 
 ## ---------------------------------------- CORRECCIÓN DE EJES ------------------------------------------
 
-def CorreccionEjes():
+## Función toma las señales de aceleración y cuaterniones de rotación y los rota
+def Rotacion(acel, quat_rotacion):
 
-    return
+    ## Construyo una lista en donde voy a almacenar las aceleraciones rotadas
+    acel_rotada = []
+
+    ## Itero para cada uno de los cuaterniones del arreglo
+    for i in range (quat_rotacion.shape[0]):
+
+        ## Inicializo un objeto conteniendo el cuaternión de rotación
+        cuaternion_rotacion = Quaternion(quat_rotacion[i, :][0], quat_rotacion[i, :][1], quat_rotacion[i, :][2], quat_rotacion[i, :][3])
+
+        ## MÉTODO I: Rotación del vector usando el cuaternión como objeto
+        vector_rotado = cuaternion_rotacion.rotate(acel[i, :])
+
+        ## MÉTODO II: Aplico la rotación del vector i de aceleración según el cuaternión i
+        acel_rotada.append(vector.rotate_vector(acel[i, :], quat_rotacion[i, :]))
+    
+    ## MÉTODO III: Obtención de la aceleración rotada aplicando los cuaterniones en un único paso
+    rotated_acc = np.array([Quaternion(q_np).rotate(acel[q_idx]) for q_idx, q_np in enumerate(quat_rotacion)])
+    
+    ## Retorno la aceleración rotada
+    return np.array(acel_rotada)
+
+## Función que toma como entrada los valores de aceleración, velocidad angular e intensidad de campo magnético
+## Se devuelve a la salida el objeto filtro dependiendo del modelo elegido
+def Filtrado(acel, gyro, mag, modelo, fs):
+
+    ## Método I: Filtro de Kalman Extendido
+    if modelo == 'ekf':
+
+        ## Procesamiento con EKF
+        filtro = ahrs.filters.EKF(gyr = gyro, acc = acel, mag = mag, frame = 'ENU', frequency = fs)
+
+    ## Método II: Filtro de Mahony
+    elif modelo == 'mahony':
+
+        ## Procesamiento con Mahony
+        filtro = ahrs.filters.Mahony(acc = acel, gyr = gyro, mag = mag, frequency = fs)
+
+    ## Método III: Filtro de Madgwick
+    elif modelo == 'madgwick':
+
+        ## Procesamiento con Madgwick
+        filtro = ahrs.filters.Madgwick(gyr = gyro, acc = acel, mag = mag, frequency = fs)
+
+    ## Método IV: Filtro Complementario
+    elif modelo == "complementary":
+
+        ## Procesamiento con complementario
+        filtro = ahrs.filters.Complementary(gyr = gyro, acc = acel, mag = mag, frequency = fs, gain = 0.8)
+    
+    ## Método V: VQF
+    elif modelo == 'vqf':
+
+        ## Creación del objeto VQF
+        filtro = VQF(gyrTs = 1 / fs, accTs = 1 / fs, magTs = 1 / fs)
+
+        ## Cargo los datos de entrada
+        filtro = filtro.updateBatch(gyr = np.ascontiguousarray(gyro), acc = np.ascontiguousarray(acel), mag = np.ascontiguousarray(mag))
+
+    ## Retorno el filtro correspondiente
+    return filtro
 
 ## Ejecución principal del programa
 if __name__== '__main__':
@@ -33,43 +94,36 @@ if __name__== '__main__':
     ## Hago la lectura de las aceleraciones y los giroscopios
     data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = 69, lectura_datos_propios = True, ruta = ruta_registro_completa)
 
-    # ## Cálculo de orientaciones
-    # orientation = imumaster.Orientation(sample_rate = 1 / periodoMuestreo, frame = 'ENU', method = 'EKF')
+    ## Especifico el conjunto de filtros que tengo a disposicion
+    filtros = ['complementary']
 
-    # ## Genero una lista vacía donde voy a guardar las aceleraciones rotadas
-    # acel_rotadas = []
+    ## Itero para cada uno de los filtros que tengo
+    for nombre_filtro in filtros:
 
-    # ## MÉTODO I: MADGWICK
-    # madgwick = ahrs.filters.Madgwick(gyr = np.array([gyro[:, 0], gyro[:, 1], gyro[:, 2]]).transpose(),
-    #                             acc = np.array([acel[:, 0], acel[:, 1], acel[:, 2]]).transpose(),
-    #                             frequency = 1 / periodoMuestreo)
+        ## Hago el filtrado de la señal para obtener orientacion
+        filtro = Filtrado(acel, gyro, mag, modelo = nombre_filtro, fs = 1 / periodoMuestreo)
+        
+        ## En caso de que el filtro sea vqf
+        if nombre_filtro == 'vqf':
 
-    # ## Obtengo cuaterniones estimados
-    # quaternions = madgwick.Q
+            ## Accedo de distinta manera a los cuaterniones
+            ## Ésta operación rota la aceleración del sistema solidario a la IMU al sistema solidario a la Tierra
+            acel_rotada = Rotacion(acel, filtro['quat9D'])
+        
+        ## En caso de que tenga otro filtro
+        else:
 
-    # rotated_vector = R.from_quat(quaternions).apply(np.array([acel[:, 0], acel[:, 1], acel[:, 2]]).transpose())
+            ## Hago la rotación de la aceleración usando cuaterniones de orientacion
+            ## Ésta operación rota la aceleración del sistema solidario a la IMU al sistema solidario a la Tierra
+            acel_rotada = Rotacion(acel, filtro.Q)
 
-    # ## MÉTODO II: FILTRO DE KALMAN EXTENDIDO
-    # ## Itero para cada una de las muestras que tengo
-    # for i in range (acel.shape[0]):
+        ## Graficación de la aceleración rotada
+        plt.plot(acel_rotada[:, 1], label = '{}'.format(nombre_filtro))
 
-    #     ## Estimacion del cuaternión de rotación en la muestra dada
-    #     q_estimation = orientation.EKF(np.array([acel[:, 0], acel[:, 2], acel[:, 1]]).transpose()[i, :], 
-    #                                 np.array([gyro[:, 0], gyro[:, 2], gyro[:, 1]]).transpose()[i, :],
-    #                                 np.array([mag[:, 0], mag[:, 2], mag[:, 1]]).transpose()[i, :])
+    # ## Hago la rotación de la aceleración usando cuaterniones reales medidos
+    # acel_rotada = Rotacion(acel, cuat)
 
-    #     ## Cálculo de ángulos de Euler para la muestra dada
-    #     eulerangle = orientation.eulerangle(q_estimation)
-
-    #     ## Hago la rotación de las aceleraciones usando Euler
-    #     acel_rotada = R.from_euler('xyz', eulerangle, degrees = True).apply(np.array([acel[:, 0], acel[:, 2], acel[:, 1]]).transpose()[i, :])
-
-    #     ## Agrego la aceleración rotada a la lista correspondiente
-    #     acel_rotadas.append(acel_rotada)
-    
-    ## MÉTODO III
-    q, pos, vel, acel_rotada = imus.analytical(omega = np.array([gyro[:, 0], gyro[:, 2], gyro[:, 1]]).transpose(), 
-                                accMeasured = np.array([acel[:, 0], acel[:, 2], acel[:, 1]]).transpose(), 
-                                rate = 1 / periodoMuestreo)
-
-    rotated_vector = R.from_quat(q).apply(np.array([acel[:, 0], acel[:, 2], acel[:, 1]]).transpose())
+    ## Despliego la gráfica
+    plt.plot(acel[:, 0], label = 'Real')
+    plt.legend()
+    plt.show()

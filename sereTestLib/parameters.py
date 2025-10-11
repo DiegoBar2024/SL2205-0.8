@@ -330,10 +330,16 @@ ruta_escalogramas_sin_giros = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalograma
 ruta_comprimidas_sin_giros = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_sin_giros"
 
 ## Especifico la ruta donde se encuentran los escalogramas de los giros
-ruta_escalogramas_giros = 'C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_giros_tot'
+ruta_escalogramas_giros = "C:/Yo/Tesis/sereData/sereData/Dataset/escalogramas_giros_tot"
 
 ## Especifico la ruta donde se guardan los espacios latentes de los giros
 ruta_comprimidas_giros = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae_giros_tot"
+
+## Especifico la ruta donde se guardan las muestras reconstruídas a la salida del autoencoder
+ruta_reconstruidas = "C:/Yo/Tesis/sereData/sereData/Dataset/reconstrucciones_ae"
+
+## Especifico la ruta donde se guardan las imágenes reconstruídas
+ruta_img_reconstruidas = "C:/Yo/Tesis/sereData/sereData/img_reconstruidas"
 
 ## Ruta en la cual se encuentra el archivo .csv con los datos clínicos de los pacientes
 ruta_pacientes = "C:/Yo/Tesis/sereData/sereData/Etiquetas/clasificaciones_antropometricos.csv"

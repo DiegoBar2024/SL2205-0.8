@@ -59,7 +59,7 @@ def Imagenes(id_persona):
 
 ## Ejecución principal del programa
 if __name__== '__main__':
-    
+
     ## La idea es poder generar y guardar los escalogramas como imagenes para todos los pacientes presentes en la base de datos
     ## Hago la lectura de los datos generales de los pacientes
     pacientes, ids_existentes = LecturaDatosPacientes()
