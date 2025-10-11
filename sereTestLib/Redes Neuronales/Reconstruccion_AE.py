@@ -12,38 +12,32 @@ from Modelo_CLAS import *
 from skimage.metrics import structural_similarity as ssim
 from PIL import Image as im 
 
-## Defino una función que me haga la reconstrucción de una imagen
+## Función que toma como entrada los escalogramas originales de un paciente y a la salida retorna las reconstrucciones del autoencoder
 def Reconstruccion(id_persona, nombre_autoencoder):
 
     ## Especifico la ruta de donde voy a leer los escalogramas del paciente
     ruta_escalogramas_paciente = ruta_escalogramas + "/S{}/".format(id_persona)
 
-    ## Especifico la ruta en la cual yo voy a guardar las muestras reconstruidas
-    ruta_reconstruidas_paciente = ruta_reconstruidas + '/S{}/'.format(id_persona)
-
     ## Cargo el modelo entrenado del autoencoder
     modelo_autoencoder = ae_load_model(ruta_ae, nombre_autoencoder)
-
-    ## En caso de que el directorio no exista
-    if not os.path.exists(ruta_reconstruidas_paciente):
-        
-        ## Creo el directorio correspondiente
-        os.makedirs(ruta_reconstruidas_paciente)
 
     ## Recuerdo que cada uno de los archivos se corresponde con un escalograma (tensor tridimensional)
     archivos = [archivo for archivo in os.listdir(ruta_escalogramas_paciente) if archivo.endswith("npz")]
 
-    ## Parámetros del autoencoder
-    ## IMPORTANTE EL HECHO DE QUE LOS SEGMENTOS NO ESTÉN DESORDENADOS
-    params = {'data_dir' :  ruta_escalogramas,
-                            'dim' : inDim,
-                            'batch_size' : batch_size,
-                            'shuffle' : False,
-                            'activities' : ['Caminando']}
+    ## Creo una lista donde voy a almacenar todos los escalogramas originales
+    escalogramas_originales = []
 
-    ## Generación de datos de entrenamiento (va a ser un objeto de la clase DataGeneratorAuto)
-    ## Le paso como argumento los parámetros de entrenamiento
-    generador_datos = DataGeneratorAuto(list_IDs = np.array([id_persona]), **params)
+    ## Itero para cada uno de los segmentos presentes en el archivo
+    for i in range (len(archivos)):
+
+        ## Abro el archivo con la extensión .npz donde se encuentra el escalograma
+        escalograma_original = np.load(ruta_escalogramas_paciente + archivos[i])['X']
+
+        ## Agrego el escalograma a la lista de escalogramas
+        escalogramas_originales.append(escalograma_original)
+    
+    ## Hago la traducción de array a vector numpy
+    escalogramas_originales = np.array(escalogramas_originales)
 
     ## Obtengo las imagenes reconstruidas
     ## La variable <<img_reconstruida>> me va a almacenar un tensor tetradimensional de dimensiones (m, c, f, t) donde
@@ -51,13 +45,22 @@ def Reconstruccion(id_persona, nombre_autoencoder):
     ##  c: Me da la cantidad de canales del escalograma (en este caso c = 6)
     ##  f: Me da la cantidad de frecuencias sobre las cuales se encuentra calculado el escalograma
     ##  t: Me da la cantidad de muestras temporales sobre las cuales se calcula el escalogarma
-    img_reconstruida = modelo_autoencoder.predict(generador_datos)
+    escalogramas_reconstruidos = modelo_autoencoder.predict(escalogramas_originales)
 
     ## Retorno la imagen reconstruída, la lista de archivos y las rutas correspondientes
-    return img_reconstruida, ruta_escalogramas_paciente, ruta_reconstruidas_paciente, archivos
+    return escalogramas_reconstruidos, escalogramas_originales, ruta_escalogramas_paciente, archivos
 
-## Defino una función que realice el guardado de los escalogramas
-def Guardado(img_reconstruida, ruta_reconstruidas_paciente):
+## Defino una función que realice el guardado de los escalogramas como matrices
+def Guardado(img_reconstruida, id_persona):
+
+    ## Especifico la ruta en la cual yo voy a guardar las muestras reconstruidas
+    ruta_reconstruidas_paciente = ruta_reconstruidas + '/S{}/'.format(id_persona)
+
+    ## En caso de que el directorio no exista
+    if not os.path.exists(ruta_reconstruidas_paciente):
+        
+        ## Creo el directorio correspondiente
+        os.makedirs(ruta_reconstruidas_paciente)
 
     ## Itero para cada uno de los segmentos que tengo detectados
     for i in range (img_reconstruida.shape[0]):
@@ -181,4 +184,4 @@ def ConversionImagenes(id_persona):
 if __name__== '__main__':
 
     ## Ejecución de la rutina de reconstruccion
-    Reconstruccion(299, "AutoencoderUCU_nuevo")
+    escalogramas_reconstruidos, escalogramas_originales, ruta_escalogramas_paciente, archivos = Reconstruccion(302, "AutoencoderUCU_nuevo")

@@ -24,7 +24,7 @@ def Rotacion(acel, quat_rotacion):
     ## Construyo una lista en donde voy a almacenar las aceleraciones rotadas
     acel_rotada = []
 
-    ## Itero para cada uno de los cuaterniones del arreglo
+    ## Itero para cada uno de los cuaterniones de orientacion
     for i in range (quat_rotacion.shape[0]):
 
         ## Inicializo un objeto conteniendo el cuaternión de rotación
@@ -34,7 +34,7 @@ def Rotacion(acel, quat_rotacion):
         vector_rotado = cuaternion_rotacion.rotate(acel[i, :])
 
         ## MÉTODO II: Aplico la rotación del vector i de aceleración según el cuaternión i
-        acel_rotada.append(vector.rotate_vector(acel[i, :], quat_rotacion[i, :]))
+        acel_rotada.append(vector.rotate_vector(acel[i, :], cuaternion_rotacion.q))
     
     ## MÉTODO III: Obtención de la aceleración rotada aplicando los cuaterniones en un único paso
     rotated_acc = np.array([Quaternion(q_np).rotate(acel[q_idx]) for q_idx, q_np in enumerate(quat_rotacion)])
@@ -42,6 +42,31 @@ def Rotacion(acel, quat_rotacion):
     ## Retorno la aceleración rotada
     return np.array(acel_rotada)
 
+## Función que me elimine las componentes de la gravedad de las señales de acelerometría
+def EliminarGravedad(acel, quat_rotacion):
+
+    ## Construyo una lista en donde voy a almacenar las aceleraciones sin tener en cuenta la gravedad
+    acel_sin_g = []
+
+    ## Defino el vector de la gravedad como vertical hacia arriba
+    gravedad = np.array([0, 0, constants.g])
+
+    ## Itero para cada uno de los cuaterniones de orientación
+    for i in range (quat_rotacion.shape[0]):
+
+        ## Inicializo un objeto conteniendo el cuaternión de rotación
+        cuaternion_rotacion = Quaternion(quat_rotacion[i, :][0], quat_rotacion[i, :][1], quat_rotacion[i, :][2], quat_rotacion[i, :][3])
+
+        ## Hago la rotación de la gravedad usando el cuaternión inverso
+        ## Como resultado obtengo la gravedad en el sistema solidario al IMU
+        gravedad_rotada = vector.rotate_vector(gravedad, cuaternion_rotacion.inverse.q)
+
+        ## Almaceno la resta entre la aceleración original y la gravedad rotada
+        acel_sin_g.append(acel[i, :] - gravedad_rotada)
+    
+    ## Retorno la aceleración sin gravedad en el sistema del IMU
+    return np.array(acel_sin_g)
+    
 ## Función que toma como entrada los valores de aceleración, velocidad angular e intensidad de campo magnético
 ## Se devuelve a la salida el objeto filtro dependiendo del modelo elegido
 def Filtrado(acel, gyro, mag, modelo, fs):
@@ -118,12 +143,16 @@ if __name__== '__main__':
             acel_rotada = Rotacion(acel, filtro.Q)
 
         ## Graficación de la aceleración rotada
-        plt.plot(acel_rotada[:, 1], label = '{}'.format(nombre_filtro))
-
-    # ## Hago la rotación de la aceleración usando cuaterniones reales medidos
-    # acel_rotada = Rotacion(acel, cuat)
+        plt.plot(acel_rotada[:, 0], label = '{}'.format(nombre_filtro))
 
     ## Despliego la gráfica
     plt.plot(acel[:, 0], label = 'Real')
     plt.legend()
+    plt.show()
+
+    ## Elimino la gravedad
+    acel_sin_g = EliminarGravedad(acel, filtro.Q)
+
+    ## Grafico aceleracion sin gravedad
+    plt.plot(acel_sin_g[:, 2])
     plt.show()
