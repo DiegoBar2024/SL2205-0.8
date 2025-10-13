@@ -14,7 +14,7 @@ from scipy import constants
 
 ## -------------------------------------- CÁLCULO DE ESCALOGRAMAS --------------------------------------
 
-def Escalogramas(id_persona, tiempo, pasos, cant_muestras, acel, gyro, periodoMuestreo):
+def Escalogramas(id_persona, tiempo, pasos, cant_muestras, acel, gyro, periodoMuestreo, graficar = False):
 
     ## --------------------------------------------- PARÁMETROS --------------------------------------------
 
@@ -167,138 +167,141 @@ def Escalogramas(id_persona, tiempo, pasos, cant_muestras, acel, gyro, periodoMu
         ## Agrego el escalograma y su nombre base como un diccionario a la lista de escalogramas
         escalogramas_segmentos.append({'escalograma': np.abs(matriz_escalogramas[i]), 'nombre_base_segmento': nombre_base_segmento})
 
-        ## Graficación del escalograma en el plano tiempo frecuencia
-        data = np.abs(coef1[:,extensiones_pasos[i]: coef1.shape[1] - extensiones_pasos[i]])
-        cmap = plt.get_cmap('jet', 256)
-        fig = plt.figure(figsize = (5,5))
-        ax = fig.add_subplot(111)
-        t = np.arange(coef1[:,extensiones_pasos[i]: coef1.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
-        ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
-        fig.colorbar(cm.ScalarMappable(norm = colors.Normalize(np.min(data), np.max(data)), cmap = cmap), ax = ax)
-        plt.xlabel("Tiempo (s)")
-        plt.ylabel("Frecuencia (Hz)")
-        plt.title("$|CWT_{ML}(t,f)|$")
-        plt.show()
+        ## En caso de que se quiera graficar los escalogramas
+        if graficar:
 
-        ## Graficación del escalograma en el plano tiempo frecuencia
-        data = np.abs(coef2[:,extensiones_pasos[i]: coef2.shape[1] - extensiones_pasos[i]])
-        cmap = plt.get_cmap('jet', 256)
-        fig = plt.figure(figsize = (5,5))
-        ax = fig.add_subplot(111)
-        t = np.arange(coef2[:,extensiones_pasos[i]: coef2.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
-        ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
-        fig.colorbar(cm.ScalarMappable(norm = colors.Normalize(np.min(data), np.max(data)), cmap = cmap), ax = ax)
-        plt.xlabel("Tiempo (s)")
-        plt.ylabel("Frecuencia (Hz)")
-        plt.title("$|CWT_{VT}(t,f)|$")
-        plt.show()
+            ## Graficación del escalograma en el plano tiempo frecuencia
+            data = np.abs(coef1[:,extensiones_pasos[i]: coef1.shape[1] - extensiones_pasos[i]])
+            cmap = plt.get_cmap('jet', 256)
+            fig = plt.figure(figsize = (5,5))
+            ax = fig.add_subplot(111)
+            t = np.arange(coef1[:,extensiones_pasos[i]: coef1.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
+            ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
+            fig.colorbar(cm.ScalarMappable(norm = colors.Normalize(np.min(data), np.max(data)), cmap = cmap), ax = ax)
+            plt.xlabel("Tiempo (s)")
+            plt.ylabel("Frecuencia (Hz)")
+            plt.title("$|CWT_{ML}(t,f)|$")
+            plt.show()
 
-        ## Graficación del escalograma en el plano tiempo frecuencia
-        data = np.abs(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])
-        cmap = plt.get_cmap('jet', 256)
-        fig = plt.figure(figsize = (5,5))
-        ax = fig.add_subplot(111)
-        t = np.arange(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
-        ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
-        fig.colorbar(cm.ScalarMappable(norm = colors.Normalize(np.min(data), np.max(data)), cmap = cmap), ax = ax)
-        plt.xlabel("Tiempo (s)")
-        plt.ylabel("Frecuencia (Hz)")
-        plt.title("$|CWT_{AP}(t,f)|$")
-        plt.show()
+            ## Graficación del escalograma en el plano tiempo frecuencia
+            data = np.abs(coef2[:,extensiones_pasos[i]: coef2.shape[1] - extensiones_pasos[i]])
+            cmap = plt.get_cmap('jet', 256)
+            fig = plt.figure(figsize = (5,5))
+            ax = fig.add_subplot(111)
+            t = np.arange(coef2[:,extensiones_pasos[i]: coef2.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
+            ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
+            fig.colorbar(cm.ScalarMappable(norm = colors.Normalize(np.min(data), np.max(data)), cmap = cmap), ax = ax)
+            plt.xlabel("Tiempo (s)")
+            plt.ylabel("Frecuencia (Hz)")
+            plt.title("$|CWT_{VT}(t,f)|$")
+            plt.show()
 
-        plt.plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
-        acel[:,2][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]])
-        plt.xlabel("Tiempo (s)")
-        plt.ylabel("Aceleración Anteroposterior $(m/s^{2})$")
-        plt.show()
+            ## Graficación del escalograma en el plano tiempo frecuencia
+            data = np.abs(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])
+            cmap = plt.get_cmap('jet', 256)
+            fig = plt.figure(figsize = (5,5))
+            ax = fig.add_subplot(111)
+            t = np.arange(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
+            ax.pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
+            fig.colorbar(cm.ScalarMappable(norm = colors.Normalize(np.min(data), np.max(data)), cmap = cmap), ax = ax)
+            plt.xlabel("Tiempo (s)")
+            plt.ylabel("Frecuencia (Hz)")
+            plt.title("$|CWT_{AP}(t,f)|$")
+            plt.show()
 
-        plt.plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
-        acel[:,1][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - constants.g)
-        plt.xlabel("Tiempo (s)")
-        plt.ylabel("Aceleración Vertical $(m/s^{2})$")
-        plt.show()
+            plt.plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
+            acel[:,2][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]])
+            plt.xlabel("Tiempo (s)")
+            plt.ylabel("Aceleración Anteroposterior $(m/s^{2})$")
+            plt.show()
 
-        plt.plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
-        acel[:,0][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]])
-        plt.xlabel("Tiempo (s)")
-        plt.ylabel("Aceleración Mediolateral $(m/s^{2})$")
-        plt.show()
+            plt.plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
+            acel[:,1][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - constants.g)
+            plt.xlabel("Tiempo (s)")
+            plt.ylabel("Aceleración Vertical $(m/s^{2})$")
+            plt.show()
 
-        ## GRÁFICAS CONJUNTAS
-        # Create a figure and a set of subplots with 1 row and 2 columns
-        fig, axes = plt.subplots(nrows = 1, ncols = 2, figsize = (20, 8))
+            plt.plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
+            acel[:,0][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]])
+            plt.xlabel("Tiempo (s)")
+            plt.ylabel("Aceleración Mediolateral $(m/s^{2})$")
+            plt.show()
 
-        # Plot the second graph on the second subplot (axes[1])
-        axes[0].plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
-        acel[:,0][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]])
-        axes[0].set_xlabel("Tiempo (s)")
-        axes[0].set_ylabel("Aceleración Mediolateral $(m/s^{2})$")
-        axes[0].set_title("$a_{ML}(t)$")
+            ## GRÁFICAS CONJUNTAS
+            # Create a figure and a set of subplots with 1 row and 2 columns
+            fig, axes = plt.subplots(nrows = 1, ncols = 2, figsize = (20, 8))
 
-        data = np.abs(coef1[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])
-        cmap = plt.get_cmap('jet', 256)
-        t = np.arange(coef1[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
-        axes[1].pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
-        fig.colorbar(cm.ScalarMappable(norm = colors.Normalize(np.min(data), np.max(data)), cmap = cmap), ax = axes[1])
-        axes[1].set_xlabel("Tiempo (s)")
-        axes[1].set_ylabel("Frecuencia (Hz)")
-        axes[1].set_title("$|CWT_{ML}(t,f)|$")
+            # Plot the second graph on the second subplot (axes[1])
+            axes[0].plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
+            acel[:,0][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]])
+            axes[0].set_xlabel("Tiempo (s)")
+            axes[0].set_ylabel("Aceleración Mediolateral $(m/s^{2})$")
+            axes[0].set_title("$a_{ML}(t)$")
 
-        # Adjust layout to prevent titles and labels from overlapping
-        plt.tight_layout()
+            data = np.abs(coef1[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])
+            cmap = plt.get_cmap('jet', 256)
+            t = np.arange(coef1[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
+            axes[1].pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
+            fig.colorbar(cm.ScalarMappable(norm = colors.Normalize(np.min(data), np.max(data)), cmap = cmap), ax = axes[1])
+            axes[1].set_xlabel("Tiempo (s)")
+            axes[1].set_ylabel("Frecuencia (Hz)")
+            axes[1].set_title("$|CWT_{ML}(t,f)|$")
 
-        # Display the figure with both plots
-        plt.show()
+            # Adjust layout to prevent titles and labels from overlapping
+            plt.tight_layout()
 
-        # Create a figure and a set of subplots with 1 row and 2 columns
-        fig, axes = plt.subplots(nrows = 1, ncols = 2, figsize = (20, 8))
+            # Display the figure with both plots
+            plt.show()
 
-        # Plot the second graph on the second subplot (axes[1])
-        axes[0].plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
-        acel[:,1][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - constants.g)
-        axes[0].set_xlabel("Tiempo (s)")
-        axes[0].set_ylabel("Aceleración Vertical $(m/s^{2})$")
-        axes[0].set_title("$a_{VT}(t)$")
+            # Create a figure and a set of subplots with 1 row and 2 columns
+            fig, axes = plt.subplots(nrows = 1, ncols = 2, figsize = (20, 8))
 
-        data = np.abs(coef2[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])
-        cmap = plt.get_cmap('jet', 256)
-        t = np.arange(coef2[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
-        axes[1].pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
-        fig.colorbar(cm.ScalarMappable(norm = colors.Normalize(np.min(data), np.max(data)), cmap = cmap), ax = axes[1])
-        axes[1].set_xlabel("Tiempo (s)")
-        axes[1].set_ylabel("Frecuencia (Hz)")
-        axes[1].set_title("$|CWT_{VT}(t,f)|$")
+            # Plot the second graph on the second subplot (axes[1])
+            axes[0].plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
+            acel[:,1][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - constants.g)
+            axes[0].set_xlabel("Tiempo (s)")
+            axes[0].set_ylabel("Aceleración Vertical $(m/s^{2})$")
+            axes[0].set_title("$a_{VT}(t)$")
 
-        # Adjust layout to prevent titles and labels from overlapping
-        plt.tight_layout()
+            data = np.abs(coef2[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])
+            cmap = plt.get_cmap('jet', 256)
+            t = np.arange(coef2[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
+            axes[1].pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
+            fig.colorbar(cm.ScalarMappable(norm = colors.Normalize(np.min(data), np.max(data)), cmap = cmap), ax = axes[1])
+            axes[1].set_xlabel("Tiempo (s)")
+            axes[1].set_ylabel("Frecuencia (Hz)")
+            axes[1].set_title("$|CWT_{VT}(t,f)|$")
 
-        # Display the figure with both plots
-        plt.show()
+            # Adjust layout to prevent titles and labels from overlapping
+            plt.tight_layout()
 
-        # Create a figure and a set of subplots with 1 row and 2 columns
-        fig, axes = plt.subplots(nrows = 1, ncols = 2, figsize = (20, 8))
+            # Display the figure with both plots
+            plt.show()
 
-        # Plot the second graph on the second subplot (axes[1])
-        axes[0].plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
-        acel[:,2][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]])
-        axes[0].set_xlabel("Tiempo (s)")
-        axes[0].set_ylabel("Aceleración Anteroposterior $(m/s^{2})$")
-        axes[0].set_title("$a_{AP}(t)$")
+            # Create a figure and a set of subplots with 1 row and 2 columns
+            fig, axes = plt.subplots(nrows = 1, ncols = 2, figsize = (20, 8))
 
-        data = np.abs(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])
-        cmap = plt.get_cmap('jet', 256)
-        t = np.arange(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
-        axes[1].pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
-        fig.colorbar(cm.ScalarMappable(norm = colors.Normalize(np.min(data), np.max(data)), cmap = cmap), ax = axes[1])
-        axes[1].set_xlabel("Tiempo (s)")
-        axes[1].set_ylabel("Frecuencia (Hz)")
-        axes[1].set_title("$|CWT_{AP}(t,f)|$")
+            # Plot the second graph on the second subplot (axes[1])
+            axes[0].plot(tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]] - tiempo[pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]][0], 
+            acel[:,2][pasos[i]['IC'][0] : pasos[i + 3]['IC'][1]])
+            axes[0].set_xlabel("Tiempo (s)")
+            axes[0].set_ylabel("Aceleración Anteroposterior $(m/s^{2})$")
+            axes[0].set_title("$a_{AP}(t)$")
 
-        # Adjust layout to prevent titles and labels from overlapping
-        plt.tight_layout()
+            data = np.abs(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])
+            cmap = plt.get_cmap('jet', 256)
+            t = np.arange(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
+            axes[1].pcolormesh(t, scales_freq, data, cmap = cmap, vmin = data.min(), vmax = data.max(), shading = 'auto')
+            fig.colorbar(cm.ScalarMappable(norm = colors.Normalize(np.min(data), np.max(data)), cmap = cmap), ax = axes[1])
+            axes[1].set_xlabel("Tiempo (s)")
+            axes[1].set_ylabel("Frecuencia (Hz)")
+            axes[1].set_title("$|CWT_{AP}(t,f)|$")
 
-        # Display the figure with both plots
-        plt.show()
+            # Adjust layout to prevent titles and labels from overlapping
+            plt.tight_layout()
+
+            # Display the figure with both plots
+            plt.show()
 
     ## Retorno los segmentos de los escalogramas correspondientes y los nombres correspondientes al directorio donde se van a almacenar las muestras
     return escalogramas_segmentos, directorio_muestra, nombre_base_segmento

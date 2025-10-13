@@ -5,6 +5,7 @@ import pandas as pd
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Presentacion')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Largo Plazo')
+sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib/Wavelets')
 sys.path.append('C:/Yo/Tesis/SL2205-0.8/SL2205-0.8/sereTestLib')
 from parameters import *
 import os
@@ -18,6 +19,8 @@ from LongitudPasoM1 import *
 from GeneracionReporte import *
 from DeteccionActividades import DeteccionActividades
 from EliminacionGirosTransitorios import *
+from Escalogramas import *
+from Escalado import *
 from tkinter import messagebox
 import tkinter as tk
 import tkinter.filedialog
@@ -96,8 +99,14 @@ def RealizarAnalisis():
         ## Hago la segmentación de la marcha
         pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro_marcha)
 
+        ## Hago el cálculo de los escalogramas correspondientes al registro de marcha (INCLUYENDO GIROS Y TRANSITORIOS)
+        escalogramas_segmentos, directorio_muestra, nombre_base_segmento = Escalogramas(id_persona, tiempo_marcha, pasos, cant_muestras_marcha, acel_marcha, gyro_marcha, periodoMuestreo)
+
+        ## Hago el escalado y el guardado correspondiente de los escalogramas
+        Escalado(escalogramas_segmentos, directorio_muestra, nombre_base_segmento, ruta_escalogramas)
+
         ## Elimino giros y transitorios donde paso como parámetro la cantidad de pasos que tiene mi transitorio
-        pasos, duraciones_pasos = EliminarGirosTransitorios(pasos, duraciones_pasos, giros, cant_pasos_transitorio = 3)
+        pasos, duraciones_pasos = EliminarGirosTransitorios(pasos, duraciones_pasos, giros, cant_pasos_transitorio = 1)
 
         ## Cálculo de parámetros de marcha usando el método I
         pasos_numerados, frecuencias, velocidades, long_pasos_m1, coeficientes_m1 = LongitudPasoM1(pasos, acel_marcha, tiempo_marcha, periodoMuestreo, frec_fund, duraciones_pasos, id_persona, giros, longitud_pierna)
