@@ -50,8 +50,6 @@ def ParametrosMarcha(id_persona, data, periodoMuestreo, pacientes):
     ## Obtengo las características de la marcha del sujeto. Debo pasar como parámetro la altura del sujeto en centímetros
     features = gait_py.extract_features(subject_height = altura_paciente)
 
-    gait_py.plot_contacts(features)
-    
     ## Retorno la lista de características correspondientes al paciente
     return features, acc_VT
 

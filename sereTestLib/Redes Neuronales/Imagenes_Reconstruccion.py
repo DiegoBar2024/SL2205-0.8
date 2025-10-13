@@ -229,13 +229,13 @@ def ImagenesReconstruidas(id_persona):
 if __name__== '__main__':
 
     ## Generación de imagenes originales
-    ImagenesOriginales(2)
+    ImagenesOriginales(1)
 
     ## Generación de los escalogramas reconstruídos expresados como matriz de coeficientes
-    escalogramas_reconstruidos, escalogramas_originales, ruta_escalogramas_paciente, archivos = Reconstruccion(2, "AutoencoderUCU_nuevo")
+    escalogramas_reconstruidos, escalogramas_originales, ruta_escalogramas_paciente, archivos = Reconstruccion(1, "AutoencoderUCU_nuevo")
 
     ## Guardado de los escalogramas reconstruídos como matriz de coeficientes
-    Guardado(escalogramas_reconstruidos, id_persona = 2)
+    Guardado(escalogramas_reconstruidos, id_persona = 1)
 
     ## Guardado de los escalogramas reconstruídos como imágenes
-    ImagenesReconstruidas(2)
+    ImagenesReconstruidas(1)
