@@ -51,7 +51,7 @@ def Reconstruccion(id_persona, nombre_autoencoder):
     return escalogramas_reconstruidos, escalogramas_originales, ruta_escalogramas_paciente, archivos
 
 ## Defino una función que realice el guardado de los escalogramas como matrices
-def Guardado(img_reconstruida, id_persona):
+def Guardado(escalogramas_reconstruidos, id_persona):
 
     ## Especifico la ruta en la cual yo voy a guardar las muestras reconstruidas
     ruta_reconstruidas_paciente = ruta_reconstruidas + '/S{}/'.format(id_persona)
@@ -63,10 +63,10 @@ def Guardado(img_reconstruida, id_persona):
         os.makedirs(ruta_reconstruidas_paciente)
 
     ## Itero para cada uno de los segmentos que tengo detectados
-    for i in range (img_reconstruida.shape[0]):
+    for i in range (escalogramas_reconstruidos.shape[0]):
 
         ## Obtengo el escalograma asociado al segmento actual
-        escalograma_reconstruido = img_reconstruida[i,:,:,:]
+        escalograma_reconstruido = escalogramas_reconstruidos[i,:,:,:]
         
         ## Guardado de los escalogramas reconstruídos en el directorio correspondiente
         np.savez_compressed(ruta_reconstruidas_paciente + 'Segmento_{}'.format(i), y = 0, X = escalograma_reconstruido)
@@ -135,8 +135,53 @@ def ErrorReconstruccion(img_reconstruida, ruta_escalogramas_paciente, archivos):
     ## Retorno los indicadores de error calculados
     return indicadores
 
+## Funcion que me haga la transformacion de escalogramas a imágenes originales
+def ImagenesOriginales(id_persona):
+
+    ## La idea es poder guardar todos los escalogramas generados como imágenes con extensión .png en una carpeta aparte
+    ## Especifico la ruta de donde voy a leer los escalogramas
+    ruta_lectura = ruta_escalogramas + "/S{}/".format(id_persona)
+
+    ## Especifico la ruta de donde voy a guardar los escalogramas
+    ruta_guardado = ruta_img_originales + "/S{}/".format(id_persona)
+
+    ## En caso de que el directorio no exista
+    if not os.path.exists(ruta_guardado):
+
+        ## Creo el directorio correspondiente
+        os.makedirs(ruta_guardado)
+
+    ## Obtengo todos los archivos presentes en la ruta anterior
+    ## Recuerdo que cada uno de los archivos se corresponde con un escalograma (tensor tridimensional)
+    archivos = [archivo for archivo in os.listdir(ruta_lectura) if archivo.endswith("npz")]
+
+    ## Itero para todos los archivos presentes en el directorio
+    for i in range (len(archivos)):
+
+        ## Abro el archivo con la extensión .npz donde se encuentra el escalograma
+        archivo_escalograma = np.load(ruta_lectura + archivos[i])
+
+        ## Almaceno el escalograma correspondiente en la variable <<escalograma>>
+        escalograma = archivo_escalograma['X']
+
+        ## Hago la traducción de los escalogramas a imágenes
+        imagen_AC_x = im.fromarray(escalograma[0]).convert("L")
+        imagen_AC_y = im.fromarray(escalograma[1]).convert("L")
+        imagen_AC_z = im.fromarray(escalograma[2]).convert("L")
+        imagen_GY_x = im.fromarray(escalograma[3]).convert("L")
+        imagen_GY_y = im.fromarray(escalograma[4]).convert("L")
+        imagen_GY_z = im.fromarray(escalograma[5]).convert("L")
+
+        ## Hago el guardado de los escalogramas como imagenes en la ruta correspondiente
+        imagen_AC_x.save(ruta_guardado + "3S{}s{}_ACx.png".format(id_persona, i))
+        imagen_AC_y.save(ruta_guardado + "3S{}s{}_ACy.png".format(id_persona, i))
+        imagen_AC_z.save(ruta_guardado + "3S{}s{}_ACz.png".format(id_persona, i))
+        imagen_GY_x.save(ruta_guardado + "3S{}s{}_GYx.png".format(id_persona, i))
+        imagen_GY_y.save(ruta_guardado + "3S{}s{}_GYy.png".format(id_persona, i))
+        imagen_GY_z.save(ruta_guardado + "3S{}s{}_GYz.png".format(id_persona, i))
+
 ## Creo una función que cargue los tensores reconstruídos a la salida del autoencoder y los guarde como imágenes
-def ConversionImagenes(id_persona):
+def ImagenesReconstruidas(id_persona):
 
     ## La idea es poder guardar todos los escalogramas generados como imágenes con extensión .png en una carpeta aparte
     ## Especifico la ruta de donde voy a leer los escalogramas
@@ -183,5 +228,11 @@ def ConversionImagenes(id_persona):
 ## Ejecución principal del programa
 if __name__== '__main__':
 
-    ## Ejecución de la rutina de reconstruccion
-    escalogramas_reconstruidos, escalogramas_originales, ruta_escalogramas_paciente, archivos = Reconstruccion(302, "AutoencoderUCU_nuevo")
+    ## Generación de los escalogramas reconstruídos expresados como matriz de coeficientes
+    escalogramas_reconstruidos, escalogramas_originales, ruta_escalogramas_paciente, archivos = Reconstruccion(299, "AutoencoderUCU_nuevo")
+
+    ## Guardado de los escalogramas reconstruídos como matriz de coeficientes
+    Guardado(escalogramas_reconstruidos, id_persona = 299)
+
+    ## Guardado de los escalogramas reconstruídos como imágenes
+    ImagenesReconstruidas(299)

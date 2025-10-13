@@ -338,6 +338,9 @@ ruta_comprimidas_giros = "C:/Yo/Tesis/sereData/sereData/Dataset/latente_ae_giros
 ## Especifico la ruta donde se guardan las muestras reconstruídas a la salida del autoencoder
 ruta_reconstruidas = "C:/Yo/Tesis/sereData/sereData/Dataset/reconstrucciones_ae"
 
+## Especifico la ruta donde se guardan las imágenes originales
+ruta_img_originales = "C:/Yo/Tesis/sereData/sereData/img_originales"
+
 ## Especifico la ruta donde se guardan las imágenes reconstruídas
 ruta_img_reconstruidas = "C:/Yo/Tesis/sereData/sereData/img_reconstruidas"
 
