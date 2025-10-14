@@ -40,7 +40,7 @@ for id_persona in ids_existentes:
         pasos, duraciones_pasos, giros = Segmentacion(contactos_iniciales, contactos_terminales, muestras_paso, periodoMuestreo, acc_AP_norm, gyro)
 
         ## Hago el cálculo de los escalogramas correspondientes
-        escalogramas_segmentos, directorio_muestra, nombre_base_segmento = Escalogramas(id_persona, tiempo, pasos, cant_muestras, acel, gyro, periodoMuestreo)
+        escalogramas_segmentos, directorio_muestra, nombre_base_segmento = Escalogramas(id_persona, tiempo, pasos, cant_muestras, acel, gyro, periodoMuestreo, graficar = True)
 
         ## Hago el escalado y el guardado correspondiente de los escalogramas
         Escalado(escalogramas_segmentos, directorio_muestra, nombre_base_segmento, ruta_escalogramas)

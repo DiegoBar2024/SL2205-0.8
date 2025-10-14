@@ -170,6 +170,45 @@ def Escalogramas(id_persona, tiempo, pasos, cant_muestras, acel, gyro, periodoMu
         ## En caso de que se quiera graficar los escalogramas
         if graficar:
 
+            ## Graficación en tres dimensiones de la mediolateral
+            t = np.arange(coef1[:,extensiones_pasos[i]: coef1.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
+            data = np.abs(coef1[:,extensiones_pasos[i]: coef1.shape[1] - extensiones_pasos[i]])
+            
+            tiempo, frecuencia = np.meshgrid(t, scales_freq)
+            fig = plt.figure(figsize = (10, 8))
+            ax = fig.add_subplot(111, projection = '3d')
+            ax.plot_surface(tiempo, frecuencia, data, cmap='viridis')
+
+            ax.set_xlabel('Tiempo (s)')
+            ax.set_ylabel('Frecuencia (s)')
+            ax.set_zlabel("$|CWT_{ML}(t,f)|$")
+
+            ## Graficación en tres dimensiones de la vertical
+            t = np.arange(coef2[:,extensiones_pasos[i]: coef2.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
+            data = np.abs(coef2[:,extensiones_pasos[i]: coef2.shape[1] - extensiones_pasos[i]])
+            
+            tiempo, frecuencia = np.meshgrid(t, scales_freq)
+            fig = plt.figure(figsize = (10, 8))
+            ax = fig.add_subplot(111, projection = '3d')
+            ax.plot_surface(tiempo, frecuencia, data, cmap='viridis')
+
+            ax.set_xlabel('Tiempo (s)')
+            ax.set_ylabel('Frecuencia (s)')
+            ax.set_zlabel("$|CWT_{VT}(t,f)|$")
+
+            ## Graficación en tres dimensiones de la anteroposterior
+            t = np.arange(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]].shape[1]) * periodoMuestreo
+            data = np.abs(coef3[:,extensiones_pasos[i]: coef3.shape[1] - extensiones_pasos[i]])
+            
+            tiempo, frecuencia = np.meshgrid(t, scales_freq)
+            fig = plt.figure(figsize = (10, 8))
+            ax = fig.add_subplot(111, projection = '3d')
+            ax.plot_surface(tiempo, frecuencia, data, cmap='viridis')
+
+            ax.set_xlabel('Tiempo (s)')
+            ax.set_ylabel('Frecuencia (s)')
+            ax.set_zlabel("$|CWT_{AP}(t,f)|$")
+
             ## Graficación del escalograma en el plano tiempo frecuencia
             data = np.abs(coef1[:,extensiones_pasos[i]: coef1.shape[1] - extensiones_pasos[i]])
             cmap = plt.get_cmap('jet', 256)
