@@ -364,7 +364,10 @@ def MatrizConfusion(etiquetas, predicciones):
 if __name__== '__main__':
 
     ## Hago el cargado de datos comprimidos
-    etiquetas, secuencias_individuales, secuencias_por_persona = CargadoComprimidos(filtrar_etiquetados = True)
+    etiquetas, secuencias_individuales, secuencias_por_persona, comprimidos_total = CargadoComprimidos(filtrar_etiquetados = True)
+
+    ## Hago la validación del algoritmo de clasificacion DTW 1NN
+    predicciones = ValidacionLSTM(etiquetas, secuencias_individuales)
 
     ## Hago la validación del algoritmo de clasificacion DTW 1NN
     predicciones = ValidacionDTW(etiquetas, secuencias_individuales, secuencias_por_persona)

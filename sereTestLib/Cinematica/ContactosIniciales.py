@@ -9,6 +9,7 @@ from scipy import signal
 from harm_analysis import *
 from control import *
 from LecturaDatos import *
+
 ## ----------------------------------- DETECCIÓN CONTACTOS INICIALES -----------------------------------
 
 def ContactosIniciales(acel, cant_muestras, periodoMuestreo, graficar = False):

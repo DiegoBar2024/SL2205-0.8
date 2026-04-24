@@ -307,13 +307,18 @@ def DeteccionAnomalias(acel, cant_muestras, periodoMuestreo, tiempo, muestras_ve
             plt.figure(figsize = (10, 6))
             plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos, c = kmeans.labels_, cmap = 'viridis')
             plt.title('Gráfico de dispersión por clúster')
+            plt.xlabel("Número de ventana")
+            plt.ylabel("Distancia de Mahalanobis al cuadrado")
             plt.show()
 
             ## Diagrama de dispersión de distancias a los centroides anomalo-normal
             plt.figure(figsize = (10, 6))
-            plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos, c = 'blue')
-            plt.scatter(np.where(np.isin(distancias_puntos, anomalias_tramo))[0], anomalias_tramo, c = 'red')
-            plt.scatter(np.where(np.isin(distancias_puntos, anomalias_tramo_extra))[0], anomalias_tramo_extra, c = 'orange')
+            plt.scatter(np.linspace(0, len(distancias_puntos) - 1, len(distancias_puntos)), distancias_puntos, c = 'blue', label = "Normal")
+            plt.scatter(np.where(np.isin(distancias_puntos, anomalias_tramo))[0], anomalias_tramo, c = 'red', label = 'Anómalía extrema')
+            plt.scatter(np.where(np.isin(distancias_puntos, anomalias_tramo_extra))[0], anomalias_tramo_extra, c = 'orange', label = 'Anómalía leve')
+            plt.xlabel("Número de ventana")
+            plt.ylabel("Distancia de Mahalanobis al cuadrado")
+            plt.legend()
             plt.show()
 
     ## Elimino el dummy vector inicial de la matriz de anomalias
@@ -406,7 +411,7 @@ if __name__== '__main__':
 
         ## La idea de ésta parte consiste en poder hacer una discriminación entre reposo y actividad
         ## Especifico la ruta en la cual se encuentra el registro a leer
-        ruta_registro_completa = ruta_registro + 'Actividades_Rodrigo.txt'
+        ruta_registro_completa = ruta_registro + 'Actividades_Sabrina.txt'
 
         ## Defino la cantidad de muestras de la ventana que voy a tomar
         muestras_ventana = 400

@@ -1,3 +1,0 @@
-# Orientation estimation
-
-::: utils.quaternion

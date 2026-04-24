@@ -47,6 +47,7 @@ def TransformadaFourier(señal, dt, enventanar, plot = True):
 
         ## Nomenclatura de ejes
         plt.xlabel("Frecuencia (Hz)")
+        plt.xlim(xmax = 20)
         plt.ylabel("Magnitud")
 
         ## Despliego la gráfica
