@@ -23,9 +23,6 @@ from sklearn.feature_selection import SequentialFeatureSelector
 from sklearn.model_selection import cross_val_score, KFold, cross_val_predict
 from joblib import dump, load
 from tsfel import *
-from tsfresh import *
-from tsfresh.feature_extraction import *
-from tsfresh.utilities.distribution import MultiprocessingDistributor
 from Fourier import *
 from sklearn.feature_selection import SequentialFeatureSelector
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
@@ -166,15 +163,6 @@ def DeteccionActividades(acel, tiempo, muestras_ventana, muestras_solapamiento, 
                 cfg = tsfel.get_features_by_domain(domain = ['statistical', 'temporal'])
 
                 ## ------------------------------ FEATURE EXTRACTION ------------------------------------------
-
-                # ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)
-                # features_ML = np.array(tsfel.time_series_features_extractor(cfg, segmento_ML_filt, fs = 1 / periodoMuestreo))
-
-                # ## Hago la extracción de features de la señal de acelerómetro AP (Body Acceleration)
-                # features_AP = np.array(tsfel.time_series_features_extractor(cfg, segmento_AP_filt, fs = 1 / periodoMuestreo))
-
-                # ## Hago la extracción de features de la señal de acelerómetro VT (Body Acceleration)
-                # features_VT = np.array(tsfel.time_series_features_extractor(cfg, segmento_VT_filt, fs = 1 / periodoMuestreo))
 
                 ## Hago la extracción de features de la señal de acelerómetro ML (Body Acceleration)   
                 features_ML = np.array([np.mean(segmento_ML_filt), np.median(segmento_ML_filt), np.std(segmento_ML_filt), np.var(segmento_ML_filt), kurtosis(segmento_ML_filt), skew(segmento_ML_filt), iqr(segmento_ML_filt), 

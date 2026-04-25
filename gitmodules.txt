@@ -1,0 +1,3 @@
+[submodule "gaitpy"]
+    path = gaitpy
+    url = https://github.com/DiegoBar2024/SL2205-0.8.git
