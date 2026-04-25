@@ -4,6 +4,7 @@ from Segmentacion import *
 import pandas as pd
 from scipy.integrate import cumulative_trapezoid
 import pathlib
+import sys
 sys.path.append(str(pathlib.Path().resolve()).replace('\\','/') + '/sereTestLib')
 from parameters import *
 import json

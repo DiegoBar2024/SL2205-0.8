@@ -2,8 +2,6 @@
 
 from ContactosIniciales import *
 from ContactosTerminales import *
-from ParametrosGaitPy import *
-from SegmentacionGaitPy import Segmentacion as SegmentacionGaitPy
 from scipy.signal import find_peaks
 from scipy.integrate import cumulative_trapezoid
 
