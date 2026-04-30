@@ -5,7 +5,7 @@ import os
 import numpy as np
 import pathlib
 import sys
-sys.path.append(str(pathlib.Path().resolve()).replace('\\','/') + '/sereTestLib')
+sys.path.append(str(pathlib.Path().resolve()).replace('\\','/') + '/SL2205-0.8/sereTestLib')
 from parameters import *
 
 ## Construyo una función la cual me permita leer los datos de los pacientes que están ingresados en la base de datos

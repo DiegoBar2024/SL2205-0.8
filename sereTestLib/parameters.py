@@ -273,6 +273,8 @@ class results:
 
 url_response = 'http://192.168.89.245:8080/sereServer/sererest/muestras' #TODO: conseguir una ip fija o bien migrarlo al mismo servidor
 
+## Configuro carpeta raiz
+
 ## ACTUALIZO LAS RUTAS PARA LOS FICHEROS EN MI COMPUTADORA
 dir_in_original_sample = 'C:/Yo/Tesis/sereData/sereData/Dataset/raw_2_process'
 dir_out_fixed_axes = 'C:/Yo/Tesis/sereData/sereData/Dataset/dataset'
