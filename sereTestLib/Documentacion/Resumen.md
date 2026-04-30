@@ -1,0 +1,15 @@
+## Resumen
+
+El proyecto consiste en el desarrollo de un sistema portátil para el análisis objetivo de la marcha, basado en sensores inerciales, en colaboración con Serelabs. La solución permite evaluar la estabilidad de un paciente de forma rápida, no invasiva y automatizada, generando información clínicamente útil sin requerir equipamiento complejo.
+
+El sistema utiliza un sensor ubicado en la zona lumbar, que registra aceleración y velocidad angular a 200 Hz, aproximando la dinámica del centro de masa del cuerpo. A partir de estas señales, se implementan algoritmos que detectan automáticamente eventos clave de la marcha (contactos iniciales y finales) y segmentan el movimiento en pasos. Sobre esta base, se estiman parámetros relevantes como cadencia, duración del paso, longitud del paso y velocidad de marcha, junto con la detección de giros, que constituye un indicador importante de estabilidad.
+
+El procesamiento incluye etapas de filtrado, análisis en frecuencia para estimación de cadencia y modelos biomecánicos (como el péndulo invertido) para aproximar la longitud del paso. Como resultado, el sistema genera automáticamente un reporte clínico en PDF, que presenta valores promedio, variabilidad y comparación con rangos de referencia, facilitando su interpretación por parte del profesional de la salud.
+
+En las pruebas realizadas, el sistema mostró estimaciones consistentes de parámetros temporales (cadencia y duración del paso), detección robusta de eventos de marcha y giros, y resultados reproducibles entre mediciones. Se identificó que la estimación de la longitud del paso presenta mayor sensibilidad a errores y requiere ajustes adicionales, aunque el sistema ya resulta útil como herramienta de evaluación funcional.
+
+Como extensión, se incorporaron herramientas avanzadas para el análisis de señales no estacionarias mediante transformada wavelet continua (CWT), permitiendo representar la marcha en el dominio tiempo-frecuencia. Estas representaciones habilitan la extracción de características más complejas y su uso en modelos de inteligencia artificial, como autoencoders y clasificadores, orientados a la detección automática de anomalías en la marcha.
+
+Asimismo, se abordó el análisis de registros de largo plazo, incorporando métodos para detección de actividades y localización de eventos anómalos en períodos extendidos. Esto permite evolucionar el sistema desde evaluaciones puntuales en entornos controlados hacia aplicaciones de monitoreo continuo en condiciones reales, donde es posible identificar episodios específicos de inestabilidad.
+
+En conjunto, la solución ofrece una alternativa portátil, accesible y automatizada frente a sistemas tradicionales de laboratorio, permitiendo transformar una caminata simple en datos clínicos cuantificables y accionables. El sistema demuestra la viabilidad de utilizar sensores inerciales para el análisis de la marcha, con potencial aplicación en diagnóstico, seguimiento de pacientes y detección temprana de alteraciones, así como futuras extensiones basadas en inteligencia artificial y monitoreo continuo.
