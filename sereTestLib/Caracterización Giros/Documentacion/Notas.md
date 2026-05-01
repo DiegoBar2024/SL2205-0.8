@@ -25,7 +25,7 @@ En principio, la intención es dividir a la población en cuatro categorías pri
 
 ### PRUEBAS SOBRE REGISTROS DE MARCHA
 
-El sistema de referencia que estoy usando para calcular la orientación en estas pruebas es 'ENU' (Earth North Up).
+El sistema de referencia que estoy usando para calcular la orientación en estas pruebas es 'ENU' (East North Up).
 
 <p align="center">
   <img src="GirosRodrigoEstandar.png" alt="My image" style="max-width: 80%;"><br>
