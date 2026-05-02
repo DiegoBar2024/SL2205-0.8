@@ -34,7 +34,7 @@ if __name__== '__main__':
         ## Hago la lectura de las mediciones de la IMU del individuo
         ## Las medidas del Shimmer3 vienen en m/s2 para el acelerómetro y grados/s para el giroscopio
         data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = '299', 
-        lectura_datos_propios = False, ruta = '{}/sereData/sereData/Registros/MarchaLibre_Rodrigo.txt'.format(root))
+        lectura_datos_propios = True, ruta = '{}/sereData/sereData/Registros/MarchaEstandar_Rodrigo.txt'.format(root))
 
         ## Hago la conversión de los valores de velocidad angular de grados/s a rad/s
         gyro = gyro * np.pi / 180

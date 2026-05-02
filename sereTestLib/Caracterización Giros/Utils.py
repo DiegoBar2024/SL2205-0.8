@@ -1,6 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from ahrs.filters import EKF
+import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 def graficar_histograma_edades(df, columna_edad = 'Edad', mostrar_porcentaje = False):
     """
@@ -104,9 +106,6 @@ def estimar_orientacion_ekf(acc, gyro, fs, frame = 'ENU'):
     ## Retorno los cuaterniones de orientación correspondientes de la estimación
     return ekf.Q
 
-import numpy as np
-from scipy.spatial.transform import Rotation as R
-
 def rotate_body_to_world(v_body, q):
     """
     Rota vectores desde el frame del IMU (Body) al frame inercial (World: ENU/NED).
@@ -131,6 +130,10 @@ def rotate_body_to_world(v_body, q):
     ## Compruebo que las entradas estén expresada como arreglos bidimensionales numpy
     v_body = np.asarray(v_body)
     q = np.asarray(q)
+
+    ## En caso de que sólo tenga un cuaternión de orientación de entrada, lo estructuro de modo consistente
+    if q.ndim == 1:
+        q = q[np.newaxis, :]
 
     ## Hago la conversión de cuaterniones de formato wxyz a formato Scipy xyzw
     q_scipy = q[:, [1, 2, 3, 0]]
@@ -259,11 +262,30 @@ def detect_turns_windowed(wz, fs = 200, window_sec = 0.5, threshold = 30 * np.pi
                 theta_total = np.trapz(wz[start:end], dx = dt)
 
                 ## En caso que la variación angular sea mayor a un determinado umbral
-                if abs(theta_total) > 30 * np.pi / 180:
+                if abs(theta_total) > threshold:
 
                     ## Considero el segmento detectado como un giro y me lo guardo den la lista
                     ## junto con sus índices de comienzo y final
                     turns.append({"start_idx": start, "end_idx": end})
+
+    ## En caso de que el registro termine cuando estoy en medio de un giro, debo procesarlo como tal
+    if in_turn:
+
+        ## Configuro el instante final del giro correspondiente al instante final del dataset
+        end = len(wz)
+
+        ## En caso que la duración del giro detectado en muestras sea mayor al umbral mínimo
+        if (end - start) >= min_samples:
+
+            ## Hago la integración de la señal de velocidad angular en la ventana correspondiente
+            theta_total = np.trapz(wz[start:end], dx = dt)
+
+            ## En caso que la variación angular sea mayor a un determinado umbral
+            if abs(theta_total) > threshold:
+
+                ## Considero el segmento detectado como un giro y me lo guardo den la lista
+                ## junto con sus índices de comienzo y final
+                turns.append({"start_idx": start, "end_idx": end})
 
     ## Retorno la lista la cual contiene todos los giros con sus inicios y terminaciones
     return turns
