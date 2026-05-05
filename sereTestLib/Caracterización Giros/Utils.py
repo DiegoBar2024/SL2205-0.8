@@ -375,6 +375,69 @@ def plot_signal_with_events(x, events, fs = 200, title = "Señal y los eventos d
     plt.tight_layout()
     plt.show()
 
+def extraer_segmentos_giros(acel, gyro, giros):
+    """
+    Separa los segmentos de la señal correspondientes a cada evento de giro
+    detectado.
+
+    Esta función no elimina los giros, sino que los segmenta individualmente
+    para su análisis independiente.
+
+    Parámetros
+    ----------
+    acel : np.ndarray (N, 3)
+        Señal del acelerómetro.
+
+    gyro : np.ndarray (N, 3)
+        Señal del giroscopio.
+
+    giros : list of dict
+        Lista de eventos de giro detectados, donde cada evento contiene:
+        - 'start_idx': inicio del giro
+        - 'end_idx': fin del giro
+
+    Retorna
+    -------
+    segmentos : list of dict
+        Lista donde cada elemento representa un giro y contiene:
+        - 'acel': segmento del acelerómetro (M, 3)
+        - 'gyro': segmento del giroscopio (M, 3)
+        - 'start_idx': índice original de inicio
+        - 'end_idx': índice original de fin
+
+    Descripción
+    -----------
+    La función recorta la señal original en los intervalos definidos por
+    los eventos de giro, preservando la estructura temporal interna de cada
+    evento. Esto permite:
+
+    - Analizar giros de forma individual
+    - Comparar patrones entre giros
+    - Extraer características por evento
+    """
+
+    ## Inicializo una lista vacía en donde voy a guardar los segmentos de giro
+    segmentos = []
+
+    ## Itero para cada uno de los eventos de giros detectados
+    for g in giros:
+
+        ## Obtengo el índice de comienzo del giro
+        start = g["start_idx"]
+
+        ## Obtengo el índice de terminación del giro
+        end = g["end_idx"]
+
+        ## Construyo un diccionario conteniendo las secuencias de acelerómetros y giroscopios en el giro
+        segmento = {"acel": acel[start:end], "gyro": gyro[start:end], 
+                    "start_idx": start, "end_idx": end}
+
+        ## Almaceno el segmento correspondiente a la lista de segmentos
+        segmentos.append(segmento)
+
+    ## Retorno los segmentos de acelerómetros y giroscopios separados entre giros
+    return segmentos
+
 def quaternion_angular_velocity(q, fs):
     """
     Estima la velocidad angular a partir de una secuencia de cuaterniones
