@@ -374,3 +374,64 @@ def plot_signal_with_events(x, events, fs = 200, title = "Señal y los eventos d
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
+def quaternion_angular_velocity(q, fs):
+    """
+    Estima la velocidad angular a partir de una secuencia de cuaterniones
+    utilizando diferencias finitas en SO(3).
+
+    Incluye:
+    - Corrección de continuidad de signo del cuaternión
+    - Diferencia hacia adelante (primer punto)
+    - Diferencia central (puntos interiores)
+    - Diferencia hacia atrás (último punto)
+
+    Parámetros
+    ----------
+    q : array Nx4 (w, x, y, z)
+        Cuaterniones estimados por EKF-AHRS.
+    fs : float
+        Frecuencia de muestreo (Hz).
+
+    Retorna
+    -------
+    omega : array Nx3
+        Velocidad angular expresada en el sistema inercial (ENU/NED).
+    """
+
+    ## Defino el período de muestreo a partir de la correspondiente frecuencia de muestreo
+    dt = 1 / fs
+
+    ## Obtengo la cantidad de muestras de la señal
+    n = len(q)
+
+    ## Hago la corrección de signos de los cuaterniones para evitar discontinuidades
+    q = q.copy()
+    for i in range(1, n):
+        if np.dot(q[i - 1], q[i]) < 0:
+            q[i] *= -1
+
+    ## Hago la conversión de los cuaterniones a formato Scipy: de wxyz a xyzw
+    q_scipy = q[:, [1, 2, 3, 0]]
+    rot = R.from_quat(q_scipy)
+
+    ## Inicializo una matriz en la cual voy a almacenar las estimaciones de la velocidad angular
+    omega = np.zeros((n, 3))
+
+    ## Implemento una diferenciación hacia delante de primer orden en la primera muestra
+    dq = rot[0].inv() * rot[1]
+    omega[0] = dq.as_rotvec() / dt
+
+    ## Itero para cada uno de los cuaterniones de orientación intermedios
+    for i in range(1, n - 1):
+
+        ## Implemento una diferencia central para los cuaterniones intermedios
+        dq = rot[i - 1].inv() * rot[i + 1]
+        omega[i] = dq.as_rotvec() / (2 * dt)
+
+    ## Implemento una diferenciación hacia delante de primer orden en la primera muestra
+    dq = rot[n - 2].inv() * rot[n - 1]
+    omega[n - 1] = dq.as_rotvec() / dt
+
+    ## Retorno la velocidad angular estimada en base a los cuaterniones de orientación
+    return omega

@@ -8,6 +8,7 @@ sys.path.append("{}/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica".format(root))
 from LecturaDatosPacientes import *
 from LecturaDatos import *
 from Utils import *
+import numpy as np
 
 ## Programa principal
 if __name__== '__main__':
@@ -34,7 +35,7 @@ if __name__== '__main__':
         ## Hago la lectura de las mediciones de la IMU del individuo
         ## Las medidas del Shimmer3 vienen en m/s2 para el acelerómetro y grados/s para el giroscopio
         data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(id_persona = '299', 
-        lectura_datos_propios = True, ruta = '{}/sereData/sereData/Registros/MarchaEstandar_Rodrigo.txt'.format(root))
+        lectura_datos_propios = False, ruta = '{}/sereData/sereData/Registros/MarchaEstandar_Rodrigo.txt'.format(root))
 
         ## Hago la conversión de los valores de velocidad angular de grados/s a rad/s
         gyro = gyro * np.pi / 180
@@ -57,3 +58,8 @@ if __name__== '__main__':
 
         ## Hago la graficación de los tramos en los que se detectan giros de los que no
         plot_signal_with_events(ang_vel_inercial[:,2], giros)
+
+        ## Hago la estimación de la velocidad angular del sistema de la IMU con respecto al sistema inercial
+        ## ENU/NED elegido, expresado en el sistema inercial ENU/NED. Si esta todo bien debería obtener la misma
+        ## señal de velocidad angular que en <<ang_vel_inercial>> como estrategia de validación de pipeline
+        vel_angular = quaternion_angular_velocity(imu_quat, frec_muestreo)
