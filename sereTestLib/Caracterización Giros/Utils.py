@@ -285,7 +285,7 @@ def detect_turns_windowed(wz, fs = 200, window_sec = 0.5, threshold = 30 * np.pi
 
                 ## Considero el segmento detectado como un giro y me lo guardo den la lista
                 ## junto con sus índices de comienzo y final
-                turns.append({"start_idx": start, "end_idx": end})
+                turns.append({"start_idx": start, "end_idx": end - 1})
 
     ## Retorno la lista la cual contiene todos los giros con sus inicios y terminaciones
     return turns
@@ -498,3 +498,224 @@ def quaternion_angular_velocity(q, fs):
 
     ## Retorno la velocidad angular estimada en base a los cuaterniones de orientación
     return omega
+
+def estimar_angulos_giro(imu_quat, segmentos):
+    """
+    Estima el ángulo de giro usando únicamente el método de endpoints:
+    rotación relativa entre el inicio y el fin del segmento.
+
+    Parameters
+    ----------
+    imu_quat : np.ndarray (N, 4)
+        Cuaterniones (w, x, y, z) estimados por EKF.
+    segmentos : list of dict
+        Lista de segmentos con:
+        - 'start_idx'
+        - 'end_idx'
+
+    Returns
+    -------
+    list of float
+        Ángulos de giro en radianes.
+    """
+
+    ## Hago la conversión de la secuencia de cuaterniones de entrada a secuencia de objetos Scipy Rotation
+    R_all = R.from_quat(imu_quat[:, [1, 2, 3, 0]])
+
+    ## Configuro la dirección vertical según el sistema de referencia inercial escogido en el pipeline
+    z_world = np.array([0, 0, 1])
+
+    ## Inicializo una lista vacía en la cual voy a almacenar los ángulos
+    angulos = []
+
+    ## Itero para cada uno de los segmentos de giro que tengo
+    for seg in segmentos:
+
+        ## Obtengo el índice de la muestra que indica el inicio y el final del giro
+        s = seg["start_idx"]
+        e = seg["end_idx"]
+
+        ## Chequeo: Evito segmentos degenerados (menos de 2 muestras)
+        if e <= s + 1:
+            angulos.append(0)
+            continue
+
+        ## Obtengo la rotación relativa entre la orientación de la IMU en el instante inicial del giro
+        ## y la orientación de la IMU en el instante final del giro
+        R_delta = R_all[s].inv() * R_all[e]
+
+        ## Hago la conversión de dicha orientación relativa a vector de rotación
+        rotvec = R_delta.as_rotvec()
+
+        ## Hago la rotación del versor que determina la dirección vertical en ENU/NED a la orientación
+        ## de la IMU al inicio del giro definida por R_all[s]
+        z_start = R_all[s].inv().apply(z_world)
+
+        ## Obtengo el ángulo de giro como la proyección del vector de rotación a la coordenada vertical
+        theta = rotvec @ z_start
+
+        ## Agrego el ángulo de giro a la lista de ángulos de giro
+        angulos.append(theta)
+
+    ## Retorno los ángulos de giro correspondientes a todos los giros detectados
+    return angulos
+
+def extraer_features_basicas(imu_quat, segmentos, fs, id):
+    """
+    Extrae un conjunto mínimo y robusto de características de cada giro detectado.
+
+    Este conjunto está diseñado como una primera aproximación para análisis de
+    marcha, caracterización de giros o estudios poblacionales (ej. relación con edad).
+
+    Las features se basan exclusivamente en:
+        - método endpoint para el ángulo de giro
+        - duración del segmento
+        - velocidad angular media derivada
+
+    Parámetros
+    ----------
+    imu_quat : np.ndarray (N, 4)
+        Secuencia de cuaterniones estimados por EKF en formato (w, x, y, z).
+
+    segmentos : list of dict
+        Lista de segmentos de giro detectados. Cada segmento contiene:
+            - 'start_idx': índice de inicio del giro
+            - 'end_idx': índice de fin del giro
+
+    fs : float
+        Frecuencia de muestreo del sistema (Hz).
+
+    id: int
+        Identificador numérico del paciente
+
+    Retorna
+    -------
+    list of dict
+        Lista donde cada elemento corresponde a un giro y contiene:
+            - id
+            - duration_s
+            - angle_deg
+            - mean_w_deg_s
+    """
+
+    ## Estimo los ángulos de giro (rad) mediante método de endpoints para cada uno de los segmentos de giro
+    ang_rad = estimar_angulos_giro(imu_quat, segmentos)
+
+    ## Hago la conversión de radianes a grados
+    ang_deg = np.rad2deg(ang_rad)
+
+    ## Inicializo una lista vacía en la cual voy a almacenar las features de los giros
+    features = []
+
+    ## Itero para cada segmento de giro detectado
+    for i, seg in enumerate(segmentos):
+
+        ## Obtengo el índice de la muestra que indica el inicio y el final del giro
+        s = seg["start_idx"]
+        e = seg["end_idx"]
+
+        ## Chequeo: Evito segmentos degenerados (menos de 2 muestras)
+        if e <= s + 1:
+            continue
+
+        ## Duración del giro en segundos
+        duration = (e - s) / fs
+
+        ## Obtengo el ángulo total de giro basado en la estimación con endpoints que hice antes
+        angle = ang_deg[i]
+
+        ## Velocidad angular media (deg/s)
+        mean_w = angle / duration
+
+        ## Almaceno las features correspondientes en forma de un diccionario en una lista
+        features.append({"id": id, "duration_s": duration, "angle_deg": angle, "mean_w_deg_s": mean_w})
+
+    ## Retorno el listado de features extraídas de los giros
+    return features
+
+def asignar_grupo_edad(edades):
+    """
+    Asigna un grupo etario a cada individuo utilizando reglas simples basadas en edad.
+
+    Esta función convierte un vector de edades en una codificación discreta de grupos,
+    lo cual facilita el análisis estadístico posterior sin depender de estructuras tipo DataFrame.
+
+    Codificación utilizada:
+        - 0 : edad < 60 años
+        - 1 : 60 ≤ edad ≤ 75 años
+        - 2 : edad > 75 años
+
+    Parámetros
+    ----------
+    edades : array-like
+        Vector de edades de los sujetos. Puede ser lista o array de NumPy.
+
+    Retorna
+    -------
+    np.ndarray
+        Vector de enteros con la misma longitud que `edades`, donde cada valor
+        representa el grupo etario asignado a cada individuo.
+
+    """
+
+    ## Convierto el vector de edades a un vector de numpy
+    edades = np.asarray(edades)
+
+    ## Inicializo todos los individuos en el grupo 0 (<60 años)
+    grupos = np.zeros_like(edades, dtype = int)
+
+    ## Asigno grupo intermedio (60–75 años)
+    grupos[(edades >= 60) & (edades <= 75)] = 1
+
+    ## Asigno grupo mayor a 75 años
+    grupos[edades > 75] = 2
+
+    ## Retorno el vector de grupos etarios
+    return grupos
+
+def agrupar_por_paciente(features_giros):
+    """
+    Agrega features de giros a nivel de paciente.
+
+    Parámetros
+    ----------
+    features_giros : list of dict
+        Lista con features por giro.
+
+    Retorna
+    -------
+    list of dict
+        Lista con features agregadas por paciente.
+    """
+
+    ## Obtengo la lista de todas las Ids asociadas a cada giro del diccionarios de features de giros
+    ids = np.array([f["id"] for f in features_giros])
+    
+    ## Obtengo la lista de todas las duraciones asociadas a cada giro del diccionarios de features de giros
+    duration = np.array([f["duration_s"] for f in features_giros])
+
+    ## Obtengo la lista de todos los ángulos de giro asociados a cada giro del diccionarios de features de giros
+    angle = np.array([f["angle_deg"] for f in features_giros])
+
+    ## Obtengo la lista de todas las velocidades angulares medias a cada giro del diccionarios de features de giros
+    mean_w = np.array([f["mean_w_deg_s"] for f in features_giros])
+
+    ## Remuevo ids duplicados en la lista de identificadores
+    pacientes = np.unique(ids)
+
+    ## Inicializo una lista vacía en donde voy a almacenar los conjuntos de features agregados por paciente
+    salida = []
+
+    ## Itero para cada uno de los pacientes
+    for pid in pacientes:
+
+        ## Obtengo una máscara que me identifique únicamente los conjuntos de giros asociados a un paciente
+        mask = ids == pid
+
+        ## Para este paciente construyo un diccionario con indicadores estadísticos del giro y lo guardo en la lista
+        salida.append({"id": pid, "n_turns": np.sum(mask), "mean_turn_speed": np.mean(mean_w[mask]),
+            "std_turn_speed": np.std(mean_w[mask]), "mean_angle": np.mean(angle[mask]),
+            "mean_duration": np.mean(duration[mask])})
+
+    ## Devuelvo la lista conteniendo los diccionarios con todas las features agregadas
+    return salida
