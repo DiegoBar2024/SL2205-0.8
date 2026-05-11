@@ -560,42 +560,50 @@ def estimar_angulos_giro(imu_quat, segmentos):
     ## Retorno los ángulos de giro correspondientes a todos los giros detectados
     return angulos
 
-def extraer_features_basicas(imu_quat, segmentos, fs, id):
+def extraer_features_basicas(imu_quat, segmentos, fs, id, wz_suav):
     """
-    Extrae un conjunto mínimo y robusto de características de cada giro detectado.
+    Extrae características cinemáticas por evento de giro a partir de una IMU lumbar.
 
-    Este conjunto está diseñado como una primera aproximación para análisis de
-    marcha, caracterización de giros o estudios poblacionales (ej. relación con edad).
+    Cada giro se analiza de forma independiente utilizando:
+    - velocidad angular filtrada del giroscopio (wz_suav) para métricas dinámicas
+    - cuaterniones estimados por EKF-AHRS para el cálculo del ángulo total de giro
 
-    Las features se basan exclusivamente en:
-        - método endpoint para el ángulo de giro
-        - duración del segmento
-        - velocidad angular media derivada
+    El enfoque es completamente event-based y está diseñado para análisis poblacional
+    (ej. correlación de parámetros de giro con edad), priorizando robustez y consistencia
+    en lugar de reconstrucción espacial completa de la trayectoria.
 
-    Parámetros
+    Parameters
     ----------
     imu_quat : np.ndarray (N, 4)
-        Secuencia de cuaterniones estimados por EKF en formato (w, x, y, z).
+        Cuaterniones (w, x, y, z) estimados mediante EKF-AHRS.
 
     segmentos : list of dict
-        Lista de segmentos de giro detectados. Cada segmento contiene:
-            - 'start_idx': índice de inicio del giro
-            - 'end_idx': índice de fin del giro
+        Lista de eventos de giro con índices:
+            - start_idx
+            - end_idx
 
     fs : float
-        Frecuencia de muestreo del sistema (Hz).
+        Frecuencia de muestreo (Hz).
 
-    id: int
-        Identificador numérico del paciente
+    id : int
+        Identificador del sujeto.
 
-    Retorna
+    wz_suav : np.ndarray (N,)
+        Señal de velocidad angular filtrada utilizada para detección y métricas dinámicas.
+
+    Returns
     -------
     list of dict
-        Lista donde cada elemento corresponde a un giro y contiene:
+        Lista de features por giro:
+
             - id
             - duration_s
             - angle_deg
             - mean_w_deg_s
+            - peak_w_deg_s
+            - rms_w_deg_s
+            - time_to_peak
+            - peak_mean_ratio
     """
 
     ## Estimo los ángulos de giro (rad) mediante método de endpoints para cada uno de los segmentos de giro
@@ -618,17 +626,44 @@ def extraer_features_basicas(imu_quat, segmentos, fs, id):
         if e <= s + 1:
             continue
 
-        ## Duración del giro en segundos
+        ## Obtengo el segmento de giro actual de la señal medida por el giroscopio
+        seg_w = wz_suav[s:e]
+
+        ## Obtengo el tiempo correspondiente al segmento de giro como tiempo = muestras / fs
         duration = (e - s) / fs
 
-        ## Obtengo el ángulo total de giro basado en la estimación con endpoints que hice antes
+        ## Obtengo la estimación del ángulo de giro
         angle = ang_deg[i]
 
-        ## Velocidad angular media (deg/s)
+        ## Obtengo la velocidad angular media asociada al giro
         mean_w = angle / duration
 
-        ## Almaceno las features correspondientes en forma de un diccionario en una lista
-        features.append({"id": id, "duration_s": duration, "angle_deg": angle, "mean_w_deg_s": mean_w})
+        ## Obtengo el valor pico de la señal del giroscopio como max{|w|}
+        peak_w = np.max(np.abs(seg_w))
+
+        ## Obtengo el valor RMS (Root Mean Square) correspondiente a la señal del giroscopio
+        rms_w = np.sqrt(np.mean(seg_w ** 2))
+
+        ## En caso de que el segmento de giro tenga más de una muestra de largo
+        if len(seg_w) > 1:
+
+            ## Obtengo la relación del tiempo que transcurre hasta el instante donde se produce el
+            ## mayor pico y el tiempo total del segmento de giro
+            t_peak = np.argmax(np.abs(seg_w)) / len(seg_w)
+        
+        ## En caso de que el segmento de giro tenga una única muestra de largo
+        else:
+            
+            ## No tiene sentido en este caso hablar de tiempo de pico en este caso (asigno valor 0)
+            t_peak = 0
+
+        ## Obtengo la relación entre el valor pico de la señal y la velocidad angular media de giro
+        peak_mean_ratio = peak_w / (np.abs(mean_w) + 1e-8)
+
+        ## Construyo el diccionario de las features asociadas al segmento actual de giro
+        features.append({"id": id, "duration_s": duration, "angle_deg": angle, "mean_w_deg_s": mean_w,
+                        "peak_w_deg_s": peak_w, "rms_w_deg_s": rms_w, "time_to_peak": t_peak,
+                        "peak_mean_ratio": peak_mean_ratio})
 
     ## Retorno el listado de features extraídas de los giros
     return features

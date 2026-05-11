@@ -14,7 +14,7 @@ import numpy as np
 if __name__== '__main__':
 
     ## Opcion 1: Graficar histograma caracterizando la distribución de edades de la población
-    ## Opcion 2: Detectar los giros y extraer features de los giros
+    ## Opcion 2: Detectar y extraer features de los giros
     opcion = 2
 
     ## En caso de que quiera caracterizar la población según la edad
@@ -84,7 +84,7 @@ if __name__== '__main__':
                 segmentos = extraer_segmentos_giros(acel, gyro, giros)
 
                 ## Hago la extracción de features correspondientes a los giros
-                features_giros = extraer_features_basicas(imu_quat, segmentos, frec_muestreo, id_paciente)
+                features_giros = extraer_features_basicas(imu_quat, segmentos, frec_muestreo, id_paciente, wz_suav)
 
                 ## Almaceno las features de los giros de dicho paciente a la lista general de features de giros de pacientes
                 features_giros_total.extend(features_giros)
@@ -92,6 +92,9 @@ if __name__== '__main__':
             ## En caso de que ocurra algún error en el procesamiento de los giros de los pacientes, continúo
             ## con el procesamiento de los giros del siguiente paciente
             except:
+
+                ## Notifico el ID de la persona en la cual el algoritmo dio error y continúo con la ejecución
+                print("Error en el procesamiento para la persona de ID: {}".format(id_paciente))
                 continue
         
         ## Extraigo el conjunto de las IDs de los pacientes correspondientes a todos los giros detectados
