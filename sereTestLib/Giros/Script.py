@@ -9,19 +9,21 @@ from LecturaDatosPacientes import *
 from LecturaDatos import *
 from Utils import *
 import numpy as np
+import json
 
 ## Programa principal
 if __name__== '__main__':
 
     ## Opcion 1: Graficar histograma caracterizando la distribución de edades de la población
     ## Opcion 2: Detectar y extraer features de los giros
+    ## Opcion 3: Procesar features de giros previamente extraídas
     opcion = 2
+
+    ## Obtengo la información correspondiente a todos los pacientes en la base de datos
+    pacientes, ids_existentes = LecturaDatosPacientes()
 
     ## En caso de que quiera caracterizar la población según la edad
     if opcion == 1:
-
-        ## Obtengo la información correspondiente a todos los pacientes en la base de datos
-        pacientes, ids_existentes = LecturaDatosPacientes()
 
         ## Obtengo el histograma por edad
         graficar_histograma_edades(pacientes)
@@ -34,9 +36,6 @@ if __name__== '__main__':
 
         ## Seteo el sistema inercial que voy a usar de referencia para el cálculo de orientación
         sist_inercial = 'ENU'
-
-        ## Obtengo la información correspondiente a todos los pacientes en la base de datos
-        pacientes, ids_existentes = LecturaDatosPacientes()
 
         ## Inicializo una lista en la cual voy a almacenar todas las features de todos los giros de todos los pacientes
         features_giros_total = []
@@ -89,14 +88,34 @@ if __name__== '__main__':
                 ## Almaceno las features de los giros de dicho paciente a la lista general de features de giros de pacientes
                 features_giros_total.extend(features_giros)
             
-            ## En caso de que ocurra algún error en el procesamiento de los giros de los pacientes, continúo
-            ## con el procesamiento de los giros del siguiente paciente
+            ## En caso de que ocurra algún error en el procesamiento de los giros de los pacientes
             except:
 
                 ## Notifico el ID de la persona en la cual el algoritmo dio error y continúo con la ejecución
                 print("Error en el procesamiento para la persona de ID: {}".format(id_paciente))
+
+                ## Conntinúo con el procesamiento de los datos correspondientes a la siguiente persona
                 continue
-        
+
+        ## Guardado: Abro el fichero .json en el cual voy a almacenar la lista de las features de giros
+        ## (le doy la opción de escritura 'w' ya que en este caso solo me interesa guardar datos)
+        with open("{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_total.json"
+                .format(root), "w", encoding = "utf-8") as f:
+
+            ## Almaceno la lista <<features_giros_total>> en el archivo .json correspondiente
+            json.dump(features_giros_total, f, indent = 2, ensure_ascii = False,
+                    default = lambda x: x.item() if isinstance(x, np.generic) else x)
+
+    ## En caso de que yo quiera procesar las features de los giros que fueron previamente extraídas
+    elif opcion == 3:
+
+        ## Guardado: Abro el fichero .json en el cual voy a almacenar la lista de las features de giros
+        ## (le doy la opción de lectura 'r' dado que en este caso me interesa extraer datos)
+        with open("features_giros_total.json", "r", encoding = "utf-8") as f:
+
+            ## Abro el contenido del fichero .json y almaceno la lista con todas las features de giros
+            features_giros_total = json.load(f)
+
         ## Extraigo el conjunto de las IDs de los pacientes correspondientes a todos los giros detectados
         ids = np.array([f["id"] for f in features_giros_total])
 
