@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from ahrs.filters import EKF
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+import os
 
 def graficar_histograma_edades(df, columna_edad = 'Edad', mostrar_porcentaje = False):
     """
@@ -708,49 +709,165 @@ def asignar_grupo_edad(edades):
     ## Retorno el vector de grupos etarios
     return grupos
 
-def agrupar_por_paciente(features_giros):
+def agrupar_por_paciente(array_features):
     """
     Agrega features de giros a nivel de paciente.
 
-    Parámetros
+    Parameters
     ----------
-    features_giros : list of dict
-        Lista con features por giro.
+    array_features : pandas.DataFrame
+        DataFrame con columnas:
+        - id (sujeto)
+        - features de cada giro
 
-    Retorna
+    Returns
     -------
     list of dict
-        Lista con features agregadas por paciente.
+        Features agregadas por paciente
     """
 
-    ## Obtengo la lista de todas las Ids asociadas a cada giro del diccionarios de features de giros
-    ids = np.array([f["id"] for f in features_giros])
-    
-    ## Obtengo la lista de todas las duraciones asociadas a cada giro del diccionarios de features de giros
-    duration = np.array([f["duration_s"] for f in features_giros])
+    ## Obtengo la lista de IDs correspondientes a todos los giros detectados
+    ids = array_features["id"].to_numpy()
 
-    ## Obtengo la lista de todos los ángulos de giro asociados a cada giro del diccionarios de features de giros
-    angle = np.array([f["angle_deg"] for f in features_giros])
+    ## Obtengo un numpy array conteniendo el resto de las features correspondientes a todos los giros
+    ## Las dimensiones de la matriz X van a ser (m,n) donde:
+    ## m: Cantidad total de giros detectados para todas las personas
+    ## n: Cantidad total de features extraídas por cada giro
+    X = array_features.drop(columns=["id"]).to_numpy()
 
-    ## Obtengo la lista de todas las velocidades angulares medias a cada giro del diccionarios de features de giros
-    mean_w = np.array([f["mean_w_deg_s"] for f in features_giros])
-
-    ## Remuevo ids duplicados en la lista de identificadores
+    ## Obtengo una lista conteniendo todos los IDs (sin repetir) de aquellos pacientes asociados a los giros
     pacientes = np.unique(ids)
 
-    ## Inicializo una lista vacía en donde voy a almacenar los conjuntos de features agregados por paciente
-    salida = []
+    ## Inicializo una lista vacía en la cual voy a almacenar una sumarización estadística de todas
+    ## las features de los giros pero ahora asociándolo a la persona
+    features_por_paciente = []
 
-    ## Itero para cada uno de los pacientes
+    ## Itero para cada uno de los IDs de los pacientes para los cuales tengo giros
     for pid in pacientes:
 
-        ## Obtengo una máscara que me identifique únicamente los conjuntos de giros asociados a un paciente
+        ## Localizo únicamente aquellos giros y sus correspondientes features asociadas para
+        ## la persona actual que estoy analizando
         mask = ids == pid
 
-        ## Para este paciente construyo un diccionario con indicadores estadísticos del giro y lo guardo en la lista
-        salida.append({"id": pid, "n_turns": np.sum(mask), "mean_turn_speed": np.mean(mean_w[mask]),
-            "std_turn_speed": np.std(mean_w[mask]), "mean_angle": np.mean(angle[mask]),
-            "mean_duration": np.mean(duration[mask])})
+        ## Análogo a antes, X va a ser una matriz de dimensiones (d,n) donde:
+        ## d: Cantidad total de giros detectados para la persona actual que está procesando
+        ## n: Cantidad total de features extraídas por cada giro
+        data = X[mask]
 
-    ## Devuelvo la lista conteniendo los diccionarios con todas las features agregadas
-    return salida
+        ## Chequeo: En caso de que la persona actual no tenga datos de giros
+        if len(data) == 0:
+
+            ## Continúo con la ejecución y paso a procesar los datos de giros de la próxima persona
+            continue
+
+        ## Construyo un diccionario de 'features' en las cuales almaceno la ID correspondiente a
+        ## la persona que estoy procesando, y la cantidad de giros que realizó en el registro de marcha
+        features = {"id": pid, "n_turns": len(data)}
+
+        ## Itero para cada una de las features detectadas del giro
+        for i in range(data.shape[1]):
+
+            ## Obtengo un vector con los valores estadísticos del i-ésimo feature correspondientes
+            ## a todos los giros detectados para la persona actual que estoy procesando
+            col = data[:, i]
+
+            ## Lo que hago es hacer un análisis estadístico correspondinete a los valores de la feature
+            ## Hago el cálculo del valor medio asociado a las medidas del i-ésimo feature y lo guardo
+            features[f"f{i}_mean"] = np.mean(col)
+
+            ## Hago el cálculo de la desviación estándar asociada las medidas del i-ésimo feature y la guardo
+            features[f"f{i}_std"] = np.std(col)
+
+            ## Hago el cálculo de la mediana asociada las medidas del i-ésimo feature y la guardo
+            features[f"f{i}_median"] = np.median(col)
+
+            ## Hago el cálculo del valor máximo de las medidas del i-ésimo feature y lo guardo
+            features[f"f{i}_max"] = np.max(col)
+
+            ## Hago el cálculo del coeficiente de variabilidad asociada a las medidas del feature i
+            features[f"f{i}_cv"] = features[f"f{i}_std"] / (features[f"f{i}_mean"] + 1e-8)
+
+            ## El cálculo de los percentiles contribuye en la caracterización de la distribución
+            ## a la que corresponden las secuencias de parámetros de los giros
+            ## Hago el cálculo del 25th percentil asociado a las medidas del feature i
+            features[f"f{i}_p25"] = np.percentile(col, 25)
+
+            ## Hago el cálculo del 75th percentil asociado a las medidas del feature i
+            features[f"f{i}_p75"] = np.percentile(col, 75)
+
+            ## Hago el cálculo del IQR (índice intercuartil) de las medidas de la feature i
+            features[f"f{i}_iqr"] = features[f"f{i}_p75"] - features[f"f{i}_p25"]
+
+        ## Agrego el diccionario de features especificando la ID del paciente y conteniendo una
+        ## sumarización estádistica de todas las features extraídas de los giros
+        features_por_paciente.append(features)
+
+    ## Retorno la lista con las sumarizaciones de los estadísticos de los giros para todas las personas
+    return features_por_paciente
+
+def plot_feature_distributions_by_age_group(df, feature_cols, age_col, output_dir, feature_names = None):
+    """
+    Genera y guarda boxplots de features separadas por grupos de edad.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataset con features + columna de grupo etario.
+
+    feature_cols : list of str
+        Lista de columnas de features a analizar.
+
+    age_col : str
+        Nombre de la columna con grupos de edad.
+
+    output_dir : str
+        Carpeta donde se guardarán los gráficos.
+
+    feature_names : dict
+        Diccionario con los nombres de las features a graficar con sus nombres de base identificadores.
+    """
+
+    ## Generar la carpeta de destino en caso de que esta no esté creada
+    os.makedirs(output_dir, exist_ok = True)
+
+    ## Defino las etiquetas correspondientes a los grupos etarios
+    group_labels = ["<60", "60 - 75", ">75"]
+
+    ## Creo una lista con las etiquetas de los grupos para indexar en el dataframe
+    groups = [0, 1, 2]
+
+    ## Itero para cada una de las columnas de features que voy a analizar
+    for feature in feature_cols:
+
+        ## Hago la extracción de los datos correspondientes a dicha feature por grupo
+        data = [df[df[age_col] == g][feature].dropna().values for g in groups]
+
+        ## En caso de que yo pase un diccionario con los nombres de las features como entrada
+        if feature_names is not None:
+            
+            ## Obtengo el nombre de base identificador para cada una de las features
+            base_name = feature.split("_")[0]
+
+            ## Armo el nombre de la feature correctamente
+            nice_name = feature_names.get(base_name, feature)
+        
+        ## En caso de que no pase como entrada ningún diccionario con nombres de features
+        else:
+
+            ## Configuro el nombre predeterminado de la feature
+            nice_name = feature
+
+        ## Genero la figura del boxplot pasando como parámetros los datos del feature y las etiquetas
+        plt.figure(figsize = (6, 4))
+        plt.boxplot(data, tick_labels = group_labels)
+
+        ## Configuro la estética del boxplot
+        plt.title(f"{nice_name} vs Grupo Etario")
+        plt.ylabel(feature)
+        plt.xlabel("Grupo Etario")
+        plt.grid(True, axis = "y")
+
+        ## Guardo el boxplot correspondiente en la ruta especificada de salida
+        save_path = os.path.join(output_dir, f"{feature}_grupos_etarios.png")
+        plt.savefig(save_path, dpi = 300, bbox_inches = "tight")
+        plt.close()

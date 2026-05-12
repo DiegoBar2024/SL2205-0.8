@@ -9,15 +9,15 @@ from LecturaDatosPacientes import *
 from LecturaDatos import *
 from Utils import *
 import numpy as np
-import json
 
 ## Programa principal
 if __name__== '__main__':
 
     ## Opcion 1: Graficar histograma caracterizando la distribución de edades de la población
     ## Opcion 2: Detectar y extraer features de los giros
-    ## Opcion 3: Procesar features de giros previamente extraídas
-    opcion = 2
+    ## Opcion 3: Procesar features de giros previamente extraídas (análisis por persona)
+    ## Opcion 4: Procesar features de giros previamente extraídas (análisis por giro)
+    opcion = 3
 
     ## Obtengo la información correspondiente a todos los pacientes en la base de datos
     pacientes, ids_existentes = LecturaDatosPacientes()
@@ -97,24 +97,80 @@ if __name__== '__main__':
                 ## Conntinúo con el procesamiento de los datos correspondientes a la siguiente persona
                 continue
 
-        ## Guardado: Abro el fichero .json en el cual voy a almacenar la lista de las features de giros
-        ## (le doy la opción de escritura 'w' ya que en este caso solo me interesa guardar datos)
-        with open("{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_total.json"
-                .format(root), "w", encoding = "utf-8") as f:
+        ## Hago la conversión de lista de diccionarios a DataFrame Pandas
+        df_features = pd.DataFrame(features_giros_total)
 
-            ## Almaceno la lista <<features_giros_total>> en el archivo .json correspondiente
-            json.dump(features_giros_total, f, indent = 2, ensure_ascii = False,
-                    default = lambda x: x.item() if isinstance(x, np.generic) else x)
+        ## Hago el guardado del dataframe pandas bajo la extensión de .parquet
+        output_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_total.parquet".format(root)
+        df_features.to_parquet(output_path, index = False)
 
     ## En caso de que yo quiera procesar las features de los giros que fueron previamente extraídas
+    ## pero haciendo una sumarización de los valores estadísticos de las features extraídas por persona
     elif opcion == 3:
 
-        ## Guardado: Abro el fichero .json en el cual voy a almacenar la lista de las features de giros
-        ## (le doy la opción de lectura 'r' dado que en este caso me interesa extraer datos)
-        with open("features_giros_total.json", "r", encoding = "utf-8") as f:
+        ## Hago la lectura del archivo .parquet donde guardo el dataframe Pandas que contiene
+        ## la lista con los diccionarios con todos los parámetros de los giros detectados
+        features_giros_total = pd.read_parquet(
+            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_total.parquet".format(root))
 
-            ## Abro el contenido del fichero .json y almaceno la lista con todas las features de giros
-            features_giros_total = json.load(f)
+        ## Especifico el orden de las columnas del dataframe según las features para asegurar consistencia
+        ## y reorganizo todo el dataframe pandas para que sea consistente con el orden que quiero
+        array_features = features_giros_total[["id", "duration_s", "angle_deg","mean_w_deg_s", "peak_w_deg_s", 
+                                "rms_w_deg_s", "time_to_peak", "peak_mean_ratio"]]
+
+        ## Genero un diccionario con los nombres de todos los features presentes (para graficación)
+        feature_names = {"f0": "Duration (s)", "f1": "Angle (deg)", "f2": "Mean angular velocity (°/s)",
+            "f3": "Peak angular velocity (°/s)", "f4": "RMS angular velocity (°/s)", "f5": "Time to peak (s)",
+            "f6": "Peak/mean ratio"}
+        
+        ## Hago la sumarización de las features estadísticas de los giros por cada paciente        
+        features_por_paciente = agrupar_por_paciente(array_features)
+
+        ## Hago la conversión de numpy a dataframe para hacer el procesamiento
+        df_features_por_paciente = pd.DataFrame(features_por_paciente)
+
+        ## Me aseguro que los IDs se encuentran todos expresados en formato string
+        df_features_por_paciente["id"] = df_features_por_paciente["id"].astype(str)
+        pacientes["sampleid"] = pacientes["sampleid"].astype(str)
+
+        ## Obtengo únicamente información de la edad y la ID asociada a cada paciente
+        df_patients = pacientes[["sampleid", "Edad"]]
+
+        ## Hago un inner join entre el dataframe con la edad y la ID de cada persona y el dataframe
+        ## con la sumarización estadística de las features de todos los giros detectados para el paciente
+        df_dataset = df_features_por_paciente.merge(df_patients, left_on = "id", right_on = "sampleid", 
+                                                    how = "inner")
+        
+        ## Elimino la columna redundante con la ID del paciente para no tener datos duplicados
+        df_dataset = df_dataset.drop(columns = ["id"])
+
+        ## Asigno cada persona al grupo etario correspondiente según su edad (0: edad < 60, 1: 
+        ## 60 < edad < 75, 2: edad > 75) generando una nueva columna denominada "age_group"
+        df_dataset["age_group"] = asignar_grupo_edad(df_dataset["Edad"])
+
+        ## Selecciono únicamente aquellas columnas que correspondan a los features
+        feature_cols = df_dataset.columns.drop(["sampleid", "Edad", "age_group"])
+
+        ## Genero los boxplots correspondientes a la distribución de la pobilación por edad según feature
+        plot_feature_distributions_by_age_group(df_dataset, feature_cols, 'age_group', 
+        "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/".format(root), feature_names)
+
+    ## En caso de que yo quiera procesar las features de los giros que fueron previamente extraídas
+    ## pero hago el procesamiento por cada giro separadamente sin hacer sumarización por persona
+    elif opcion == 4:
+
+        ## Hago la lectura del archivo .parquet donde guardo el dataframe Pandas que contiene
+        ## la lista con los diccionarios con todos los parámetros de los giros detectados
+        features_giros_total = pd.read_parquet(
+            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_total.parquet".format(root))
+
+        ## Especifico el orden de las columnas del dataframe según las features para asegurar consistencia
+        ## y reorganizo todo el dataframe pandas para que sea consistente con el orden que quiero
+        array_features = features_giros_total[["id", "duration_s", "angle_deg","mean_w_deg_s", "peak_w_deg_s", 
+                                "rms_w_deg_s", "time_to_peak", "peak_mean_ratio"]]
+        
+        ## Hago la conversión del Dataframe de features por paciente a array numpy
+        array_features = array_features.to_numpy()
 
         ## Extraigo el conjunto de las IDs de los pacientes correspondientes a todos los giros detectados
         ids = np.array([f["id"] for f in features_giros_total])
