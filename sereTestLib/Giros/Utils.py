@@ -4,6 +4,7 @@ from ahrs.filters import EKF
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 import os
+from datetime import datetime
 
 def graficar_histograma_edades(df, columna_edad = 'Edad', mostrar_porcentaje = False):
     """
@@ -827,7 +828,7 @@ def plot_feature_distributions_by_age_group(df, feature_cols, age_col, output_di
         Diccionario con los nombres de las features a graficar con sus nombres de base identificadores.
     """
 
-    ## Generar la carpeta de destino en caso de que esta no esté creada
+    ## Generar la carpeta/ruta de destino en caso de que esta no esté creada
     os.makedirs(output_dir, exist_ok = True)
 
     ## Defino las etiquetas correspondientes a los grupos etarios
@@ -839,7 +840,7 @@ def plot_feature_distributions_by_age_group(df, feature_cols, age_col, output_di
     ## Itero para cada una de las columnas de features que voy a analizar
     for feature in feature_cols:
 
-        ## Hago la extracción de los datos correspondientes a dicha feature por grupo
+        ## Hago la extracción de los datos correspondientes a dicha feature por grupo etario
         data = [df[df[age_col] == g][feature].dropna().values for g in groups]
 
         ## En caso de que yo pase un diccionario con los nombres de las features como entrada
@@ -869,5 +870,73 @@ def plot_feature_distributions_by_age_group(df, feature_cols, age_col, output_di
 
         ## Guardo el boxplot correspondiente en la ruta especificada de salida
         save_path = os.path.join(output_dir, f"{feature}_grupos_etarios.png")
+        plt.savefig(save_path, dpi = 300, bbox_inches = "tight")
+        plt.close()
+
+def plot_turn_features_by_age_group(df, feature_cols, output_dir, feature_names = None,
+                                    feature_file_names = None):
+    """
+    Genera boxplots de features a nivel de giro agrupadas por grupo etario.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Debe contener columnas de features a nivel de giro y la columna
+        'age_group' con valores {0, 1, 2}.
+
+    feature_cols : list of str
+        Lista de nombres de las features a graficar.
+
+    output_dir : str
+        Directorio base donde se guardarán los gráficos. Dentro de este
+        se crea automáticamente una subcarpeta con timestamp para cada ejecución.
+
+    feature_names : dict, opcional
+        Diccionario que mapea el nombre técnico de la feature a una etiqueta
+        legible (usado para los títulos de los gráficos).
+
+    feature_file_names : dict, opcional
+        Diccionario que mapea el nombre técnico de la feature a un nombre
+        seguro para archivos (usado para los nombres de los PNG generados).
+    """
+
+    ## Construyo el timestamp en el cual indica el instante en el que se generan los gráficos
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    ## Construyo la ruta completa de salida concatenando la ruta pasada como parámetro y el timestamp
+    run_dir = os.path.join(output_dir, timestamp)
+
+    ## Generar la carpeta/ruta de destino en caso de que esta no esté creada
+    os.makedirs(run_dir, exist_ok = True)
+
+    ## Agrupo el dataset de giros según el grupo etario de la persona a la que pertenezcan
+    grouped = df.groupby("age_group")
+
+    ## Defino las etiquetas correspondientes a los grupos etarios
+    labels = ["<60", "60-75", ">75"]
+
+    ## Itero para cada una de las columnas de features que voy a analizar
+    for feature in feature_cols:
+
+        ## Hago la extracción de los datos correspondientes a dicha feature por grupo etario
+        data = [grouped.get_group(g)[feature].dropna() if g in grouped.groups else [] for g in [0, 1, 2]]
+
+        ## Genero la figura del boxplot pasando como parámetros los datos del feature y las etiquetas
+        plt.figure(figsize = (6, 4))
+        plt.boxplot(data, tick_labels = labels)
+
+        ## Configuro los rasgos estéticos y el título del boxplot
+        title = feature_names.get(feature, feature) if feature_names else feature
+        plt.title(title)
+        plt.xlabel("Rango etario")
+        plt.ylabel(feature)
+        plt.grid(True, axis = "y")
+        plt.tight_layout()
+
+        ## Especifico el nombre del boxplot que voy a guardar
+        safe_name = feature_file_names.get(feature, feature)
+
+        ## Guardo el boxplot correspondiente en la ruta especificada de salida
+        save_path = os.path.join(run_dir, f"{safe_name}_por_grupo_etario.png")
         plt.savefig(save_path, dpi = 300, bbox_inches = "tight")
         plt.close()

@@ -17,7 +17,7 @@ if __name__== '__main__':
     ## Opcion 2: Detectar y extraer features de los giros
     ## Opcion 3: Procesar features de giros previamente extraídas (análisis por persona)
     ## Opcion 4: Procesar features de giros previamente extraídas (análisis por giro)
-    opcion = 3
+    opcion = 4
 
     ## Obtengo la información correspondiente a todos los pacientes en la base de datos
     pacientes, ids_existentes = LecturaDatosPacientes()
@@ -116,7 +116,7 @@ if __name__== '__main__':
         ## Especifico el orden de las columnas del dataframe según las features para asegurar consistencia
         ## y reorganizo todo el dataframe pandas para que sea consistente con el orden que quiero
         array_features = features_giros_total[["id", "duration_s", "angle_deg","mean_w_deg_s", "peak_w_deg_s", 
-                                "rms_w_deg_s", "time_to_peak", "peak_mean_ratio"]]
+                                "rms_w_deg_s", "time_to_peak", "peak_mean_ratio"]].copy()
 
         ## Genero un diccionario con los nombres de todos los features presentes (para graficación)
         feature_names = {"f0": "Duration (s)", "f1": "Angle (deg)", "f2": "Mean angular velocity (°/s)",
@@ -134,7 +134,7 @@ if __name__== '__main__':
         pacientes["sampleid"] = pacientes["sampleid"].astype(str)
 
         ## Obtengo únicamente información de la edad y la ID asociada a cada paciente
-        df_patients = pacientes[["sampleid", "Edad"]]
+        df_patients = pacientes[["sampleid", "Edad"]].copy()
 
         ## Hago un inner join entre el dataframe con la edad y la ID de cada persona y el dataframe
         ## con la sumarización estadística de las features de todos los giros detectados para el paciente
@@ -164,39 +164,52 @@ if __name__== '__main__':
         features_giros_total = pd.read_parquet(
             "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_total.parquet".format(root))
 
-        ## Especifico el orden de las columnas del dataframe según las features para asegurar consistencia
-        ## y reorganizo todo el dataframe pandas para que sea consistente con el orden que quiero
+        ## Selecciono y ordeno las columnas de features por giro para asegurar consistencia
         array_features = features_giros_total[["id", "duration_s", "angle_deg","mean_w_deg_s", "peak_w_deg_s", 
-                                "rms_w_deg_s", "time_to_peak", "peak_mean_ratio"]]
-        
-        ## Hago la conversión del Dataframe de features por paciente a array numpy
-        array_features = array_features.to_numpy()
+                                "rms_w_deg_s", "time_to_peak", "peak_mean_ratio"]].copy()
 
-        ## Extraigo el conjunto de las IDs de los pacientes correspondientes a todos los giros detectados
-        ids = np.array([f["id"] for f in features_giros_total])
+        ## Asocio los identificadores de cada una de las features con sus respectivas descripciones
+        feature_names = {"duration_s": "Duración (s)", "angle_deg": "Ángulo (grados)",
+        "mean_w_deg_s": "Velocidad angular media (°/s)", "peak_w_deg_s": "Velocidad angular pico (°/s)",
+        "rms_w_deg_s": "Velocidad angular RMS (°/s)", "time_to_peak": "Tiempo hasta el pico (s)",
+        "peak_mean_ratio": "Relación pico/media"}
 
-        ## Extraigo el conjunto de las velocidades angulares correspondientes a los giros detectados
-        mean_w = np.array([f["mean_w_deg_s"] for f in features_giros_total])
+        ## Asocio los identificadores de cada una de las features con los respectivos nombres de gráfico
+        feature_file_names = {"duration_s": "duracion_giro", "angle_deg": "angulo_giro", 
+                            "mean_w_deg_s": "vel_angular_media", "peak_w_deg_s": "vel_angular_pico",
+                            "rms_w_deg_s": "vel_angular_rms", "time_to_peak": "tiempo_pico",
+                            "peak_mean_ratio": "ratio_pico_media"}
 
-        ## Obtengo las IDs y las edades de todos los pacientes para los cuales tengo registros
-        patient_ids = np.array(pacientes["sampleid"])
-        ages = np.array(pacientes["Edad"])
+        ## Obtengo únicamente información de la edad y la ID asociada a cada paciente
+        df_patients = pacientes[["sampleid", "Edad"]].copy()
 
-        ## Hago la asignación de cada uno de los pacientes al grupo etario correspondiente
-        groups_patient = asignar_grupo_edad(ages)
+        ## Me aseguro que los IDs se encuentran todos expresados en formato string
+        array_features["id"] = array_features["id"].astype(str)
+        df_patients["sampleid"] = df_patients["sampleid"].astype(str)
 
-        ## Hago la asignación de la ID de cada paciente con su correspondiente rango etario
-        id_to_group = dict(zip(patient_ids, groups_patient))
+        ## Asocio cada giro con la edad del sujeto correspondiente mediante un merge por ID
+        df_dataset = array_features.merge(df_patients, left_on = "id", right_on = "sampleid", how = "inner")
 
-        ## Por intermedio de la ID del paciente, hago la asignación de cada uno de los conjuntos de features
-        ## de giros con el rango etario correspondiente
-        groups = np.array([id_to_group[i] for i in ids])
+        ## Elimino la columna redundante con la ID del paciente para no tener datos duplicados
+        df_dataset = df_dataset.drop(columns = ["sampleid"])
 
-        ## Hago la graficación del boxplot de las velocidades angulares medias de giro segmentadas por
-        ## el rango etario definido
-        data = [np.abs(mean_w[groups == g]) for g in [0, 1, 2]]
-        plt.boxplot(data, tick_labels=["<60", "60-75", ">75"])
-        plt.ylabel("Velocidad angular promedio de giro (°/s)")
-        plt.title("Velocidad angular promedio de giro según rango etario")
-        plt.grid(True, axis = "y")
-        plt.show()
+        ## Asigno cada persona al grupo etario correspondiente según su edad (0: edad < 60, 1: 
+        ## 60 < edad < 75, 2: edad > 75) generando una nueva columna denominada "age_group"
+        df_dataset["age_group"] = asignar_grupo_edad(df_dataset["Edad"])
+
+        ## Creo una copia de los datos para visualización (de manera de no tocar los datos originales)
+        df_plot = df_dataset.copy()
+
+        ## Tomo magnitudes para variables dependientes de dirección (velocidad angular y ángulo),
+        ## ya que para este análisis nos interesa comparar intensidad de giro y no el sentido.
+        df_plot["mean_w_deg_s"] = np.abs(df_plot["mean_w_deg_s"])
+        df_plot["angle_deg"] = np.abs(df_plot["angle_deg"])
+        df_plot["peak_mean_ratio"] = df_plot["peak_w_deg_s"] / (df_plot["mean_w_deg_s"] + 1e-8)
+
+        ## Selecciono únicamente las columnas numéricas correspondientes a features de los giros
+        feature_cols = df_plot.columns.drop(["id", "Edad", "age_group"])
+
+        ## Hago la graficación de los boxplots y los guardo como imágenes en la carpeta de graficos
+        plot_turn_features_by_age_group(df_plot, feature_cols,
+            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/".format(root),
+            feature_names, feature_file_names)
