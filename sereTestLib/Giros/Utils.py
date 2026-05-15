@@ -61,7 +61,7 @@ def graficar_histograma_edades(df, columna_edad = 'Edad', mostrar_porcentaje = F
     ## Configuro el título y las etiquetas de los ejes
     plt.title('Distribución de edades por grupo', fontsize = 14)
     plt.xlabel('Grupo de edad')
-    plt.ylabel('Porcentaje (%)' if mostrar_porcentaje else 'Frecuencia')
+    plt.ylabel('Porcentaje (%)' if mostrar_porcentaje else 'Número de personas')
 
     ## Agrego la cuadrícula al gráfico para poder facilitar la interpretación
     plt.grid(axis = 'y', linestyle = '--', alpha = 0.7)
@@ -69,7 +69,95 @@ def graficar_histograma_edades(df, columna_edad = 'Edad', mostrar_porcentaje = F
     ## Agrego las etiquetas encima de cada barra
     for i, valor in enumerate(conteos.values):
         texto = f"{valor:.1f}%" if mostrar_porcentaje else str(int(valor))
-        plt.text(i, valor, texto, ha='center', va='bottom')
+        plt.text(i, valor, texto, ha = 'center', va = 'bottom')
+
+    ## Despliego la gráfica
+    plt.tight_layout()
+    plt.show()
+
+def graficar_caidas_por_rango_etario(df, columna_edad = "Edad",
+                                    columna_caida = "Caida",
+                                    rango_edad = [75, float("inf")]):
+    """
+    Grafica la distribución absoluta del número de caídas
+    para un rango etario determinado.
+
+    La función filtra los sujetos pertenecientes al intervalo de edad
+    especificado y construye un gráfico de barras donde:
+
+        - El eje X representa el número de caídas {0, 1, 2}
+        - El eje Y representa la frecuencia absoluta de individuos
+
+    Esta representación permite caracterizar poblaciones específicas
+    según antecedentes de caídas, manteniendo consistencia visual
+    con los histogramas utilizados en el resto del pipeline.
+
+    Parámetros
+    ----------
+    df : pandas.DataFrame
+        DataFrame que contiene la información de los pacientes.
+
+    columna_edad : str, opcional (default = "Edad")
+        Nombre de la columna que contiene la edad de los sujetos.
+
+    columna_caida : str, opcional (default = "Caida")
+        Nombre de la columna que contiene el número de caídas.
+
+    rango_edad : list, opcional (default = [75, float("inf")])
+        Intervalo etario utilizado para el filtrado.
+        Debe especificarse como:
+            [edad_min, edad_max]
+
+        Ejemplos:
+            [60, 75]
+            [75, float("inf")]
+    """
+
+    ## Obtengo el límite inferior del rango etario
+    edad_min = rango_edad[0]
+
+    ## Obtengo el límite superior del rango etario
+    edad_max = rango_edad[1]
+
+    ## Me quedo solamente con aquellas personas dentro del rango eterio especificado
+    df_filtrado = df[(df[columna_edad] >= edad_min) & (df[columna_edad] < edad_max)].copy()
+
+    ## Hago la conversión de la columna cuyos valores son el número de caídas
+    df_filtrado[columna_caida] = pd.to_numeric(df_filtrado[columna_caida], errors="coerce")
+
+    ## Elimino aquellas filas que no tengan ningún valor como número de caídas
+    df_filtrado = df_filtrado.dropna(subset = [columna_caida])
+
+    ## Especifico el conteo absoluto restringido al conjunto {0,1,2} para la nomenclatura del eje x
+    conteos = (df_filtrado[columna_caida].value_counts().reindex([0, 1, 2], fill_value = 0).sort_index())
+
+    ## Inicializo el gráfico y configuro sus dimensiones
+    plt.figure(figsize = (7,5))
+
+    ## Especifico parámetros del gráfico de barras (colores y contorno)
+    plt.bar([0, 1, 2], conteos.values, color = 'green', edgecolor = "black")
+
+    ## Construcción del título del gráfico
+    if edad_max == float("inf"):
+        titulo = f"Distribución de caídas (Edad ≥ {edad_min})"
+    else:
+        titulo = f"Distribución de caídas ({edad_min} ≤ Edad < {edad_max})"
+
+    ## Configuración de título del gráfico y nomenclatura de los ejes
+    plt.title(titulo, fontsize = 14)
+    plt.xlabel("Número de caídas")
+    plt.ylabel("Número de personas")
+
+    ## Obligo una restricción implícita a los valores del eje x
+    plt.xticks([0, 1, 2])
+
+    ## Configuro la grilla del historgrama
+    plt.grid(axis = "y", linestyle = "--", alpha = 0.7)
+
+    ## Despliego las etiquetas sobre las barras con los valores numéricos correspondientes
+    for i, valor in enumerate(conteos.values):
+        plt.text(i, valor, str(int(valor)),
+                ha = "center", va="bottom")
 
     ## Despliego la gráfica
     plt.tight_layout()
@@ -938,5 +1026,88 @@ def plot_turn_features_by_age_group(df, feature_cols, output_dir, feature_names 
 
         ## Guardo el boxplot correspondiente en la ruta especificada de salida
         save_path = os.path.join(run_dir, f"{safe_name}_por_grupo_etario.png")
+        plt.savefig(save_path, dpi = 300, bbox_inches = "tight")
+        plt.close()
+
+def plot_turn_feature_pairs_by_age_group(df, feature_pairs, output_dir,
+                                        feature_names = None,
+                                        feature_file_names = None):
+    """
+    Genera scatter plots 2D de pares de features a nivel de giro,
+    coloreados por grupo etario.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Debe contener features a nivel de giro y la columna 'age_group'
+        con valores {0, 1, 2}.
+
+    feature_pairs : list of tuple
+        Lista de pares (feature_x, feature_y) a graficar.
+
+    output_dir : str
+        Directorio base donde se guardarán los gráficos.
+        Se crea automáticamente una carpeta con timestamp.
+
+    feature_names : dict, opcional
+        Mapeo de nombre técnico → etiqueta legible para ejes y títulos.
+
+    feature_file_names : dict, opcional
+        Mapeo de nombre técnico → nombre seguro para archivos.
+    """
+
+    ## Construyo el timestamp en el cual indica el instante en el que se generan los gráficos
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    
+    ## Construyo la ruta completa de salida concatenando la ruta pasada como parámetro y el timestamp
+    run_dir = os.path.join(output_dir, timestamp)
+
+    ## Generar la carpeta/ruta de destino en caso de que esta no esté creada    
+    os.makedirs(run_dir, exist_ok = True)
+
+    ## Agrupo el dataset de giros según el grupo etario de la persona a la que pertenezcan
+    grouped = df.groupby("age_group")
+
+    ## Defino las etiquetas correspondientes a los grupos etarios
+    labels = {0: "<60", 1: "60-75", 2: ">75"}
+
+    ## Itero para todos los pares de features para los que quiero graficar
+    for f1, f2 in feature_pairs:
+
+        ## Inicializo y configuro el tamaño del gráfico
+        plt.figure(figsize = (6, 5))
+
+        ## Itero para cada uno de los groupos estarios que tengo
+        for g in [0, 1, 2]:
+
+            ## Itero para cada una de las agrupaciones de datos de entrada
+            if g in grouped.groups:
+
+                ## Obtengo únicamente los vectores de features de los giros correspondientes al grupo g
+                data = grouped.get_group(g)
+
+                ## Hago el gráfico de dispersión correspondiente a uno de los grupos etarios
+                plt.scatter(data[f1], data[f2], alpha = 0.5, label = labels[g])
+
+        ## Configuraciones de títulos y ejes del gráfico de dispersión
+        title = f"{feature_names.get(f1, f1)} vs {feature_names.get(f2, f2)}" if feature_names else f"{f1} vs {f2}"
+        xlabel = feature_names.get(f1, f1) if feature_names else f1
+        ylabel = feature_names.get(f2, f2) if feature_names else f2
+
+        ## Configuraciones adicionales del gráfico y despliegue de la gráfica
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+
+        ## Configuro nombre del archivo del gráfico
+        f1_safe = feature_file_names.get(f1, f1) if feature_file_names else f1
+        f2_safe = feature_file_names.get(f2, f2) if feature_file_names else f2
+
+        ## Hago el guardado del gráfico con el nombre correspondiente
+        filename = f"{f1_safe}_vs_{f2_safe}.png"
+        save_path = os.path.join(run_dir, filename)
         plt.savefig(save_path, dpi = 300, bbox_inches = "tight")
         plt.close()

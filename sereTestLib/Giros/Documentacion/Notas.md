@@ -14,6 +14,25 @@ En principio, la intención es dividir a la población en cuatro categorías pri
   <strong>Figura:</strong> Gráfico de barras mostrando la distribución de los datos organizados por franja etaria, de aquellos pacientes para los que se cuentan con registros en la base de datos
 </p>
 
+## CARACTERIZACIÓN DE LA POBLACIÓN SEGÚN EL NÚMERO DE CAÍDAS
+
+Se visualizan las distribuciones del número de caídas de los pacientes dentro de cada uno de los rangos etarios. Para este análisis se contabilizan únicamente pacientes para los cuales se cuenta con registros en la base de datos.
+
+<p align="center">
+  <img src="CaidasMenor60.png" alt="My image" style="max-width: 60%;"><br>
+  <strong>Figura:</strong> Gráfico de barras mostrando la distribución del número de caídas de los pacientes menores a 60 años
+</p>
+
+<p align="center">
+  <img src="Caidas60y75.png" alt="My image" style="max-width: 60%;"><br>
+  <strong>Figura:</strong> Gráfico de barras mostrando la distribución del número de caídas de los pacientes entre 60 y 75 años
+</p>
+
+<p align="center">
+  <img src="CaidasMayor75.png" alt="My image" style="max-width: 60%;"><br>
+  <strong>Figura:</strong> Gráfico de barras mostrando la distribución del número de caídas de los pacientes mayores a 75 años
+</p>
+
 ## DETECCIÓN DE GIROS
 
 ### DIAGRAMA DE FLUJO DEL ALGORITMO

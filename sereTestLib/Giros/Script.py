@@ -9,6 +9,7 @@ from LecturaDatosPacientes import *
 from LecturaDatos import *
 from Utils import *
 import numpy as np
+from itertools import combinations
 
 ## Programa principal
 if __name__== '__main__':
@@ -17,7 +18,7 @@ if __name__== '__main__':
     ## Opcion 2: Detectar y extraer features de los giros
     ## Opcion 3: Procesar features de giros previamente extraídas (análisis por persona)
     ## Opcion 4: Procesar features de giros previamente extraídas (análisis por giro)
-    opcion = 4
+    opcion = 1
 
     ## Obtengo la información correspondiente a todos los pacientes en la base de datos
     pacientes, ids_existentes = LecturaDatosPacientes()
@@ -27,7 +28,16 @@ if __name__== '__main__':
 
         ## Obtengo el histograma por edad
         graficar_histograma_edades(pacientes)
-    
+
+        ## Obtengo el histograma de la cantidad de caídas para pacientes mayores a 75 años
+        graficar_caidas_por_rango_etario(pacientes, "Edad", "Caida", [75, float("inf")])
+
+        ## Obtengo el histograma de la cantidad de caídas para pacientes entre 60 y 75 años
+        graficar_caidas_por_rango_etario(pacientes, "Edad", "Caida", [60, 75])
+
+        ## Obtengo el histograma de la cantidad de caídas para pacientes menores a 60 años
+        graficar_caidas_por_rango_etario(pacientes, "Edad", "Caida", [0, 60])
+
     ## En caso que quiera hacer la detección y extracción de features de giros
     elif opcion == 2:
 
@@ -209,7 +219,17 @@ if __name__== '__main__':
         ## Selecciono únicamente las columnas numéricas correspondientes a features de los giros
         feature_cols = df_plot.columns.drop(["id", "Edad", "age_group"])
 
-        ## Hago la graficación de los boxplots y los guardo como imágenes en la carpeta de graficos
+        ## Hago la graficación de los boxplots con las features individualmente por el grupo etario
+        ## y los guardo como imágenes en la carpeta de graficos correspondiente
         plot_turn_features_by_age_group(df_plot, feature_cols,
-            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/".format(root),
+            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Boxplots/".format(root),
             feature_names, feature_file_names)
+
+        ## Obtengo una lista con todos los posibles pares de features de los giros
+        pairs = list(combinations(feature_cols, 2))
+
+        ## Construyo los diagramas de scatter con algunas de las features 1vs1 donde cada punto
+        ## representa un giro y está pintado según el color del grupo etario al que pertenezca
+        plot_turn_feature_pairs_by_age_group(df_plot, pairs, 
+                                            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Scatter/"
+                                            .format(root), feature_names, feature_file_names)
