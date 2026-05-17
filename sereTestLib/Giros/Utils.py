@@ -5,6 +5,8 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 import os
 from datetime import datetime
+from scipy.stats import kruskal
+from statsmodels.stats.multitest import multipletests
 
 def graficar_histograma_edades(df, columna_edad = 'Edad', mostrar_porcentaje = False):
     """
@@ -1111,3 +1113,85 @@ def plot_turn_feature_pairs_by_age_group(df, feature_pairs, output_dir,
         save_path = os.path.join(run_dir, filename)
         plt.savefig(save_path, dpi = 300, bbox_inches = "tight")
         plt.close()
+
+def kruskal_wallis_features(df, feature_cols, group_col="age_group"):
+    """
+    Aplica el test de Kruskal-Wallis a múltiples features para evaluar
+    diferencias entre grupos.
+
+    Además calcula tamaño de efecto (epsilon squared) y corrección FDR.
+
+    Parámetros
+    ----------
+    df : pandas.DataFrame
+        Dataset con features a nivel de evento (ej. giro) y columna de grupo.
+
+    feature_cols : list of str
+        Lista de columnas numéricas (features) a evaluar.
+
+    group_col : str, opcional (default="age_group")
+        Columna que define los grupos (ej: 0, 1, 2).
+
+    Retorna
+    -------
+    pandas.DataFrame
+        Resultados por feature con:
+        - feature
+        - H : estadístico Kruskal-Wallis
+        - p_value : p-value original
+        - epsilon_sq : tamaño de efecto
+        - p_fdr : p-value corregido (FDR)
+        - significant_fdr : significancia tras FDR
+    """
+
+    results = []
+
+    groups = df[group_col].dropna().unique()
+    groups = np.sort(groups)
+
+    for feat in feature_cols:
+
+        # extraer datos por grupo
+        samples = []
+        for g in groups:
+            values = df[df[group_col] == g][feat].dropna().values
+            if len(values) > 0:
+                samples.append(values)
+
+        # evitar tests inválidos
+        if len(samples) < 2:
+            continue
+
+        # Kruskal-Wallis
+        H, p = kruskal(*samples)
+
+        # tamaño total y número de grupos
+        N = sum(len(s) for s in samples)
+        k = len(samples)
+
+        # epsilon squared (efecto para Kruskal-Wallis)
+        # ε² = (H - k + 1) / (N - k)
+        eps_sq = (H - k + 1) / (N - k + 1e-12)
+
+        results.append({
+            "feature": feat,
+            "H": H,
+            "p_value": p,
+            "epsilon_sq": eps_sq
+        })
+
+    results_df = pd.DataFrame(results)
+
+    # FDR correction
+    if len(results_df) > 0:
+        reject, p_fdr, _, _ = multipletests(
+            results_df["p_value"].values,
+            method="fdr_bh"
+        )
+        results_df["p_fdr"] = p_fdr
+        results_df["significant_fdr"] = reject
+
+    # ordenar por efecto (lo más importante arriba)
+    results_df = results_df.sort_values("epsilon_sq", ascending=False).reset_index(drop=True)
+
+    return results_df

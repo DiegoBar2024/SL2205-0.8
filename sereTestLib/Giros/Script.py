@@ -18,7 +18,7 @@ if __name__== '__main__':
     ## Opcion 2: Detectar y extraer features de los giros
     ## Opcion 3: Procesar features de giros previamente extraídas (análisis por persona)
     ## Opcion 4: Procesar features de giros previamente extraídas (análisis por giro)
-    opcion = 1
+    opcion = 4
 
     ## Obtengo la información correspondiente a todos los pacientes en la base de datos
     pacientes, ids_existentes = LecturaDatosPacientes()
@@ -169,6 +169,9 @@ if __name__== '__main__':
     ## pero hago el procesamiento por cada giro separadamente sin hacer sumarización por persona
     elif opcion == 4:
 
+        ## Configuro una variable que me de a elegir si quiero graficar datos o no
+        graficar = False
+
         ## Hago la lectura del archivo .parquet donde guardo el dataframe Pandas que contiene
         ## la lista con los diccionarios con todos los parámetros de los giros detectados
         features_giros_total = pd.read_parquet(
@@ -219,17 +222,31 @@ if __name__== '__main__':
         ## Selecciono únicamente las columnas numéricas correspondientes a features de los giros
         feature_cols = df_plot.columns.drop(["id", "Edad", "age_group"])
 
-        ## Hago la graficación de los boxplots con las features individualmente por el grupo etario
-        ## y los guardo como imágenes en la carpeta de graficos correspondiente
-        plot_turn_features_by_age_group(df_plot, feature_cols,
-            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Boxplots/".format(root),
-            feature_names, feature_file_names)
+        ## En caso de que sí quiera graficar y guardar los datos:
+        if graficar:
+
+            ## Hago la graficación de los boxplots con las features individualmente por el grupo etario
+            ## y los guardo como imágenes en la carpeta de graficos correspondiente
+            plot_turn_features_by_age_group(df_plot, feature_cols,
+                "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Boxplots/".format(root),
+                feature_names, feature_file_names)
 
         ## Obtengo una lista con todos los posibles pares de features de los giros
         pairs = list(combinations(feature_cols, 2))
 
-        ## Construyo los diagramas de scatter con algunas de las features 1vs1 donde cada punto
-        ## representa un giro y está pintado según el color del grupo etario al que pertenezca
-        plot_turn_feature_pairs_by_age_group(df_plot, pairs, 
-                                            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Scatter/"
-                                            .format(root), feature_names, feature_file_names)
+        ## En caso de que sí quiera graficar y guardar los datos:
+        if graficar:
+
+            ## Construyo los diagramas de scatter con algunas de las features 1vs1 donde cada punto
+            ## representa un giro y está pintado según el color del grupo etario al que pertenezca
+            plot_turn_feature_pairs_by_age_group(df_plot, pairs, 
+                                                "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Scatter/"
+                                                .format(root), feature_names, feature_file_names)
+        
+        ## Aplico el test de Kruskal Wallis a todas las features que tengo para comprobar si para alguna de
+        ## las features de los giros existe al menos una distribución diferente a las demás
+        ## Si <<significant_fdr>> = True entonces estoy rechazando la hipótesis nula lo cual implica que no
+        ## todas las distribuciones son iguales, o lo que es lo mismo, al menos una distribución es distinta
+        ## Formalmente, <<epsilon_sq>> me da la proporción de la variabilidad de la feature que se explica por
+        ## el grupo etario (pensar similitudes con R^2 de la regresión lineal) --> En mi caso con mirar H alcanza
+        results = kruskal_wallis_features(df_dataset, feature_cols)
