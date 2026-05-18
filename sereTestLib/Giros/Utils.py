@@ -7,6 +7,9 @@ import os
 from datetime import datetime
 from scipy.stats import kruskal
 from statsmodels.stats.multitest import multipletests
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 
 def graficar_histograma_edades(df, columna_edad = 'Edad', mostrar_porcentaje = False):
     """
@@ -1195,3 +1198,142 @@ def kruskal_wallis_features(df, feature_cols, group_col="age_group"):
     results_df = results_df.sort_values("epsilon_sq", ascending=False).reset_index(drop=True)
 
     return results_df
+
+def aplicar_clustering_giros(df, feature_cols, k_range = range(2, 7), random_state = 42):
+    """
+    Aplica clustering sobre un dataframe YA PREPROCESADO de giros.
+
+    Esta función está diseñada como extensión del pipeline existente,
+    no como reemplazo del flujo de carga o preprocesamiento.
+
+    Parámetros
+    ----------
+    df : pandas.DataFrame
+        Dataset de giros ya construido en el pipeline principal.
+        Debe contener:
+        - features numéricas
+        - columnas de identificación
+        - age_group (opcional, para análisis posterior)
+
+    feature_cols : list of str
+        Lista de features utilizadas para clustering.
+
+    k_range : iterable
+        Rango de K evaluado mediante silhouette score.
+
+    random_state : int
+        Semilla para reproducibilidad.
+
+    Retorna
+    -------
+    df : pandas.DataFrame
+        Dataset original con columna adicional:
+        - cluster
+
+    best_k : int
+        Número óptimo de clusters según silhouette score.
+
+    kmeans : sklearn.cluster.KMeans
+        Modelo entrenado.
+    """
+
+    ## Obtengo la matriz de datos con el conjunto de todas las features de todos los giros
+    ## La i-ésima fila hace referencia al i-ésimo giro
+    ## La j-ésima columna hace referencia al j-ésimo giro
+    X = df[feature_cols].values
+
+    ## Instancio un objeto escalador de la clase StandardScaler()
+    scaler = StandardScaler()
+
+    ## Hago la estandarización de la matriz de datos como etapa previa al clústering
+    X_scaled = scaler.fit_transform(X)
+
+    ## Inicializo una lista vacía en donde voy a guardar los silhouette scores asociados a cada
+    ## una de las ejecuciones de los clusterings (en el rango deseado)
+    sil_scores = []
+
+    ## Itero para cada uno de los clústerings en el rango deseado (en la k-ésima iteración se
+    ## ejecuta K-Means especificando un total de k clústers como objetivo)
+    for k in k_range:
+
+        ## Instancio un modelo de K-Means especificando la cantidad de clústers deseada
+        model = KMeans(n_clusters = k, random_state = random_state, n_init = 10)
+
+        ## Ejecuto K-Means sobre la matriz de datos estandarizada y me quedo con las asignaciones
+        labels = model.fit_predict(X_scaled)
+
+        ## Agrego la silhouette score correspondiente al clustering a la lista correspondiente
+        sil_scores.append(silhouette_score(X_scaled, labels))
+
+    ## Obtengo la cantidad de clústers óptima dentro del rango especificado como entrada, tomando como
+    ## 'óptimo' aquella cantidad de clústers la cual me maximice el silhouette score
+    best_k = list(k_range)[np.argmax(sil_scores)]
+
+    ## Instancio un modelo de clustering tomando la cantidad de clústers óptima en base al análisis de
+    ## la maximización de silohouette score
+    kmeans = KMeans(n_clusters = best_k, random_state = random_state, n_init = 10)
+
+    ## Ejecuto el clustering y agrego al dataframe de features el índice del clúster al que pertenece
+    ## cada feature vector de cada giro
+    df["cluster"] = kmeans.fit_predict(X_scaled)
+
+    ## Obtengo los centroides correspondientes a cada uno de los clústers
+    centroids_scaled = kmeans.cluster_centers_
+
+    ## Invierto la estandarización para expresar los centroides en términos de las features originales
+    centroids_original = scaler.inverse_transform(centroids_scaled)
+
+    ## Construyo un dataframe que contenga los centroides y los nombres de las features, y expreso las
+    ## coordenadas de los centroides en términos de las features correspondientes
+    centroids = pd.DataFrame(centroids_original, columns = feature_cols)
+
+    ## Agrego una columna asignando el centroide al índice del clúster al que corresponde
+    centroids["cluster"] = range(best_k)
+
+    ## Retorno los resultados de hacer el clustering en el dataframe de giros
+    return df, best_k, kmeans, scaler, centroids
+
+def plot_clusters_2d(df, feature_x, feature_y, labels, centroids=None):
+    """
+    Grafica clusters en 2D usando dos features.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataset con las features.
+    feature_x : str
+        Feature eje X.
+    feature_y : str
+        Feature eje Y.
+    labels : array-like
+        Etiquetas de cluster para cada punto.
+    centroids : np.ndarray or pd.DataFrame, optional
+        Centroides del clustering (K x 2 o K x n_features).
+    """
+
+    ## Inicializo la figura y configuro las dimensiones del gráfico correspondiente
+    plt.figure(figsize = (7, 6))
+
+    ## Obtengo el conjunto de valores correspondientes al feature x
+    x = df[feature_x].values
+
+    ## Obtengo el conjunto de valores correspondientes al feature y
+    y = df[feature_y].values
+
+    ## Inicializo el diagrama de dispersión correspondiente
+    scatter = plt.scatter(x, y, c = labels, cmap = "viridis", alpha = 0.6)
+
+    ## En caso de que se hayan provisto los centroides de los clústers a la entrada
+    if centroids is not None:
+
+        ## Grafico los centroides con una X dentro del gráfico de dispersión
+        plt.scatter(centroids[:, 0], centroids[:, 1], c = "red", marker = "X", s = 200, label = "Centroids")
+
+    ## Nomenclatura de ejes, título y despliegue del gráfico
+    plt.xlabel(feature_x)
+    plt.ylabel(feature_y)
+    plt.title("Clusters en espacio de features")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()

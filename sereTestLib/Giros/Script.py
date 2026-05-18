@@ -249,4 +249,15 @@ if __name__== '__main__':
         ## todas las distribuciones son iguales, o lo que es lo mismo, al menos una distribución es distinta
         ## Formalmente, <<epsilon_sq>> me da la proporción de la variabilidad de la feature que se explica por
         ## el grupo etario (pensar similitudes con R^2 de la regresión lineal) --> En mi caso con mirar H alcanza
-        results = kruskal_wallis_features(df_dataset, feature_cols)
+        results_kruskal = kruskal_wallis_features(df_dataset, feature_cols)
+
+        ## Hago análisis de clústering sobre los feature vectors de los giros
+        df_clustered, best_k, kmeans, scaler, centroids = aplicar_clustering_giros(df_dataset,
+                                                        ["rms_w_deg_s", "peak_mean_ratio"])
+        
+        ## Obtengo el conjunto de asignaciones de los feature vectors a cada clúster
+        labels = df_clustered["cluster"].values
+
+        ## Hago la graficación de los clústers en dos dimensiones para el par de features elegidas
+        plot_clusters_2d(df_clustered, feature_x = "rms_w_deg_s", feature_y = "peak_mean_ratio",
+            labels = labels)
