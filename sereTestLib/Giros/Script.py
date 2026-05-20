@@ -11,6 +11,90 @@ from Utils import *
 import numpy as np
 from itertools import combinations
 
+FEATURES_INFO = {
+
+    ## Duración de giro
+    "duration_s": {
+        "label": "Duración (s)",
+        "file_name": "duracion_giro"
+    },
+
+    ## Ángulo de giro
+    "angle_deg": {
+        "label": "Ángulo (grados)",
+        "file_name": "angulo_giro"
+    },
+
+    ## Velocidad angular media de giro
+    "mean_w_deg_s": {
+        "label": "Velocidad angular media (°/s)",
+        "file_name": "vel_angular_media"
+    },
+
+    ## Velocidad angular pico en el giro
+    "peak_w_deg_s": {
+        "label": "Velocidad angular pico (°/s)",
+        "file_name": "vel_angular_pico"
+    },
+
+    ## Velocidad angular RMS del giro
+    "rms_w_deg_s": {
+        "label": "Velocidad angular RMS (°/s)",
+        "file_name": "vel_angular_rms"
+    },
+
+    ## Tiempo que transcurre hasta el pico en el giro
+    "time_to_peak": {
+        "label": "Tiempo hasta el pico (fracción)",
+        "file_name": "tiempo_pico"
+    },
+
+    ## Relación pico con respecto a la media
+    "peak_mean_ratio": {
+        "label": "Relación pico/media",
+        "file_name": "ratio_pico_media"
+    },
+
+    ## Asimetría de la señal de velocidad angular
+    "skew_wz": {
+        "label": "Asimetría (skewness)",
+        "file_name": "asimetria_wz"
+    },
+
+    ## Curtosis de la señal de velocidad angular
+    "kurt_wz": {
+        "label": "Curtosis",
+        "file_name": "curtosis_wz"
+    },
+
+    ## Tasa de cruces por cero
+    "zcr_wz": {
+        "label": "Cruces por cero",
+        "file_name": "zcr_wz"
+    },
+
+    ## Entropía espectral de la señal
+    "spec_entropy_wz": {
+        "label": "Entropía espectral",
+        "file_name": "entropia_espectral_wz"
+    },
+
+    ## Energía de jerk (suavidad del movimiento)
+    "jerk_energy_wz": {
+        "label": "Energía de jerk",
+        "file_name": "jerk_energy_wz"
+    }
+}
+
+## Obtengo la lista de columnas con los nombres de las features de giros
+FEATURE_COLUMNS = list(FEATURES_INFO.keys())
+
+## Obtengo los nombres de las features calculadas de los giros
+FEATURE_NAMES = {key: value["label"] for key, value in FEATURES_INFO.items()}
+
+## Obtengo los nombres de los gráficos correspondientes a las features de los giros
+FEATURE_FILE_NAMES = {key: value["file_name"] for key, value in FEATURES_INFO.items()}
+
 ## Programa principal
 if __name__== '__main__':
 
@@ -125,13 +209,7 @@ if __name__== '__main__':
 
         ## Especifico el orden de las columnas del dataframe según las features para asegurar consistencia
         ## y reorganizo todo el dataframe pandas para que sea consistente con el orden que quiero
-        array_features = features_giros_total[["id", "duration_s", "angle_deg","mean_w_deg_s", "peak_w_deg_s", 
-                                "rms_w_deg_s", "time_to_peak", "peak_mean_ratio"]].copy()
-
-        ## Genero un diccionario con los nombres de todos los features presentes (para graficación)
-        feature_names = {"f0": "Duration (s)", "f1": "Angle (deg)", "f2": "Mean angular velocity (°/s)",
-            "f3": "Peak angular velocity (°/s)", "f4": "RMS angular velocity (°/s)", "f5": "Time to peak (s)",
-            "f6": "Peak/mean ratio"}
+        array_features = features_giros_total[["id"] + FEATURE_COLUMNS].copy()
         
         ## Hago la sumarización de las features estadísticas de los giros por cada paciente        
         features_por_paciente = agrupar_por_paciente(array_features)
@@ -150,7 +228,7 @@ if __name__== '__main__':
         ## con la sumarización estadística de las features de todos los giros detectados para el paciente
         df_dataset = df_features_por_paciente.merge(df_patients, left_on = "id", right_on = "sampleid", 
                                                     how = "inner")
-        
+
         ## Elimino la columna redundante con la ID del paciente para no tener datos duplicados
         df_dataset = df_dataset.drop(columns = ["id"])
 
@@ -163,7 +241,7 @@ if __name__== '__main__':
 
         ## Genero los boxplots correspondientes a la distribución de la pobilación por edad según feature
         plot_feature_distributions_by_age_group(df_dataset, feature_cols, 'age_group', 
-        "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/".format(root), feature_names)
+        "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/".format(root), FEATURE_NAMES)
 
     ## En caso de que yo quiera procesar las features de los giros que fueron previamente extraídas
     ## pero hago el procesamiento por cada giro separadamente sin hacer sumarización por persona
@@ -178,20 +256,7 @@ if __name__== '__main__':
             "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_total.parquet".format(root))
 
         ## Selecciono y ordeno las columnas de features por giro para asegurar consistencia
-        array_features = features_giros_total[["id", "duration_s", "angle_deg","mean_w_deg_s", "peak_w_deg_s", 
-                                "rms_w_deg_s", "time_to_peak", "peak_mean_ratio"]].copy()
-
-        ## Asocio los identificadores de cada una de las features con sus respectivas descripciones
-        feature_names = {"duration_s": "Duración (s)", "angle_deg": "Ángulo (grados)",
-        "mean_w_deg_s": "Velocidad angular media (°/s)", "peak_w_deg_s": "Velocidad angular pico (°/s)",
-        "rms_w_deg_s": "Velocidad angular RMS (°/s)", "time_to_peak": "Tiempo hasta el pico (s)",
-        "peak_mean_ratio": "Relación pico/media"}
-
-        ## Asocio los identificadores de cada una de las features con los respectivos nombres de gráfico
-        feature_file_names = {"duration_s": "duracion_giro", "angle_deg": "angulo_giro", 
-                            "mean_w_deg_s": "vel_angular_media", "peak_w_deg_s": "vel_angular_pico",
-                            "rms_w_deg_s": "vel_angular_rms", "time_to_peak": "tiempo_pico",
-                            "peak_mean_ratio": "ratio_pico_media"}
+        array_features = features_giros_total[["id"] + FEATURE_COLUMNS].copy()
 
         ## Obtengo únicamente información de la edad y la ID asociada a cada paciente
         df_patients = pacientes[["sampleid", "Edad"]].copy()
@@ -229,7 +294,7 @@ if __name__== '__main__':
             ## y los guardo como imágenes en la carpeta de graficos correspondiente
             plot_turn_features_by_age_group(df_plot, feature_cols,
                 "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Boxplots/".format(root),
-                feature_names, feature_file_names)
+                FEATURE_NAMES, FEATURE_FILE_NAMES)
 
         ## Obtengo una lista con todos los posibles pares de features de los giros
         pairs = list(combinations(feature_cols, 2))
@@ -241,8 +306,14 @@ if __name__== '__main__':
             ## representa un giro y está pintado según el color del grupo etario al que pertenezca
             plot_turn_feature_pairs_by_age_group(df_plot, pairs, 
                                                 "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Scatter/"
-                                                .format(root), feature_names, feature_file_names)
-        
+                                                .format(root), FEATURE_NAMES, FEATURE_FILE_NAMES)
+
+        ## IMPORTANTE EN LOS TESTS DE HIPÓTESIS:
+        ## Si p_valor <= alpha --> Rechazo H0 al nivel de significación alpha
+        ## Si p_valor > alpha --> No rechazo H0 al nivel de significación alpha
+        ## alpha = Probabilidad de cometer error tipo I (error de significación de la prueba)
+        ## Cuanto menor es el p-valor, implica una mayor contradicción a H0 por parte de los datos muestrales
+
         ## Aplico el test de Kruskal Wallis a todas las features que tengo para comprobar si para alguna de
         ## las features de los giros existe al menos una distribución diferente a las demás
         ## Si <<significant_fdr>> = True entonces estoy rechazando la hipótesis nula lo cual implica que no
@@ -251,13 +322,32 @@ if __name__== '__main__':
         ## el grupo etario (pensar similitudes con R^2 de la regresión lineal) --> En mi caso con mirar H alcanza
         results_kruskal = kruskal_wallis_features(df_dataset, feature_cols)
 
+        ## El test de Wilcoxon de suma de rangos intenta rechazar la hipótesis nula de que dos muestras
+        ## independientes provienen de la misma distribución. Entonces ejecuto el test de hipótesis de
+        ## Wilcoxon de suma de rangos para comprobar diferencias entre distribuciones uno a uno
+        results_wilcoxon = pairwise_wilcoxon_rank_sum(df_dataset, feature_cols, group_col = "age_group")
+
+        ## Selecciono únicamente las columnas más relevantes del dataframe de resultados de aplicar el
+        ## test de hipótesis de Wilcoxon al dataset dado con los grupos definidos
+        res_min = results_wilcoxon[["feature", "group_1", "group_2", "p_value", "p_fdr", "significant_fdr"]]
+
+        ## Represento los resultados del test de hipótesis de Wilcoxon uno a uno en una matriz
+        ## La idea es que para cada una de las features tenga un diccionario que resuma para cada feature,
+        ## si para cada par de grupos etarios el test de Wilcoxon de suma de rangos se rechaza (True
+        ## en caso de que rechazo H0) al nivel de significación pasado como entrada (por defecto alpha = 0.05)
+        matrices_wilcoxon = wilcoxon_pairwise_matrices(results_wilcoxon)
+
         ## Hago análisis de clústering sobre los feature vectors de los giros
         df_clustered, best_k, kmeans, scaler, centroids = aplicar_clustering_giros(df_dataset,
                                                         ["rms_w_deg_s", "peak_mean_ratio"])
-        
+
         ## Obtengo el conjunto de asignaciones de los feature vectors a cada clúster
         labels = df_clustered["cluster"].values
 
         ## Hago la graficación de los clústers en dos dimensiones para el par de features elegidas
         plot_clusters_2d(df_clustered, feature_x = "rms_w_deg_s", feature_y = "peak_mean_ratio",
-            labels = labels)
+                        labels = labels)
+
+        ## Analizo cómo se distribuyen los grupos etarios dentro de cada clúster
+        tabla_clusters = pd.crosstab(df_clustered["cluster"], df_clustered["age_group"], 
+                                    normalize = "index")
