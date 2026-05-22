@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 import os
 from datetime import datetime
 import numpy as np
+import seaborn as sns
+from matplotlib.patches import Patch
+from matplotlib.colors import ListedColormap
+from matplotlib import use
 
 def graficar_histograma_edades(df, columna_edad = 'Edad', mostrar_porcentaje = False):
     """
@@ -508,3 +512,236 @@ def plot_clusters_2d(df, feature_x, feature_y, labels, centroids = None):
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
+def plot_kruskal_results(results_df, top_n = 20):
+    """
+    Visualiza los resultados del test de Kruskal–Wallis ordenados por tamaño de efecto.
+
+    Esta función genera un gráfico de barras que muestra las features más
+    discriminativas según el estadístico epsilon cuadrado (ε²), el cual mide
+    el tamaño de efecto del test no paramétrico de Kruskal–Wallis.
+
+    El objetivo es identificar qué variables presentan mayor capacidad de
+    separación entre grupos (por ejemplo, grupos etarios o condiciones clínicas).
+
+    Parámetros
+    ----------
+    results_df : pandas.DataFrame
+        DataFrame con los resultados del test de Kruskal–Wallis. Debe contener:
+            - feature: nombre de la variable
+            - epsilon_sq: tamaño de efecto (ε²)
+
+    top_n : int, opcional (default=20)
+        Número de features más relevantes a visualizar, ordenadas por ε².
+
+    Retorna
+    -------
+    None
+        La función genera y muestra un gráfico, sin retornar valores.
+
+    Notas
+    -----
+    - Un mayor valor de ε² indica mayor capacidad discriminativa de la feature
+    entre los grupos analizados.
+    - Este gráfico es útil para selección de variables en pipelines de machine learning.
+    """
+
+    ## A partir de los datos de entrada obtengo un dataframe ordenando las features de mayor a menor por
+    ## el valor de epsilon cuadrado, manteniendo los primeros <<top_n>> valores
+    df = results_df.sort_values("epsilon_sq", ascending = False).head(top_n)
+
+    ## Configuro el tamaño de la figura
+    plt.figure(figsize = (10,6))
+
+    ## Configuro los datos a graficar en cada uno de los ejes
+    sns.barplot(data = df, y = "feature", x = "epsilon_sq")
+
+    ## Configuro título, nomenclatura de ejes y despliego el gráfico
+    plt.title("Kruskal-Wallis: Valor de ε² por feature")
+    plt.xlabel("ε²")
+    plt.ylabel("Feature")
+    plt.grid(axis = "x", alpha = 0.3)
+    plt.tight_layout()
+    plt.show()
+
+def plot_wilcoxon_significance_matrices(results_df, output_dir, use_fdr = True,
+                                    feature_names = None, use_timestamp = True, alpha = 0.05):
+    """
+    Genera matrices visuales de significancia estadística para comparaciones
+    por pares entre grupos utilizando el test de Wilcoxon rank-sum (Mann–Whitney U).
+
+    Esta función toma los resultados de análisis estadísticos previamente calculados
+    entre grupos etarios y los reorganiza en forma de matrices simétricas
+    (grupo × grupo) para cada feature, facilitando la interpretación visual
+    de diferencias significativas entre distribuciones.
+
+    Cada matriz representa, para una feature dada, si existe o no diferencia
+    estadísticamente significativa entre pares de grupos según un umbral de significancia.
+
+    Parameters
+    ----------
+    results_df : pandas.DataFrame
+        DataFrame con los resultados de comparaciones por pares. Debe contener:
+
+        - feature : nombre de la variable analizada
+        - group_1 : primer grupo de comparación
+        - group_2 : segundo grupo de comparación
+        - p_value : p-valor del test (si use_fdr=False)
+        - significant_fdr : booleano de significancia corregida (si use_fdr=True)
+
+    output_dir : str
+        Directorio base donde se guardarán las figuras generadas.
+        Si use_timestamp=True, se crea una subcarpeta con la fecha y hora actual.
+
+    use_fdr : bool, opcional (default=True)
+        Define si la significancia se evalúa usando corrección FDR
+        (False Discovery Rate) o p-values crudos.
+
+    feature_names : dict, opcional
+        Diccionario que mapea nombres técnicos de features a etiquetas
+        más legibles para los títulos de los gráficos.
+
+    use_timestamp : bool, opcional (default=True)
+        Si es True, crea una carpeta de salida con timestamp para evitar
+        sobreescritura de resultados entre ejecuciones.
+
+    alpha : float, opcional (default=0.05)
+        Nivel de significancia estadística utilizado cuando use_fdr=False.
+        Un valor p < alpha se considera estadísticamente significativo.
+
+        Este parámetro también se utiliza para:
+        - Etiquetado de la leyenda del gráfico
+        - Inclusión en el título de la figura
+        - Nomenclatura de los archivos generados
+
+    Returns
+    -------
+    None
+        La función no retorna valores. Genera y guarda imágenes en disco
+        para cada feature analizada.
+
+    Notas
+    -----
+    - Las matrices son simétricas: (g1, g2) = (g2, g1).
+    - La diagonal principal se deja como NaN (sin comparación intra-grupo).
+    - Los valores se codifican como:
+        - 1.0 → diferencia significativa
+        - 0.0 → no significativa
+        - NaN → comparación no definida (misma clase)
+    - El parámetro alpha controla el umbral de decisión cuando no se usa FDR.
+    - Las figuras incluyen una leyenda explícita para interpretación visual.
+    - Se utiliza un colormap discreto para facilitar la lectura cualitativa
+    de los resultados estadísticos.
+    """
+
+    ## Agrego configuraciones necesarias para que los gráficos se guarden y no se desplieguen
+    ## en la pantall mientras está ejecutándose la función (se vuelve molesto sino)
+    use("Agg")
+    plt.ioff()
+
+    ## En caso de que quiera usar el timestamp para guardar los gráficos
+    if use_timestamp:
+
+        ## Construyo el timestamp correspondiente al instante actual del gráfico
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        ## Construyo la ruta de salida donde voy a guardar los gráficos
+        output_dir = os.path.join(output_dir, timestamp)
+
+    ## En caso de que la ruta de salida no exista, la construyo
+    os.makedirs(output_dir, exist_ok = True)
+
+    ## Itero para cada una de las features extraídas de las señales de los giros
+    for feat in results_df["feature"].unique():
+
+        ## Selecciono únicamente aquellos resultados del test asociados a la feature que estoy estudiando
+        sub = results_df[results_df["feature"] == feat]
+
+        ## Obtengo la lista que contiene todos los grupos etarios
+        groups = sorted(set(sub["group_1"]).union(set(sub["group_2"])))
+
+        ## Inicializo la matriz donde voy a representar los resultados de las discriminaciones
+        ## por Wilcoxon. Inicialmente todas las entradas de la matriz corresponden a NaN
+        mat = pd.DataFrame(np.nan, index = groups, columns = groups, dtype = float)
+
+        ## Itero para cada uno de los resultados del test de Wilcoxon asociados a la feature de estudio
+        for _, row in sub.iterrows():
+
+            ## Obtengo el par de grupos etarios que estoy comparando en el resultado
+            g1, g2 = row["group_1"], row["group_2"]
+
+            ## En caso de que quiera usar el indicador FDR
+            if use_fdr:
+
+                ## Configuro el resultado correspondiente a dicho indicador
+                is_sig = bool(row["significant_fdr"])
+            
+            ## En caso de que no quiera utilizar el indicador FDR
+            else:
+
+                ## Expreso el resultado del test a partir del p-valor y el nivel de significación
+                ## correspondiente (alpha, pasado como entrada de la función)
+                is_sig = row["p_value"] < alpha
+
+            ## Asigno val == 1 en caso de que la diferencia detectada por el test de Wilcoxon sea significativa
+            val = 1 if is_sig else 0
+
+            ## Dado que el resultado del test es simétrico (no depende del orden de los grupos etarios)
+            ## configuro el mismo valor de resultado de significación del test en las entradas de ambos grupos
+            mat.loc[g1, g2] = val
+            mat.loc[g2, g1] = val
+
+        ## Construyo un diccionario que contiene las etiquetas asociadas a los grupos etarios
+        label_map = {0: "<60", 1: "60-75", 2: ">75"}
+
+        ## Configuro las etiquetas de los grupos etarios en las filas de la matriz
+        mat.index = [label_map.get(g, str(g)) for g in mat.index]
+
+        ## Configuro las etiquetas de los grupos etarios en las columnas de la matriz
+        mat.columns = [label_map.get(g, str(g)) for g in mat.columns]
+
+        ## Inicializo el gráfico configurando el tamaño y las dimensiones correspondientes
+        fig, ax = plt.subplots(figsize = (5, 4))
+
+        ## Inicializo el objeto que representa el mapa de colores que voy a utilizar para las matrices
+        cmap = ListedColormap(["lightgray", "darkred"])
+
+        ## Configuro el blanco como el color asociado al NaN
+        cmap.set_bad(color = "white")
+
+        ## Configuro los parámetros correspondientes al mapa de calor
+        sns.heatmap(mat, cmap = cmap, vmin = 0, vmax = 1, cbar = False, linewidths = 1,
+                linecolor = "black", square = True, ax = ax)
+
+        ## Construyo el título asociado al gráfico correspondiente
+        title = feature_names.get(feat, feat) if feature_names else feat
+
+        ## Configuro el título que construí anteriormente para que quede visible en el gráfico
+        ax.set_title(f"{title}\nSignificancia Wilcoxon por pares (α = {alpha})", fontsize = 11, pad = 10)
+
+        ## Construyo los contenidos de las leyendas/referencias correspondientes a los gráficos
+        legend_elements = [Patch(facecolor = "darkred", edgecolor = "black", 
+                                label = f"Diferencia significativa (p-valor < {alpha})"),
+                            Patch(facecolor = "lightgray", edgecolor = "black", 
+                                label = f"No significativo (p-valor ≥ {alpha})"),
+                            Patch(facecolor = "white", edgecolor = "black", 
+                                label = "Mismo grupo (NaN)")]
+
+        ## Configuro las referencias/leyendas que construí anteriormente para que queden visibles
+        ax.legend(handles = legend_elements, loc = "upper left", bbox_to_anchor = (1.02, 1), frameon = True)
+
+        ## Hago el ajuste de layout correspondiente al gráfico
+        plt.subplots_adjust(right = 0.8)
+
+        ## Configuro la nomenclatura del gráfico asociado a la significación de Wilcoxon
+        safe_name = feat.replace("/", "_")
+        filename = f"{safe_name}_significancia_wilcoxon.png"
+
+        ## Construyo la ruta completa donde voy a guardar el gráfico
+        save_path = os.path.join(output_dir, filename)
+
+        ## Guardo el gráfico correspondiente especificando el formato y el tamaño
+        plt.savefig(save_path, dpi = 300, bbox_inches = "tight")
+
+        ## Finalizo el procesamiento de la figura (para que los gráficos subsiguientes no se superpongan)
+        plt.close(fig)

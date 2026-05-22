@@ -180,8 +180,15 @@ if __name__== '__main__':
     ## pero hago el procesamiento por cada giro separadamente sin hacer sumarización por persona
     elif opcion == 4:
 
-        ## Configuro una variable que me de a elegir si quiero graficar datos o no
-        graficar = False
+        ## Configuro una variable que me de a elegir si quiero graficar boxplots de features
+        graficar_boxplots = False
+
+        ## Configuro una variable que me de a elegir si quiero graficar scatterplots de features
+        graficar_scatter = False
+
+        ## Configuro una variable que me de a elegir si quiero graficar matrices de significación
+        ## del test de hipótesis de Wilcoxon
+        graficar_wilcoxon = True
 
         ## Hago la lectura del archivo .parquet donde guardo el dataframe Pandas que contiene
         ## la lista con los diccionarios con todos los parámetros de los giros detectados
@@ -233,21 +240,6 @@ if __name__== '__main__':
         ## Obtengo una lista con todos los posibles pares de features de los giros
         pairs = list(combinations(feature_cols, 2))
 
-        ## En caso de que quiera graficar y guardar los resultados
-        if graficar:
-
-            ## Hago la graficación de los boxplots con las features individualmente por el grupo etario
-            ## y los guardo como imágenes en la carpeta de graficos correspondiente
-            plot_turn_features_by_age_group(df_plot, feature_cols,
-                "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Boxplots/".format(root),
-                FEATURE_NAMES, FEATURE_FILE_NAMES)
-
-            ## Construyo los diagramas de scatter con algunas de las features 1vs1 donde cada punto
-            ## representa un giro y está pintado según el color del grupo etario al que pertenezca
-            plot_turn_feature_pairs_by_age_group(df_plot, pairs, 
-                "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Scatter/".format(root), 
-                FEATURE_NAMES, FEATURE_FILE_NAMES)
-
         ## Hago una selección de aquellos features estadísticos que son significativos para los tests
         ## Elimino aquellas features para las cuales todos los valores sean constantes
         valid_features = [c for c in feature_cols if df_dataset[c].nunique() > 1]
@@ -266,6 +258,10 @@ if __name__== '__main__':
         ## el grupo etario (pensar similitudes con R^2 de la regresión lineal) --> En mi caso con mirar H alcanza
         results_kruskal = kruskal_wallis_features(df_dataset, valid_features)
 
+        ## Hago la graficación de aquellas features que más rechazan la idea de que todas las distribuciones
+        ## son iguales (que es H0 de Kruskal Wallis)
+        plot_kruskal_results(results_kruskal)
+
         ## El test de Wilcoxon de suma de rangos intenta rechazar la hipótesis nula de que dos muestras
         ## independientes provienen de la misma distribución. Entonces ejecuto el test de hipótesis de
         ## Wilcoxon de suma de rangos para comprobar diferencias entre distribuciones uno a uno
@@ -280,3 +276,29 @@ if __name__== '__main__':
         ## si para cada par de grupos etarios el test de Wilcoxon de suma de rangos se rechaza (True
         ## en caso de que rechazo H0) al nivel de significación pasado como entrada (por defecto alpha = 0.05)
         matrices_wilcoxon = wilcoxon_pairwise_matrices(results_wilcoxon)
+
+        ## En caso de que quiera graficar y guardar los scatter plots combinando features dos a dos
+        if graficar_boxplots:
+
+            ## Construyo los diagramas de scatter con algunas de las features 1vs1 donde cada punto
+            ## representa un giro y está pintado según el color del grupo etario al que pertenezca
+            plot_turn_feature_pairs_by_age_group(df_plot, pairs, 
+                "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Scatter/".format(root), 
+                FEATURE_NAMES, FEATURE_FILE_NAMES)
+
+        ## En caso de que quiera graficar y guardar los boxplots de las features por rango etario
+        if graficar_scatter:
+
+            ## Hago la graficación de los boxplots con las features individualmente por el grupo etario
+            ## y los guardo como imágenes en la carpeta de graficos correspondiente
+            plot_turn_features_by_age_group(df_plot, feature_cols,
+                "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Boxplots/".format(root),
+                FEATURE_NAMES, FEATURE_FILE_NAMES)
+
+        ## En caso de que quiera graficar y guardar las matrices de significancia de Wilcoxon
+        if graficar_wilcoxon:
+
+            ## Grafico y guardo los resultados de aplicar el test de Wilcoxon dos a dos
+            plot_wilcoxon_significance_matrices(results_wilcoxon, 
+                        "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Wilcoxon/".format(root),
+                        True, FEATURE_NAMES)
