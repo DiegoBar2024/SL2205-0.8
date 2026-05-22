@@ -745,3 +745,102 @@ def plot_wilcoxon_significance_matrices(results_df, output_dir, use_fdr = True,
 
         ## Finalizo el procesamiento de la figura (para que los gráficos subsiguientes no se superpongan)
         plt.close(fig)
+
+def plot_features_vs_age(df, feature_cols, output_dir, feature_names = None, 
+                        use_timestamp = True):
+    """
+    Genera gráficos de dispersión que representan la relación entre la edad
+    continua de los sujetos y cada una de las features extraídas de los giros.
+
+    Para cada feature, se construye una figura independiente donde:
+    - El eje X corresponde a la edad (variable continua en años).
+    - El eje Y corresponde al valor de la feature analizada.
+
+    Estos gráficos permiten evaluar visualmente la posible dependencia
+    entre la edad y las características cinemáticas derivadas del movimiento,
+    lo cual es un paso preliminar para el posterior ajuste mediante modelos
+    de regresión (lineales o no lineales).
+
+    Los resultados se guardan directamente en disco dentro de un directorio
+    de salida, sin mostrar las figuras en pantalla, lo que permite su
+    ejecución eficiente sobre grandes volúmenes de features.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame que contiene la variable de edad ("Edad") y las features
+        a analizar.
+
+    feature_cols : list
+        Lista de nombres de columnas correspondientes a las features
+        que se desean graficar.
+
+    output_dir : str
+        Directorio base donde se guardarán las figuras generadas.
+
+    feature_names : dict, optional
+        Diccionario opcional que mapea nombres técnicos de features a
+        etiquetas más legibles para los títulos de los gráficos.
+
+    use_timestamp : bool, optional (default=True)
+        Si es True, crea una subcarpeta con timestamp para evitar
+        sobreescritura de resultados entre ejecuciones.
+    """
+
+    ## En caso de que quiera usar el timestamp para guardar los gráficos
+    if use_timestamp:
+
+        ## Construyo el timestamp correspondiente al instante actual del gráfico
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        ## Construyo la ruta de salida donde voy a guardar los gráficos
+        output_dir = os.path.join(output_dir, timestamp)
+
+    ## En caso de que la ruta de salida no exista, la construyo
+    os.makedirs(output_dir, exist_ok = True)
+
+    ## Itero para cada una de las features que tengo
+    for feat in feature_cols:
+
+        ## En caso de que no tenga ningún valor asociado a dicha feature
+        if feat not in df.columns:
+
+            ## Continúo con la ejecución de la siguiente feature
+            continue
+
+        ## Obtengo el conjunto de valores de edades a las que corresponden los giros
+        x = df["Edad"].values
+
+        ## Obtengo el conjunto de features asociados a cada uno de los giros
+        y = df[feat].values
+
+        ## Inicializo el gráfico y configuro las dimensiones correspondientes
+        plt.figure(figsize = (5, 4))
+
+        ## Construyo el gráfico colocando la Edad en el eje de las abscisas y los valores de la feature
+        ## en el eje de las ordenadas
+        plt.scatter(x, y, alpha = 0.5, s = 15)
+
+        ## Hago la construcción del título del gráfico a partir de la feature que estoy procesando
+        title = feature_names.get(feat, feat) if feature_names else feat
+
+        ## Despliego el título correspondiente en el gráfico
+        plt.title(f"{title} vs Edad")
+
+        ## Configuro nomenclatura de los ejes de abscisas y ordenadas del gráfico
+        plt.xlabel("Edad")
+        plt.ylabel(feat)
+        plt.tight_layout()
+
+        ## Configuro la nomenclatura del gráfico asociado a la significación de Wilcoxon
+        safe_name = feat.replace("/", "_")
+        filename = f"{safe_name}_vs_edad.png"
+
+        ## Construyo la ruta completa donde voy a guardar el gráfico
+        save_path = os.path.join(output_dir, filename)
+
+        ## Guardo el gráfico correspondiente especificando el formato y el tamaño
+        plt.savefig(save_path, dpi = 300, bbox_inches = "tight")
+
+        ## Finalizo el procesamiento de la figura (para que los gráficos subsiguientes no se superpongan)
+        plt.close()

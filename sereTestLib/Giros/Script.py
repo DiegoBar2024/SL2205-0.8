@@ -188,7 +188,11 @@ if __name__== '__main__':
 
         ## Configuro una variable que me de a elegir si quiero graficar matrices de significación
         ## del test de hipótesis de Wilcoxon
-        graficar_wilcoxon = True
+        graficar_wilcoxon = False
+
+        ## Configuro una variable que me de a elegir si quiero graficar la evolución de cada una de
+        ## las features en función de la edad a la que corresponde el giro
+        graficar_featvsedad = True
 
         ## Hago la lectura del archivo .parquet donde guardo el dataframe Pandas que contiene
         ## la lista con los diccionarios con todos los parámetros de los giros detectados
@@ -302,3 +306,11 @@ if __name__== '__main__':
             plot_wilcoxon_significance_matrices(results_wilcoxon, 
                         "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Wilcoxon/".format(root),
                         True, FEATURE_NAMES)
+        
+        ## En caso de que quiera graficar la variación de la feature en función de la edad
+        if graficar_featvsedad:
+
+            ## Hago los gráficos correspondientes y los guardo en la ruta de salida
+            plot_features_vs_age(df_plot, FEATURE_COLUMNS,
+                        "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Regresion/".format(root),
+                        FEATURE_NAMES)
