@@ -115,7 +115,7 @@ def extract_1d_signal_features(seg, fs):
         ## Obtengo la relación del tiempo que transcurre hasta el instante donde se produce el
         ## mayor pico y el tiempo total del segmento de giro
         t_peak = np.argmax(np.abs(seg)) / len(seg)
-    
+
     ## En caso que el segmento de señal tenga menos de dos muestras
     else:
 
