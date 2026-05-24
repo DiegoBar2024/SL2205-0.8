@@ -746,45 +746,164 @@ def plot_wilcoxon_significance_matrices(results_df, output_dir, use_fdr = True,
         ## Finalizo el procesamiento de la figura (para que los gráficos subsiguientes no se superpongan)
         plt.close(fig)
 
-def plot_features_vs_age(df, feature_cols, output_dir, feature_names = None, 
-                        use_timestamp = True):
+def plot_features_vs_age(df, feature_cols, output_dir, feature_names = None, x_col = "age",
+    results_df = None):
     """
-    Genera gráficos de dispersión que representan la relación entre la edad
-    continua de los sujetos y cada una de las features extraídas de los giros.
-
-    Para cada feature, se construye una figura independiente donde:
-    - El eje X corresponde a la edad (variable continua en años).
-    - El eje Y corresponde al valor de la feature analizada.
-
-    Estos gráficos permiten evaluar visualmente la posible dependencia
-    entre la edad y las características cinemáticas derivadas del movimiento,
-    lo cual es un paso preliminar para el posterior ajuste mediante modelos
-    de regresión (lineales o no lineales).
-
-    Los resultados se guardan directamente en disco dentro de un directorio
-    de salida, sin mostrar las figuras en pantalla, lo que permite su
-    ejecución eficiente sobre grandes volúmenes de features.
+    Genera gráficos de dispersión entre edad y un conjunto de features,
+    con soporte opcional para enriquecer la visualización con resultados
+    de regresión previamente calculados.
 
     Parameters
     ----------
     df : pandas.DataFrame
-        DataFrame que contiene la variable de edad ("Edad") y las features
-        a analizar.
+        Dataset que contiene la variable independiente (edad) y las features.
 
-    feature_cols : list
-        Lista de nombres de columnas correspondientes a las features
-        que se desean graficar.
+    feature_cols : list of str
+        Lista de columnas a graficar como variables dependientes.
 
     output_dir : str
-        Directorio base donde se guardarán las figuras generadas.
+        Carpeta donde se guardarán las figuras generadas.
 
     feature_names : dict, optional
-        Diccionario opcional que mapea nombres técnicos de features a
-        etiquetas más legibles para los títulos de los gráficos.
+        Diccionario que mapea nombres técnicos a etiquetas legibles para los gráficos.
 
-    use_timestamp : bool, optional (default=True)
-        Si es True, crea una subcarpeta con timestamp para evitar
-        sobreescritura de resultados entre ejecuciones.
+    x_col : str, default="age"
+        Nombre de la variable independiente (edad).
+
+    results_df : pandas.DataFrame, optional
+        Resultados de `regression_analysis`. Si se provee, se usan para
+        mostrar información adicional (p-value y R²) en el título del gráfico.
+
+    Returns
+    -------
+    None
+    """
+
+    ## Itero para cada feature seleccionada en feature_cols
+    for feat in feature_cols:
+
+        ## En caso de que no tenga ningún valor asociado a dicha feature
+        if feat not in df.columns:
+
+            ## Continúo con la ejecución de la siguiente feature
+            continue
+
+        ## Obtengo el conjunto de valores de edades a las que corresponden los giros
+        x = df[x_col].values
+
+        ## Obtengo el conjunto de valores de las features a las que corresponden los giros
+        y = df[feat].values
+
+        ## Inicializo el gráfico y configuro el tamaño y dimensiones del mismo
+        plt.figure(figsize = (5, 4))
+
+        ## Hago la graficación del diagrama de dispersión con los pares de valores correspondientes
+        plt.scatter(x, y, alpha = 0.5, s = 15)  
+
+        ## En caso de que yo de los resultados de los análisis de regresión como parámetro
+        if results_df is not None:
+
+            ## Selecciono la fila correspondiente a la feature en los resultados de regresión
+            row = results_df[results_df["feature"] == feat]
+
+            ## En caso de que exista una fila de resultados para esta feature
+            if not row.empty:
+
+                ## Selecciono el subconjunto de resultados numéricos más relevante para la ilustración
+                row = row.iloc[0]
+
+                ## En caso de que tenga información acerca del slope y el intercept del modelo de regresion
+                if "slope" in row and "intercept" in row:
+
+                    ## Selecciono el valor del slope (pendiente)
+                    slope = row["slope"]
+
+                    ## Selecciono el valor del intercept (ordenada en el origen)
+                    intercept = row["intercept"]
+
+                    ## Me aseguro de ordenar las edades para que la linea sea correcta
+                    x_sorted = np.sort(x)
+
+                    ## Obtengo analíticamente la recta del modelo de regresión lineal
+                    y_pred = slope * x_sorted + intercept
+
+                    ## Grafico la recta de regresión junto con los datos correspondientes
+                    plt.plot(x_sorted, y_pred, color = "red", linewidth = 2, label = "Linear fit")
+
+                ## Configuro el título del gráfico incluyendo métricas de regresión
+                plt.title(f"{feature_names.get(feat, feat) if feature_names else feat} "
+                        f"(p={row['p_value']:.3g}, R²={row['linear_r2']:.4f})")
+            
+            ## En caso de que no tenga resultados numéricos de hacer análisis de regresión
+            else:
+
+                ## Configuro el título del gráfico correspondiente
+                plt.title(feature_names.get(feat, feat) if feature_names else feat)
+        
+        ## En caso de que no tenga resultados generales de análisis de regresión de la feature
+        else:
+
+            ## Configuro el título del gráfico correspondiente
+            plt.title(feature_names.get(feat, feat) if feature_names else feat)
+
+        ## Configuro nomenclatura de ejes del gráfico. Agrego la leyenda del gráfico correspondiente
+        plt.xlabel(x_col)
+        plt.ylabel(feat)
+        plt.tight_layout()
+        plt.legend()
+
+        ## Configuro la nomenclatura del gráfico correspondiente
+        safe_name = feat.replace("/", "_")
+        
+        ## Construyo la ruta completa donde voy a guardar el gráfico
+        save_path = os.path.join(output_dir, f"{safe_name}_vs_{x_col}.png")
+
+        ## Guardo el gráfico correspondiente especificando el formato y el tamaño
+        plt.savefig(save_path, dpi = 300, bbox_inches = "tight")
+
+        ## Finalizo el procesamiento de la figura (para que los gráficos subsiguientes no se superpongan)
+        plt.close()
+
+def save_regression_plots(df, results_df, feature_cols, output_dir, x_col = "age", 
+                        only_significant = False, use_timestamp = True):
+    """
+    Genera y guarda gráficos de features vs edad usando resultados
+    ya computados de regresión.
+
+    Esta función actúa como wrapper de `plot_features_vs_age`, filtrando
+    features a partir de los resultados de `regression_analysis` y
+    generando un gráfico por feature.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataset original con edad y features.
+
+    results_df : pandas.DataFrame
+        Salida de `regression_analysis` con métricas por feature.
+
+    feature_cols : list of str
+        Features candidatas a graficar.
+
+    output_dir : str
+        Carpeta base donde se guardarán los gráficos.
+        Si `use_timestamp=True`, se crea automáticamente una subcarpeta
+        con timestamp.
+
+    x_col : str, default="age"
+        Variable independiente usada como eje X.
+
+    only_significant : bool, default=False
+        Si True, solo grafica features marcadas como significativas
+        en `results_df`.
+
+    use_timestamp : bool, default=True
+        Si True, crea una subcarpeta con timestamp dentro de `output_dir`
+        para evitar sobrescritura de resultados.
+
+    Returns
+    -------
+    None
     """
 
     ## En caso de que quiera usar el timestamp para guardar los gráficos
@@ -799,48 +918,27 @@ def plot_features_vs_age(df, feature_cols, output_dir, feature_names = None,
     ## En caso de que la ruta de salida no exista, la construyo
     os.makedirs(output_dir, exist_ok = True)
 
-    ## Itero para cada una de las features que tengo
+    ## En caso de que solo quiera graficar aquellas features que son significativas
+    if only_significant:
+
+        ## Selecciono únicamente aquellas features que son significativas para la graficación
+        feature_cols = results_df.loc[results_df["significant"], "feature"].tolist()
+
+    ## Itero para cada feature seleccionada en feature_cols
     for feat in feature_cols:
 
-        ## En caso de que no tenga ningún valor asociado a dicha feature
-        if feat not in df.columns:
+        ## Obtengo los resultados de los análisis de regresión correspondientes a la feature <<feat>>
+        feat_stats = results_df[results_df["feature"] == feat]
 
-            ## Continúo con la ejecución de la siguiente feature
+        ## En caso de que para una feature en particular no haya ningún resultado estadístico
+        if feat_stats.empty:
+
+            ## Continúo con el procesamiento de la siguiente feature
             continue
 
-        ## Obtengo el conjunto de valores de edades a las que corresponden los giros
-        x = df["Edad"].values
+        ## Obtengo los resultados relvantes del análisis de regresión correspondientes a la feature
+        feat_stats = feat_stats.iloc[0].to_dict()
 
-        ## Obtengo el conjunto de features asociados a cada uno de los giros
-        y = df[feat].values
-
-        ## Inicializo el gráfico y configuro las dimensiones correspondientes
-        plt.figure(figsize = (5, 4))
-
-        ## Construyo el gráfico colocando la Edad en el eje de las abscisas y los valores de la feature
-        ## en el eje de las ordenadas
-        plt.scatter(x, y, alpha = 0.5, s = 15)
-
-        ## Hago la construcción del título del gráfico a partir de la feature que estoy procesando
-        title = feature_names.get(feat, feat) if feature_names else feat
-
-        ## Despliego el título correspondiente en el gráfico
-        plt.title(f"{title} vs Edad")
-
-        ## Configuro nomenclatura de los ejes de abscisas y ordenadas del gráfico
-        plt.xlabel("Edad")
-        plt.ylabel(feat)
-        plt.tight_layout()
-
-        ## Configuro la nomenclatura del gráfico asociado a la significación de Wilcoxon
-        safe_name = feat.replace("/", "_")
-        filename = f"{safe_name}_vs_edad.png"
-
-        ## Construyo la ruta completa donde voy a guardar el gráfico
-        save_path = os.path.join(output_dir, filename)
-
-        ## Guardo el gráfico correspondiente especificando el formato y el tamaño
-        plt.savefig(save_path, dpi = 300, bbox_inches = "tight")
-
-        ## Finalizo el procesamiento de la figura (para que los gráficos subsiguientes no se superpongan)
-        plt.close()
+        ## Genero el gráfico de la feature contra la edad incluyendo métricas de regresión en el título
+        plot_features_vs_age(df = df, feature_cols = [feat], output_dir = output_dir,
+            feature_names = None, x_col = x_col, results_df = pd.DataFrame([feat_stats]))

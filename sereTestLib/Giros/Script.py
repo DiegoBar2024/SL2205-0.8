@@ -281,8 +281,27 @@ if __name__== '__main__':
         ## en caso de que rechazo H0) al nivel de significación pasado como entrada (por defecto alpha = 0.05)
         matrices_wilcoxon = wilcoxon_pairwise_matrices(results_wilcoxon)
 
+        ## --> TEST SIGNIFICACIÓN: Suponiendo que tengo un modelo de regresión lineal dado y = b0 + b1 * x + eps
+        ## donde tengo b0 como el intercept y b1 como el slope, el test de significación tiene como hipótesis
+        ## nula H0: b1 = 0 es decir que no hay relación lineal entre la edad y la feature.
+        ## Cuanto menor sea el p-valor, los datos muestrales sugieren con más fuerza la existencia de
+        ## una relación lineal DE PENDIENTE NO NULA entre la edad y la feature
+
+        ## --> VALOR DE R^2: R^2 me indica el porcentaje de la varianza de la variable dependiente (feature)
+        ## que es explicada en base al modelo de regresión lineal (coeficiente de ajuste). Intuitivamente
+        ## un mayor valor de R^2 implica que el modelo de regresión lineal captura más efectivaemente la
+        ## dependencia que existe entre la edad y la feature
+
+        ## Hago análisis de regresión (en principio lineal y polinomial) comparando directamente las
+        ## features (como variable dependiente) contra la edad (variable indpendiente).
+        results_df = regression_analysis(df = df_dataset, feature_cols = feature_cols, x_col = "Edad",
+                                        poly_degree = 2, alpha = 0.05)
+
         ## En caso de que quiera graficar y guardar los scatter plots combinando features dos a dos
         if graficar_boxplots:
+
+            ## Imprimo mensaje de aviso
+            print("Generando gráficos de boxplot [...]")
 
             ## Construyo los diagramas de scatter con algunas de las features 1vs1 donde cada punto
             ## representa un giro y está pintado según el color del grupo etario al que pertenezca
@@ -293,6 +312,9 @@ if __name__== '__main__':
         ## En caso de que quiera graficar y guardar los boxplots de las features por rango etario
         if graficar_scatter:
 
+            ## Imprimo mensaje de aviso
+            print("Generando gráficos de dispersión [...]")
+
             ## Hago la graficación de los boxplots con las features individualmente por el grupo etario
             ## y los guardo como imágenes en la carpeta de graficos correspondiente
             plot_turn_features_by_age_group(df_plot, feature_cols,
@@ -302,15 +324,23 @@ if __name__== '__main__':
         ## En caso de que quiera graficar y guardar las matrices de significancia de Wilcoxon
         if graficar_wilcoxon:
 
+            ## Imprimo mensaje de aviso
+            print("Generando matrices de significación de Wilcoxon [...]")
+
             ## Grafico y guardo los resultados de aplicar el test de Wilcoxon dos a dos
             plot_wilcoxon_significance_matrices(results_wilcoxon, 
                         "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Wilcoxon/".format(root),
                         True, FEATURE_NAMES)
         
-        ## En caso de que quiera graficar la variación de la feature en función de la edad
+        ## En caso de que quiera graficar la variación de la feature en función de la edad junto
+        ## con los correspondientes resultados de las regresiones lineal y polinomial
         if graficar_featvsedad:
 
+            ## Imprimo mensaje de aviso
+            print("Generando gráficos de features vs edad y regresión [...]")
+
+            ## Obs
             ## Hago los gráficos correspondientes y los guardo en la ruta de salida
-            plot_features_vs_age(df_plot, FEATURE_COLUMNS,
-                        "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Regresion/".format(root),
-                        FEATURE_NAMES)
+            save_regression_plots(df = df_dataset, results_df = results_df, feature_cols = feature_cols,
+                output_dir = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Regresion/".format(root),
+                x_col = "Edad", only_significant = False)

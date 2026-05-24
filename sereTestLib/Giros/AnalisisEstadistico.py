@@ -7,6 +7,10 @@ from scipy.stats import mannwhitneyu
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.metrics import r2_score
+import statsmodels.api as sm
 
 def kruskal_wallis_features(df, feature_cols, group_col = "age_group"):
     """
@@ -413,3 +417,113 @@ def wilcoxon_pairwise_matrices(df_results, alpha = 0.05, use_fdr = False, use_si
 
     ## Retorno el diccionario conteniendo las matrices de resultados del test de Wilcoxon para cada feature
     return matrices
+
+def regression_analysis(df, feature_cols, x_col = "age", poly_degree = 2, alpha = 0.05):
+    """
+    Analiza la relación entre edad y features mediante regresión lineal,
+    regresión polinómica e inferencia estadística.
+
+    Para cada feature se ajustan dos modelos:
+        1. Regresión lineal (sklearn)
+        2. Regresión polinómica (sklearn)
+
+    Además, se evalúa la significancia estadística del coeficiente lineal
+    de la edad mediante un modelo OLS.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataset que contiene la variable independiente y las features.
+    feature_cols : list of str
+        Columnas a analizar como variables dependientes.
+    x_col : str, default="age"
+        Variable independiente (edad).
+    poly_degree : int, default=2
+        Grado del modelo polinómico.
+    alpha : float, default=0.05
+        Nivel de significación para el test del coeficiente lineal.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Resultados por feature con:
+
+        - feature: nombre de la variable analizada
+        - slope: coeficiente lineal (edad)
+        - intercept: término independiente
+        - linear_r2: R² del modelo lineal
+        - poly_r2: R² del modelo polinómico
+        - p_value: p-valor del coeficiente de edad (OLS)
+        - significant: True si p_value < alpha
+    """
+
+    ## Construyo una lista vacía en la cual yo voy a almacenar los resultados de la regresión
+    results = []
+
+    ## Obtengo el conjunto de valores de la edad (variable independiente en el análisis de regresión)
+    X = df[[x_col]].values
+
+    ## Construyo la matriz de diseño para el modelo OLS, incluyendo el término constante (intercept)
+    X_ols = sm.add_constant(df[[x_col]])
+
+    ## Itero para cada una de las features que tengo
+    for feat in feature_cols:
+
+        ## Obtengo el conjunto de valores asociados a la feature correspondiente
+        y = df[feat].values
+
+        ## Instancio un objeto de la clase LinearRegression() para poder hacer la regresión lineal
+        lin = LinearRegression()
+
+        ## Hago el ajuste del modelo de regresión lineal al conjunto de datos empíricos
+        lin.fit(X, y)
+
+        ## Obtengo los valores predichos de la variable dependiente a partir del modelo de regresión
+        y_pred_lin = lin.predict(X)
+
+        ## Obtengo el coeficiente de ajuste R^2 correspondiente al modelo de regresión lineal
+        linear_r2 = r2_score(y, y_pred_lin)
+
+        ## Obtengo el valor del slope (b_1) asociado al modelo de regresión
+        slope = lin.coef_[0]
+
+        ## Obtengo el valor del intercept (b_0) asociado al modelo de regresión
+        intercept = lin.intercept_
+
+        ## Instancio un objeto de la clase PolynomialFeatures() que me permita generar el polinomio
+        ## de grado igual al parámetro de entrada
+        poly = PolynomialFeatures(degree = poly_degree, include_bias = False)
+
+        ## Hago el ajuste del polinomio a los datos y luego lo transformo
+        X_poly = poly.fit_transform(X)
+
+        ## Instancio un objeto de la clase LinearRegression() para poder hacer la regresión polinomial
+        poly_model = LinearRegression()
+
+        ## Hago el ajuste del modelo polnomial al dataset empírico
+        poly_model.fit(X_poly, y)
+
+        ## Obtengo los valores predichos de la variable dependiente a partir del modelo de regresión
+        y_pred_poly = poly_model.predict(X_poly)
+
+        ## Obtengo el coeficiente de ajuste R^2 correspondiente al modelo de regresión polinomial
+        poly_r2 = r2_score(y, y_pred_poly)
+
+        ## Ajusto un modelo de regresión lineal mediante Mínimos Cuadrados Ordinarios (OLS),
+        ## a partir del cual luego se derivan los tests de significación de los coeficientes
+        model = sm.OLS(y, X_ols).fit()
+
+        ## Obtengo el p-valor asociado al test de significación del coeficiente de la variable independiente (slope)
+        p_value = model.pvalues[x_col]
+
+        ## Si el p-valor es menor que el nivel de significación, se rechaza la hipótesis nula.
+        ## Esto indica evidencia estadística de una asociación lineal entre la feature y la edad.
+        significant = p_value < alpha
+
+        ## Construyo un diccionario con el resultado del análisis de regresión para los datos edad-feature
+        results.append({"feature": feat, "slope": slope, "intercept": intercept, "linear_r2": linear_r2,
+            "poly_r2": poly_r2, "p_value": p_value, "significant": significant})
+
+    ## Retorno los resultados en forma de un dataframe ordenados según la significación
+    return (pd.DataFrame(results).sort_values(by = ["significant", "p_value"],
+            ascending = [False, True]).reset_index(drop = True))
