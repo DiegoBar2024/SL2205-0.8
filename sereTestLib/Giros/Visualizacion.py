@@ -942,3 +942,111 @@ def save_regression_plots(df, results_df, feature_cols, output_dir, x_col = "age
         ## Genero el gráfico de la feature contra la edad incluyendo métricas de regresión en el título
         plot_features_vs_age(df = df, feature_cols = [feat], output_dir = output_dir,
             feature_names = None, x_col = x_col, results_df = pd.DataFrame([feat_stats]))
+
+def plot_cluster_age_distributions(df, cluster_col = "cluster", age_col = "age_group", show_counts = True):
+    """
+    Visualiza la relación entre clusters de giros y grupos etarios mediante
+    distribuciones condicionales normalizadas.
+
+    Se construyen dos matrices de contingencia:
+
+    1. P(age | cluster)
+    Distribución de grupos etarios dentro de cada cluster
+    (normalización por filas).
+
+    2. P(cluster | age)
+    Distribución de clusters dentro de cada grupo etario
+    (normalización por columnas).
+
+    Se incluyen opcionalmente los tamaños de muestra por cluster
+    para contextualizar las distribuciones.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataset a nivel de giro con columnas de cluster y grupo etario.
+
+    cluster_col : str, default="cluster"
+        Columna con etiquetas de cluster.
+
+    age_col : str, default="age_group"
+        Columna con grupos etarios.
+
+    Returns
+    -------
+    tuple (cluster_age, age_cluster)
+        cluster_age : P(age | cluster)
+        age_cluster : P(cluster | age)
+    """
+
+    ## Hago la agrupación de los estadísticos por clúster
+    cluster_age = pd.crosstab(df[cluster_col], df[age_col], normalize = "index")
+
+    ## Cuento la cantidad de giros que tengo por cada clúster
+    cluster_counts = df[cluster_col].value_counts().sort_index()
+
+    ## Cuento la cantidad de giros que tengo por grupo etario
+    age_counts = df[age_col].value_counts().sort_index()
+
+    ## Represento la distribución de los rangos etarios dentro de cada clúster
+    plt.figure(figsize = (7, 4))
+    ax = sns.heatmap(cluster_age, annot = True, fmt = ".3f", cmap = "viridis", linewidths = 0.5)
+
+    ## En caso de que quiera mostrar la cantidad de elementos por clúster
+    if show_counts:
+
+        ## Obtengo las etiquetas que especifican la cantidad de giros por cluster
+        y_labels = [f"{idx} (n={cluster_counts.loc[idx]})" if idx in cluster_counts.index else str(idx)
+            for idx in cluster_age.index]
+    
+        ## Agrego las etiquetas de los giros por clúster al gráfico
+        ax.set_yticklabels(y_labels, rotation = 0)
+
+        ## Obtengo las etiquetas que especifican la cantidad de giros por grupo etario
+        x_labels = [f"{col} (n={age_counts.loc[col]})" if col in age_counts.index else str(col)
+            for col in cluster_age.columns]
+
+        ## Agrego las etiquetas de los giros por grupo etario al gráfico
+        ax.set_xticklabels(x_labels, rotation = 0)
+
+    ## Configuro nomenclatura de los ejes, el título y despliego el gráfico resultante
+    plt.title("Distribución etaria dentro de cada cluster")
+    plt.xlabel("Grupo etario")
+    plt.ylabel("Cluster")
+    plt.tight_layout()
+    plt.show()
+
+    ## Hago la agrupación de los estadísticos por rango etario
+    age_cluster = pd.crosstab(df[cluster_col], df[age_col], normalize = "columns")
+
+    ## Represento la distribución de los clústers dentro de cada rango etario
+    plt.figure(figsize = (7, 4))
+    ax = sns.heatmap(age_cluster, annot = True, fmt = ".3f", cmap = "viridis", linewidths = 0.5,
+                cbar_kws = {"label": "Proporción dentro del grupo etario"})
+
+    ## En caso de que quiera mostrar la cantidad de elementos por clúster
+    if show_counts:
+
+        ## Obtengo las etiquetas que especifican la cantidad de giros por cluster
+        y_labels = [f"{idx} (n={cluster_counts.loc[idx]})" if idx in cluster_counts.index else str(idx)
+            for idx in cluster_age.index]
+    
+        ## Agrego las etiquetas de los giros por clúster al gráfico
+        ax.set_yticklabels(y_labels, rotation = 0)
+
+        ## Obtengo las etiquetas que especifican la cantidad de giros por grupo etario
+        x_labels = [f"{col} (n={age_counts.loc[col]})" if col in age_counts.index else str(col)
+            for col in cluster_age.columns]
+
+        ## Agrego las etiquetas de los giros por grupo etario al gráfico
+        ax.set_xticklabels(x_labels, rotation = 0)
+
+    ## Configuro nomenclatura de los ejes, el título y despliego el gráfico resultante
+    plt.title("Distribución de clusters dentro de cada grupo etario")
+    plt.xlabel("Grupo etario")
+    plt.ylabel("Cluster")
+    plt.tight_layout()
+    plt.show()
+
+    ## Retorno las tablas dinámicas al agrupar por rango etario y por clúster
+    return cluster_age, age_cluster

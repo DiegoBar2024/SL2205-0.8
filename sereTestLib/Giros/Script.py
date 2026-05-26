@@ -181,14 +181,14 @@ if __name__== '__main__':
     elif opcion == 4:
 
         ## Configuro una variable que me de a elegir si quiero graficar boxplots de features
-        graficar_boxplots = False
+        graficar_boxplots = True
 
         ## Configuro una variable que me de a elegir si quiero graficar scatterplots de features
         graficar_scatter = False
 
         ## Configuro una variable que me de a elegir si quiero graficar matrices de significación
         ## del test de hipótesis de Wilcoxon
-        graficar_wilcoxon = False
+        graficar_wilcoxon = True
 
         ## Configuro una variable que me de a elegir si quiero graficar la evolución de cada una de
         ## las features en función de la edad a la que corresponde el giro
@@ -296,12 +296,34 @@ if __name__== '__main__':
         ## features (como variable dependiente) contra la edad (variable indpendiente).
         results_df = regression_analysis(df = df_dataset, feature_cols = feature_cols, x_col = "Edad",
                                         poly_degree = 2, alpha = 0.05)
+        
+        ## Selecciono features numéricas válidas para clustering (sin NaNs ni constantes)
+        valid_cluster_features = [c for c in feature_cols if df_dataset[c].nunique() > 1]
+
+        ## Hago clustering para todos mis giros con mi conjunto de features correspondiente
+        cluster_results = aplicar_clustering_giros(df = df_dataset.copy(),
+                    feature_cols = valid_cluster_features, k_range = range(2, 7), random_state = 42)
+
+        ## Obtengo el dataset de giros con las correspondientes asignaciones de los giros a cada cluster
+        df_dataset = cluster_results["df"]
+
+        ## Obtengo los centroides correspondientes a cada uno de los clústers en el feature space
+        centroids = cluster_results["centroids"]
+
+        ## Obtengo el modelo de KMeans utilizado para hacer el clustering de las features de giros
+        kmeans_model = cluster_results["kmeans"]
+
+        ## Obtengo las etiquetas (asignaciones de clusters) correspondientes a cada uno de los giros
+        labels = df_dataset["cluster"].values
+
+        ## Hago la graficación de la distribución de rangos etarios por clúster y de clústers por rango etario
+        cluster_age, age_cluster = plot_cluster_age_distributions(df_dataset)
 
         ## En caso de que quiera graficar y guardar los scatter plots combinando features dos a dos
-        if graficar_boxplots:
+        if graficar_scatter:
 
             ## Imprimo mensaje de aviso
-            print("Generando gráficos de boxplot [...]")
+            print("Generando gráficos de dispersión [...]")
 
             ## Construyo los diagramas de scatter con algunas de las features 1vs1 donde cada punto
             ## representa un giro y está pintado según el color del grupo etario al que pertenezca
@@ -310,10 +332,10 @@ if __name__== '__main__':
                 FEATURE_NAMES, FEATURE_FILE_NAMES)
 
         ## En caso de que quiera graficar y guardar los boxplots de las features por rango etario
-        if graficar_scatter:
+        if graficar_boxplots:
 
             ## Imprimo mensaje de aviso
-            print("Generando gráficos de dispersión [...]")
+            print("Generando gráficos de boxplot [...]")
 
             ## Hago la graficación de los boxplots con las features individualmente por el grupo etario
             ## y los guardo como imágenes en la carpeta de graficos correspondiente

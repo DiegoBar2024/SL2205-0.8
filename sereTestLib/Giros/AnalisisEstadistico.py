@@ -119,40 +119,68 @@ def kruskal_wallis_features(df, feature_cols, group_col = "age_group"):
 
 def aplicar_clustering_giros(df, feature_cols, k_range = range(2, 7), random_state = 42):
     """
-    Aplica clustering sobre un dataframe YA PREPROCESADO de giros.
+    Aplica clustering no supervisado sobre un conjunto de giros representados
+    por features cinemáticas y estadísticas.
 
-    Esta función está diseñada como extensión del pipeline existente,
-    no como reemplazo del flujo de carga o preprocesamiento.
+    El objetivo es descubrir estructuras latentes en el espacio de características
+    de los giros (turn-level analysis), sin utilizar información de edad u otras etiquetas.
+
+    El modelo utiliza K-Means con selección automática de K basada en silhouette score.
 
     Parámetros
     ----------
     df : pandas.DataFrame
         Dataset de giros ya construido en el pipeline principal.
+        Cada fila representa un giro individual.
+
         Debe contener:
-        - features numéricas
-        - columnas de identificación
-        - age_group (opcional, para análisis posterior)
+        - features numéricas definidas en `feature_cols`
+        - opcionalmente columnas de identificación (ej. id)
 
     feature_cols : list of str
-        Lista de features utilizadas para clustering.
+        Lista de columnas utilizadas como espacio de características para clustering.
 
-    k_range : iterable
-        Rango de K evaluado mediante silhouette score.
+    k_range : iterable, default=range(2, 7)
+        Rango de valores de K evaluados mediante silhouette score.
 
-    random_state : int
-        Semilla para reproducibilidad.
+    random_state : int, default=42
+        Semilla para reproducibilidad del algoritmo K-Means.
 
-    Retorna
+    Returns
     -------
-    df : pandas.DataFrame
-        Dataset original con columna adicional:
-        - cluster
+    dict
+        Diccionario con los siguientes elementos:
 
-    best_k : int
-        Número óptimo de clusters según silhouette score.
+        df : pandas.DataFrame
+            Dataset original con una nueva columna:
+            - cluster: asignación de cluster por giro
 
-    kmeans : sklearn.cluster.KMeans
-        Modelo entrenado.
+        best_k : int
+            Número óptimo de clusters seleccionado mediante silhouette score.
+
+        kmeans : sklearn.cluster.KMeans
+            Modelo K-Means entrenado con el mejor K.
+
+        scaler : sklearn.preprocessing.StandardScaler
+            Escalador ajustado a los datos originales.
+
+        centroids : pandas.DataFrame
+            Centroides de los clusters en el espacio original de features.
+
+            Incluye:
+            - una fila por cluster
+            - columnas = features originales
+
+        cluster_summary : pandas.DataFrame
+            Estadísticas descriptivas por cluster:
+            - mean
+            - std
+            - median
+            para cada feature
+
+        cluster_counts : dict
+            Diccionario con el número de giros en cada cluster.
+            Formato: {cluster_id: count}
     """
 
     ## Obtengo la matriz de datos con el conjunto de todas las features de todos los giros
@@ -208,8 +236,21 @@ def aplicar_clustering_giros(df, feature_cols, k_range = range(2, 7), random_sta
     ## Agrego una columna asignando el centroide al índice del clúster al que corresponde
     centroids["cluster"] = range(best_k)
 
+    ## Obtengo un resumen estadístico de cada una de las features en cada uno de los clusters
+    cluster_summary = df.groupby("cluster")[feature_cols].agg(["mean", "std", "median"])
+
+    ## Hago el aplanamiento de las columnas y configuro los nombres correspondientes
+    cluster_summary.columns = [f"{feat}_{stat}" for feat, stat in cluster_summary.columns]
+
+    ## Hago el reset del índice correspondiente al dataframe del resumen estadístico de los clústers
+    cluster_summary = cluster_summary.reset_index()
+
+    ## Obtengo la cantidad de puntos correspondientes a los diferentes clusters
+    cluster_counts = df["cluster"].value_counts().sort_index().to_dict()
+
     ## Retorno los resultados de hacer el clustering en el dataframe de giros
-    return df, best_k, kmeans, scaler, centroids
+    return {"df": df, "best_k": best_k, "kmeans": kmeans, "scaler": scaler,
+        "centroids": centroids, "cluster_summary": cluster_summary, "cluster_counts": cluster_counts}
 
 def pairwise_wilcoxon_rank_sum(df, feature_cols, group_col = "age_group"):
     """
