@@ -979,8 +979,14 @@ def plot_cluster_age_distributions(df, cluster_col = "cluster", age_col = "age_g
         age_cluster : P(cluster | age)
     """
 
+    ## Obtengo la matriz (tabla dinámica) con los conteos absolutos
+    counts = pd.crosstab(df[cluster_col], df[age_col])
+
     ## Hago la agrupación de los estadísticos por clúster
     cluster_age = pd.crosstab(df[cluster_col], df[age_col], normalize = "index")
+
+    ## Hago la agrupación de los estadísticos por rango etario
+    age_cluster = pd.crosstab(df[cluster_col], df[age_col], normalize = "columns")
 
     ## Cuento la cantidad de giros que tengo por cada clúster
     cluster_counts = df[cluster_col].value_counts().sort_index()
@@ -988,9 +994,49 @@ def plot_cluster_age_distributions(df, cluster_col = "cluster", age_col = "age_g
     ## Cuento la cantidad de giros que tengo por grupo etario
     age_counts = df[age_col].value_counts().sort_index()
 
-    ## Represento la distribución de los rangos etarios dentro de cada clúster
+    ## Hago una copia del dataframe que sale de agrupar los giros por clúster
+    annot_cluster_age = cluster_age.copy().astype(str)
+
+    ## Hago una copia del dataframe que sale de agrupar los giros por grupo etario
+    annot_age_cluster = age_cluster.copy().astype(str)
+
+    ## Itero para cada uno de los índices de los clústers
+    for r in cluster_age.index:
+
+        ## Itero para cada uno de los índices de los grupos etarios
+        for c in cluster_age.columns:
+
+            ## Obtengo la proporción de giros correspondientes al par grupo etario <<c>> y cluster <<r>>
+            ## con respecto al total de puntos en el clúster
+            prob = cluster_age.loc[r, c]
+
+            ## Obtengo la cantidad al par grupo etario <<c>> y cluster <<r>>
+            n = counts.loc[r, c]
+
+            ## Construyo la anotación correspondiente combinando la proporción y cantidad de puntos dados
+            annot_cluster_age.loc[r, c] = f"{prob:.3f}\n({n})"
+
+    ## Itero para cada uno de los índices de los clústers
+    for r in age_cluster.index:
+
+        ## Itero para cada uno de los índices de los grupos etarios
+        for c in age_cluster.columns:
+
+            ## Obtengo la proporción de giros correspondientes al par grupo etario <<c>> y cluster <<r>>
+            ## con respecto al total de puntos en el grupo etario
+            prob = age_cluster.loc[r, c]
+
+            ## Obtengo la cantidad al par grupo etario <<c>> y cluster <<r>>
+            n = counts.loc[r, c]
+
+            ## Construyo la anotación correspondiente combinando la proporción y cantidad de puntos dados
+            annot_age_cluster.loc[r, c] = f"{prob:.3f}\n({n})"
+
+    ## Configuro el tamaño y las dimensiones de la figura correspondiente
     plt.figure(figsize = (7, 4))
-    ax = sns.heatmap(cluster_age, annot = True, fmt = ".3f", cmap = "viridis", linewidths = 0.5)
+
+    ## Represento la distribución de los rangos etarios dentro de cada clúster
+    ax = sns.heatmap(cluster_age, annot = annot_cluster_age, fmt = "", cmap = "viridis", linewidths = 0.5)
 
     ## En caso de que quiera mostrar la cantidad de elementos por clúster
     if show_counts:
@@ -1016,13 +1062,11 @@ def plot_cluster_age_distributions(df, cluster_col = "cluster", age_col = "age_g
     plt.tight_layout()
     plt.show()
 
-    ## Hago la agrupación de los estadísticos por rango etario
-    age_cluster = pd.crosstab(df[cluster_col], df[age_col], normalize = "columns")
+    ## Configuro el tamaño y las dimensiones de la figura correspondiente
+    plt.figure(figsize = (7, 4))
 
     ## Represento la distribución de los clústers dentro de cada rango etario
-    plt.figure(figsize = (7, 4))
-    ax = sns.heatmap(age_cluster, annot = True, fmt = ".3f", cmap = "viridis", linewidths = 0.5,
-                cbar_kws = {"label": "Proporción dentro del grupo etario"})
+    ax = sns.heatmap(age_cluster, annot = annot_age_cluster, fmt = "", cmap = "viridis", linewidths = 0.5)
 
     ## En caso de que quiera mostrar la cantidad de elementos por clúster
     if show_counts:

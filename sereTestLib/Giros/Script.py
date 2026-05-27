@@ -14,6 +14,7 @@ from Preprocesamiento import *
 from ExtraccionFeatures import *
 from AnalisisEstadistico import *
 from MetadatosFeatures import *
+from AnalisisClasificacion import *
 
 ## Programa principal
 if __name__== '__main__':
@@ -318,6 +319,24 @@ if __name__== '__main__':
 
         ## Hago la graficación de la distribución de rangos etarios por clúster y de clústers por rango etario
         cluster_age, age_cluster = plot_cluster_age_distributions(df_dataset)
+
+        ## Obtengo los resultados de calcular el Information Gain de las features respecto al grupo etario
+        ig_results = compute_information_gain_features(df_dataset, feature_cols = feature_cols,
+                                        target_col = "age_group")
+        
+        ## Especifico el número de features que me da la mayor información que uso para clustering
+        top_k = 5
+
+        ## Obtengo las <<top_k>> features con mayor ganancia de información para mi análisis
+        top_features = (ig_results.sort_values("information_gain", ascending = False)
+                .head(top_k)["feature"].tolist())
+        
+        ## Hago el clustering de mi dataset utilizando únicamente las <<top_k>> features
+        cluster_results = aplicar_clustering_giros(df = df_dataset.copy(), 
+            feature_cols = top_features, k_range = range(3, 10), random_state = 42)
+        
+        ## Hago la graficación más detallada de la información de la distribución de clústers
+        cluster_age, age_cluster = plot_cluster_age_distributions(cluster_results["df"])
 
         ## En caso de que quiera graficar y guardar los scatter plots combinando features dos a dos
         if graficar_scatter:
