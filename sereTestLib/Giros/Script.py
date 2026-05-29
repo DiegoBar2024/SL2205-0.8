@@ -199,7 +199,7 @@ if __name__== '__main__':
         ## la lista con los diccionarios con todos los parámetros de los giros detectados
         features_giros_total = pd.read_parquet(
             "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro.parquet".format(root))
-        
+
         ## Me aseguro que el campo "id" del dataframe de features esté en formato string
         features_giros_total["id"] = features_giros_total["id"].astype(str)
 
@@ -322,21 +322,25 @@ if __name__== '__main__':
 
         ## Obtengo los resultados de calcular el Information Gain de las features respecto al grupo etario
         ig_results = compute_information_gain_features(df_dataset, feature_cols = feature_cols,
-                                        target_col = "age_group")
-        
-        ## Especifico el número de features que me da la mayor información que uso para clustering
-        top_k = 5
+                                target_col = "age_group")
 
-        ## Obtengo las <<top_k>> features con mayor ganancia de información para mi análisis
-        top_features = (ig_results.sort_values("information_gain", ascending = False)
-                .head(top_k)["feature"].tolist())
-        
-        ## Hago el clustering de mi dataset utilizando únicamente las <<top_k>> features
-        cluster_results = aplicar_clustering_giros(df = df_dataset.copy(), 
-            feature_cols = top_features, k_range = range(3, 10), random_state = 42)
-        
-        ## Hago la graficación más detallada de la información de la distribución de clústers
-        cluster_age, age_cluster = plot_cluster_age_distributions(cluster_results["df"])
+        ## Hago la lectura de archivo .parquet donde tengo el historial óptimo de features con sfs
+        sfs_features_results = pd.read_parquet(
+            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/sfs_features.parquet".format(root))
+
+        ## SVM Univariado: Resultados al hacer los tests de clasificación univariada usando una SVM
+        results_svm = rbf_svm_univariate_feature_error(df = df_dataset, feature_cols = feature_cols,
+                                target_col = "age_group", C = 1, gamma = "scale", n_splits = 5)
+
+        ## Hago el ordenamiento de todas las features con su respectiva Information Gain de mayor a menor
+        candidate_features = (ig_results.sort_values("information_gain", ascending = False)
+                                ["feature"].tolist())
+
+        ## Sequential Forward Feature Selection (SFFS): Obtengo aquellos conjuntos de features que me dan 
+        ## la mejor performance. En otras palabras, elijo el conjunto de las k features que me da mayor 
+        ## discriminación de los feature vectors de los giros en los rangos etarios correspondientes
+        sfs_results = sfs_svm_fixed(df = df_dataset, feature_cols = candidate_features,
+                                target_col = "age_group", k = 2, C = 10, gamma = "scale", cv = 5)
 
         ## En caso de que quiera graficar y guardar los scatter plots combinando features dos a dos
         if graficar_scatter:
