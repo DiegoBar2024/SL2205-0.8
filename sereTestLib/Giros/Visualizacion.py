@@ -664,6 +664,12 @@ def plot_wilcoxon_significance_matrices(results_df, output_dir, use_fdr = True,
         ## por Wilcoxon. Inicialmente todas las entradas de la matriz corresponden a NaN
         mat = pd.DataFrame(np.nan, index = groups, columns = groups, dtype = float)
 
+        ## Configuro la correspondiente matriz de anotación para la escritura de los p-valores
+        annot_mat = pd.DataFrame("", index = groups, columns = groups)
+
+        ## Configuro una matriz numérica que me permita almacenar los p-valores
+        p_mat = pd.DataFrame(np.nan, index = groups, columns = groups)
+
         ## Itero para cada uno de los resultados del test de Wilcoxon asociados a la feature de estudio
         for _, row in sub.iterrows():
 
@@ -683,6 +689,9 @@ def plot_wilcoxon_significance_matrices(results_df, output_dir, use_fdr = True,
                 ## correspondiente (alpha, pasado como entrada de la función)
                 is_sig = row["p_value"] < alpha
 
+            ## Selecciono el p-valor correspondiente al test de hipótesis realizado
+            p = row["p_value"]
+
             ## Asigno val == 1 en caso de que la diferencia detectada por el test de Wilcoxon sea significativa
             val = 1 if is_sig else 0
 
@@ -690,6 +699,14 @@ def plot_wilcoxon_significance_matrices(results_df, output_dir, use_fdr = True,
             ## configuro el mismo valor de resultado de significación del test en las entradas de ambos grupos
             mat.loc[g1, g2] = val
             mat.loc[g2, g1] = val
+
+            ## Configuro la anotación del p-valor del test de hipótesis de manera simétrica en la matriz
+            annot_mat.loc[g1, g2] = f"p = {p:.2e}"
+            annot_mat.loc[g2, g1] = f"p = {p:.2e}"
+
+            ## Configuro el p-valor en la matriz correspondiente a los p-valores
+            p_mat.loc[g1, g2] = p
+            p_mat.loc[g2, g1] = p
 
         ## Construyo un diccionario que contiene las etiquetas asociadas a los grupos etarios
         label_map = {0: "<60", 1: "60-75", 2: ">75"}
@@ -710,8 +727,8 @@ def plot_wilcoxon_significance_matrices(results_df, output_dir, use_fdr = True,
         cmap.set_bad(color = "white")
 
         ## Configuro los parámetros correspondientes al mapa de calor
-        sns.heatmap(mat, cmap = cmap, vmin = 0, vmax = 1, cbar = False, linewidths = 1,
-                linecolor = "black", square = True, ax = ax)
+        sns.heatmap(mat, cmap = cmap, vmin = 0, vmax = 1, cbar = False, linewidths = 1, 
+            linecolor = "black", square = True, ax = ax, annot = annot_mat, fmt = "")
 
         ## Construyo el título asociado al gráfico correspondiente
         title = feature_names.get(feat, feat) if feature_names else feat

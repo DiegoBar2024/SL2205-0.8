@@ -182,7 +182,7 @@ if __name__== '__main__':
     elif opcion == 4:
 
         ## Configuro una variable que me de a elegir si quiero graficar boxplots de features
-        graficar_boxplots = True
+        graficar_boxplots = False
 
         ## Configuro una variable que me de a elegir si quiero graficar scatterplots de features
         graficar_scatter = False
@@ -193,7 +193,7 @@ if __name__== '__main__':
 
         ## Configuro una variable que me de a elegir si quiero graficar la evolución de cada una de
         ## las features en función de la edad a la que corresponde el giro
-        graficar_featvsedad = True
+        graficar_featvsedad = False
 
         ## Hago la lectura del archivo .parquet donde guardo el dataframe Pandas que contiene
         ## la lista con los diccionarios con todos los parámetros de los giros detectados
@@ -376,7 +376,7 @@ if __name__== '__main__':
             plot_wilcoxon_significance_matrices(results_wilcoxon, 
                         "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Wilcoxon/".format(root),
                         True, FEATURE_NAMES)
-        
+
         ## En caso de que quiera graficar la variación de la feature en función de la edad junto
         ## con los correspondientes resultados de las regresiones lineal y polinomial
         if graficar_featvsedad:
