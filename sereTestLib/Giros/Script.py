@@ -181,6 +181,10 @@ if __name__== '__main__':
     ## pero hago el procesamiento por cada giro separadamente sin hacer sumarización por persona
     elif opcion == 4:
 
+        ## ======================================================
+        ## CONFIGURACIÓN DE PARÁMETROS Y CARGADO DE ARCHIVOS DEL PIPELINE
+        ## ======================================================
+
         ## Configuro una variable que me de a elegir si quiero graficar boxplots de features
         graficar_boxplots = False
 
@@ -199,6 +203,14 @@ if __name__== '__main__':
         ## la lista con los diccionarios con todos los parámetros de los giros detectados
         features_giros_total = pd.read_parquet(
             "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro.parquet".format(root))
+        
+        ## Hago la lectura de archivo .parquet donde tengo el historial óptimo de features con sfs
+        sfs_features_results = pd.read_parquet(
+            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/sfs_features.parquet".format(root))
+        
+        ## ======================================================
+        ## PREPROCESAMIENTO DE LOS DATOS (FEATURES EXTRAÍDAS)
+        ## ======================================================
 
         ## Me aseguro que el campo "id" del dataframe de features esté en formato string
         features_giros_total["id"] = features_giros_total["id"].astype(str)
@@ -249,6 +261,10 @@ if __name__== '__main__':
         ## Elimino aquellas features para las cuales todos los valores sean constantes
         valid_features = [c for c in feature_cols if df_dataset[c].nunique() > 1]
 
+        ## ======================================================
+        ## TEST DE HIPÓTESIS DE KRUSKAL-WALLIS EN EL DATASET
+        ## ======================================================
+
         ## IMPORTANTE EN LOS TESTS DE HIPÓTESIS:
         ## Si p_valor <= alpha --> Rechazo H0 al nivel de significación alpha
         ## Si p_valor > alpha --> No rechazo H0 al nivel de significación alpha
@@ -267,6 +283,10 @@ if __name__== '__main__':
         ## son iguales (que es H0 de Kruskal Wallis)
         plot_kruskal_results(results_kruskal)
 
+        ## ======================================================
+        ## TEST DE SUMA DE RANGOS DE WILCOXON EN EL DATASET
+        ## ======================================================
+
         ## El test de Wilcoxon de suma de rangos intenta rechazar la hipótesis nula de que dos muestras
         ## independientes provienen de la misma distribución. Entonces ejecuto el test de hipótesis de
         ## Wilcoxon de suma de rangos para comprobar diferencias entre distribuciones uno a uno
@@ -281,6 +301,10 @@ if __name__== '__main__':
         ## si para cada par de grupos etarios el test de Wilcoxon de suma de rangos se rechaza (True
         ## en caso de que rechazo H0) al nivel de significación pasado como entrada (por defecto alpha = 0.05)
         matrices_wilcoxon = wilcoxon_pairwise_matrices(results_wilcoxon)
+
+        ## ======================================================
+        ## CONSTRUCCIÓN DE MODELOS DE REGRESIÓN LINEAL (FEATURE vs EDAD)
+        ## ======================================================
 
         ## --> TEST SIGNIFICACIÓN: Suponiendo que tengo un modelo de regresión lineal dado y = b0 + b1 * x + eps
         ## donde tengo b0 como el intercept y b1 como el slope, el test de significación tiene como hipótesis
@@ -298,49 +322,80 @@ if __name__== '__main__':
         results_df = regression_analysis(df = df_dataset, feature_cols = feature_cols, x_col = "Edad",
                                         poly_degree = 2, alpha = 0.05)
         
+        ## ======================================================
+        ## CLUSTERING K-MEANS DEL DATASET CON TODAS LAS FEATURES
+        ## ======================================================
+
         ## Selecciono features numéricas válidas para clustering (sin NaNs ni constantes)
         valid_cluster_features = [c for c in feature_cols if df_dataset[c].nunique() > 1]
 
         ## Hago clustering para todos mis giros con mi conjunto de features correspondiente
         cluster_results = aplicar_clustering_giros(df = df_dataset.copy(),
                     feature_cols = valid_cluster_features, k_range = range(2, 7), random_state = 42)
-
-        ## Obtengo el dataset de giros con las correspondientes asignaciones de los giros a cada cluster
-        df_dataset = cluster_results["df"]
-
-        ## Obtengo los centroides correspondientes a cada uno de los clústers en el feature space
-        centroids = cluster_results["centroids"]
-
-        ## Obtengo el modelo de KMeans utilizado para hacer el clustering de las features de giros
-        kmeans_model = cluster_results["kmeans"]
-
-        ## Obtengo las etiquetas (asignaciones de clusters) correspondientes a cada uno de los giros
-        labels = df_dataset["cluster"].values
+        
+        ## Evalúo qué tan bien el clustering separa los grupos etarios
+        ## Como regla de decisión, tengo que una precisión > 0.85 representa una buena separación
+        cluster_eval = evaluar_clustering_por_edad(cluster_results, group_col = "age_group")
 
         ## Hago la graficación de la distribución de rangos etarios por clúster y de clústers por rango etario
-        cluster_age, age_cluster = plot_cluster_age_distributions(df_dataset)
+        cluster_age, age_cluster = plot_cluster_age_distributions(cluster_results["df"])
+
+        ## ======================================================
+        ## RANKING UNIVARIADO DE FEATURES USANDO INFORMACIÓN MUTUA
+        ## ======================================================
 
         ## Obtengo los resultados de calcular el Information Gain de las features respecto al grupo etario
         ig_results = compute_information_gain_features(df_dataset, feature_cols = feature_cols,
                                 target_col = "age_group")
+        
+        ## Hago el ordenamiento de todas las features con su respectiva Information Gain de mayor a menor
+        candidate_features = (ig_results.sort_values("information_gain", ascending = False)
+                                ["feature"].tolist())
 
-        ## Hago la lectura de archivo .parquet donde tengo el historial óptimo de features con sfs
-        sfs_features_results = pd.read_parquet(
-            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/sfs_features.parquet".format(root))
+        ## ======================================================
+        ## RANKING UNIVARIADO DE FEATURES USANDO SVM (SUPPORT VECTOR MACHINE)
+        ## ======================================================
 
         ## SVM Univariado: Resultados al hacer los tests de clasificación univariada usando una SVM
         results_svm = rbf_svm_univariate_feature_error(df = df_dataset, feature_cols = feature_cols,
                                 target_col = "age_group", C = 1, gamma = "scale", n_splits = 5)
 
-        ## Hago el ordenamiento de todas las features con su respectiva Information Gain de mayor a menor
-        candidate_features = (ig_results.sort_values("information_gain", ascending = False)
-                                ["feature"].tolist())
+        ## Hago la graficación de las features según el error de predicción medio en las K-Folds
+        plot_svm_feature_error_ranking(results_svm, top_k = 10)
 
-        ## Sequential Forward Feature Selection (SFFS): Obtengo aquellos conjuntos de features que me dan 
-        ## la mejor performance. En otras palabras, elijo el conjunto de las k features que me da mayor 
-        ## discriminación de los feature vectors de los giros en los rangos etarios correspondientes
-        sfs_results = sfs_svm_fixed(df = df_dataset, feature_cols = candidate_features,
-                                target_col = "age_group", k = 2, C = 10, gamma = "scale", cv = 5)
+        ## Obtengo un conjunto de las mejores features luego de hacer el SVM univariado
+        top_features_univ = results_svm.nsmallest(5, "error")
+
+        ## Hago el clustering con las mejores features luego de hacer el SVM univariado
+        cluster_top_features_univ = aplicar_clustering_giros(df_dataset, 
+                    feature_cols = np.array(top_features_univ['feature']))
+
+        ## Hago la graficación de la distribución de rangos etarios por clúster y de clústers por rango etario
+        cluster_age, age_cluster = plot_cluster_age_distributions(cluster_top_features_univ['df'])
+
+        ## ======================================================
+        ## RANKING MULTIVARIADO DE FEATURES USANDO SVM (SUPPORT VECTOR MACHINE)
+        ## ======================================================
+
+        # ## Sequential Forward Feature Selection (SFFS): Obtengo aquellos conjuntos de features que me dan 
+        # ## la mejor performance. En otras palabras, elijo el conjunto de las k features que me da mayor 
+        # ## discriminación de los feature vectors de los giros en los rangos etarios correspondientes
+        # sfs_results = sfs_svm_fixed(df = df_dataset, feature_cols = candidate_features,
+        #                         target_col = "age_group", k = 5, C = 10, gamma = "scale", cv = 5)
+
+        # ## Obtengo un conjunto de las mejores features luego de hacer el SVM SFFS multivariado
+        # top_features_multiv = sfs_results['features'][4]
+
+        ## Hago el clustering con las mejores features luego de hacer el SVM SFFS multivariado
+        cluster_top_features_multiv = aplicar_clustering_giros(df_dataset, 
+                                feature_cols = sfs_features_results['features'][4])
+        
+        ## Hago la graficación de la distribución de rangos etarios por clúster y de clústers por rango etario
+        cluster_age, age_cluster = plot_cluster_age_distributions(cluster_top_features_multiv['df'])
+
+        ## ======================================================
+        ## CONSTRUCCIÓN Y GUARDADO DE GRÁFICOS
+        ## ======================================================
 
         ## En caso de que quiera graficar y guardar los scatter plots combinando features dos a dos
         if graficar_scatter:

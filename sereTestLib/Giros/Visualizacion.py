@@ -1111,3 +1111,72 @@ def plot_cluster_age_distributions(df, cluster_col = "cluster", age_col = "age_g
 
     ## Retorno las tablas dinámicas al agrupar por rango etario y por clúster
     return cluster_age, age_cluster
+
+def plot_svm_feature_error_ranking(results_svm, top_k = None, annotate = True):
+    """
+    Visualiza el ranking de features basado en el error de clasificación
+    obtenido mediante SVM univariado.
+
+    Parameters
+    ----------
+    results_svm : pandas.DataFrame
+        DataFrame con resultados del análisis univariado.
+        Debe contener al menos:
+            - 'feature'
+            - 'error' (o métrica equivalente de error)
+
+    top_k : int or None
+        Si se especifica, muestra solo las top-k features con menor error.
+
+    annotate : bool
+        Si True, muestra el valor numérico del error sobre cada barra.
+
+    Returns
+    -------
+    None
+        Genera un gráfico de barras ordenado por error ascendente.
+    """
+
+    ## Hago una copia del dataframe de entrada el cual contiene los resultados del análisis de SVM
+    df = results_svm.copy()
+
+    ## Hago la detección de la columna de error de forma flexible
+    error_col = "error" if "error" in df.columns else "mean_error"
+
+    ## Ordeno los resultados según el desempeño (error de predicción medio obtenido)
+    df = df.sort_values(error_col, ascending = True)
+
+    ## En caso de que me quiera quedar con los mejores k features
+    if top_k is not None:
+
+        ## Hago la selección de aquellos k features que tienen el menor error
+        df = df.head(top_k)
+
+    ## Selecciono la lista de todas las features que tengo
+    features = df["feature"].values
+
+    ## Selecciono la lista de los errores de predicción correspondientes a las features
+    errors = df[error_col].values
+
+    ## Inicializo y configuro las dimensiones del gráfico
+    plt.figure(figsize = (10, 5))
+    bars = plt.bar(features, errors)
+
+    ## Configuro el título y las leyendas del gráfico
+    plt.xticks(rotation = 45, ha = "right")
+    plt.ylabel("Error de clasificación (SVM univariado)")
+    plt.title("Ranking de features por capacidad discriminativa (menor error = mejor)")
+
+    ## En caso de que quiera hacer anotaciones numéricas en el gráfico con el valor del error
+    if annotate:
+
+        ## Itero para cada uno de los pares (feature, error) que tengo
+        for bar, err in zip(bars, errors):
+
+            ## Genero y despliego la etiqueta con el valor del error de predicción medio de la feature
+            plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                f"{err:.3f}", ha = "center", va = "bottom", fontsize = 9)
+
+    ## Despliego el gráfico correspondiente
+    plt.tight_layout()
+    plt.show()

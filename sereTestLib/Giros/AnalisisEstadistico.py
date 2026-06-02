@@ -11,6 +11,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import r2_score
 import statsmodels.api as sm
+from sklearn.metrics import accuracy_score
 
 def kruskal_wallis_features(df, feature_cols, group_col = "age_group"):
     """
@@ -116,6 +117,78 @@ def kruskal_wallis_features(df, feature_cols, group_col = "age_group"):
 
     ## Retorno el dataframe conteniendo todos los resultados de los tests de Kruskal Wallis
     return results_df
+
+def evaluar_clustering_por_edad(clustering_output, group_col = "age_group"):
+    """
+    Evalúa qué tan bien un clustering no supervisado (K-Means) se alinea con los grupos etarios conocidos.
+
+    Description
+    -----------
+    Esta función toma la salida de `aplicar_clustering_giros()` y cuantifica qué tan informativos
+    son los clusters aprendidos con respecto a las verdaderas etiquetas de grupo etario.
+
+    La idea es medir si los clusters descubiertos de manera no supervisada separan naturalmente
+    los grupos etarios, calculando un mapeo desde clusters hacia el grupo etario mayoritario
+    y estimando el error de clasificación.
+
+    Esto puede interpretarse como un proxy de la calidad de las features: si las features son informativas,
+    los clusters deberían alinearse con la estructura etaria.
+
+    Parameters
+    ----------
+    clustering_output : dict
+        Diccionario de salida de `aplicar_clustering_giros()`. Debe contener:
+        - df : pandas.DataFrame con una columna 'cluster' agregada
+
+    group_col : str, default="age_group"
+        Columna del dataframe que contiene las etiquetas reales de grupo etario.
+
+    Returns
+    -------
+    dict
+        Diccionario que contiene:
+
+        accuracy : float
+            Exactitud del mapeo clusters → grupo etario mayoritario.
+
+        error_rate : float
+            1 - accuracy (proxy de la probabilidad de mala clasificación).
+
+        cluster_to_group : dict
+            Mapeo de ID de cluster → grupo etario más frecuente.
+
+        confusion_matrix : pandas.DataFrame
+            Tabla de contingencia entre clusters y grupos etarios reales.
+
+        cluster_purity : pandas.DataFrame
+            Pureza de cada cluster (fracción de la clase dominante dentro del cluster).
+    """
+
+    ## Hago una copia en formato dataframe pandas de los resultados del clustering
+    df = clustering_output["df"].copy()
+
+    ## Elimino aquellas filas que no tengan etiquetas
+    df = df.dropna(subset = [group_col, "cluster"])
+
+    ## Hago el mapeo entre los clusters y los grupos etarios usando voto por mayoría
+    cluster_to_group = (df.groupby("cluster")[group_col].agg(lambda x: x.mode().iloc[0]).to_dict())
+
+    ## Obtengo las etiquetas predichas basadas en la asignación de clústers
+    df["pred_group"] = df["cluster"].map(cluster_to_group)
+
+    ## Obtengo una medida de la precisión de la relación entre los clústers y los grupos etarios
+    acc = accuracy_score(df[group_col], df["pred_group"])
+
+    ## Obtengo una medida del error de la relación entre los clústers y los grupos etarios
+    error = 1 - acc
+
+    ## Hago el cálculo de la matriz de confusión correspondiente a la relación de clústers y grupos etarios
+    cm = pd.crosstab(df["cluster"], df[group_col])
+
+    ## Retorno un diccionario con todos los resultados estadísticos del agrupamiento entre clusters
+    ## y los grupos etarios dados
+    return {"accuracy": acc, "error_rate": error, "cluster_to_group": cluster_to_group,
+        "confusion_matrix": cm}
 
 def aplicar_clustering_giros(df, feature_cols, k_range = range(2, 7), random_state = 42):
     """
