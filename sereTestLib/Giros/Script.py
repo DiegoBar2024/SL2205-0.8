@@ -193,11 +193,15 @@ if __name__== '__main__':
 
         ## Configuro una variable que me de a elegir si quiero graficar matrices de significación
         ## del test de hipótesis de Wilcoxon
-        graficar_wilcoxon = True
+        graficar_wilcoxon = False
 
         ## Configuro una variable que me de a elegir si quiero graficar la evolución de cada una de
         ## las features en función de la edad a la que corresponde el giro
         graficar_featvsedad = False
+
+        ## Configuro una variable que me de a elegir si quiero graficar las matrices de confusión
+        ## para cada una de las features usando SVM con K-Fold Cross Validation
+        graficar_matconf = True
 
         ## Hago la lectura del archivo .parquet donde guardo el dataframe Pandas que contiene
         ## la lista con los diccionarios con todos los parámetros de los giros detectados
@@ -347,7 +351,7 @@ if __name__== '__main__':
         ## Obtengo los resultados de calcular el Information Gain de las features respecto al grupo etario
         ig_results = compute_information_gain_features(df_dataset, feature_cols = feature_cols,
                                 target_col = "age_group")
-        
+
         ## Hago el ordenamiento de todas las features con su respectiva Information Gain de mayor a menor
         candidate_features = (ig_results.sort_values("information_gain", ascending = False)
                                 ["feature"].tolist())
@@ -357,8 +361,8 @@ if __name__== '__main__':
         ## ======================================================
 
         ## SVM Univariado: Resultados al hacer los tests de clasificación univariada usando una SVM
-        results_svm = rbf_svm_univariate_feature_error(df = df_dataset, feature_cols = feature_cols,
-                                target_col = "age_group", C = 1, gamma = "scale", n_splits = 5)
+        results_svm, svm_predictions = rbf_svm_univariate_feature_error(df = df_dataset, 
+                feature_cols = feature_cols, target_col = "age_group", C = 1, gamma = "scale", n_splits = 5)
 
         ## Hago la graficación de las features según el error de predicción medio en las K-Folds
         plot_svm_feature_error_ranking(results_svm, top_k = 10)
@@ -370,28 +374,43 @@ if __name__== '__main__':
         cluster_top_features_univ = aplicar_clustering_giros(df_dataset, 
                     feature_cols = np.array(top_features_univ['feature']))
 
-        ## Hago la graficación de la distribución de rangos etarios por clúster y de clústers por rango etario
-        cluster_age, age_cluster = plot_cluster_age_distributions(cluster_top_features_univ['df'])
-
         ## ======================================================
         ## RANKING MULTIVARIADO DE FEATURES USANDO SVM (SUPPORT VECTOR MACHINE)
         ## ======================================================
 
-        # ## Sequential Forward Feature Selection (SFFS): Obtengo aquellos conjuntos de features que me dan 
-        # ## la mejor performance. En otras palabras, elijo el conjunto de las k features que me da mayor 
-        # ## discriminación de los feature vectors de los giros en los rangos etarios correspondientes
-        # sfs_results = sfs_svm_fixed(df = df_dataset, feature_cols = candidate_features,
-        #                         target_col = "age_group", k = 5, C = 10, gamma = "scale", cv = 5)
+        ## Sequential Forward Feature Selection (SFFS): Obtengo aquellos conjuntos de features que me dan 
+        ## la mejor performance. En otras palabras, elijo el conjunto de las k features que me da mayor 
+        ## discriminación de los feature vectors de los giros en los rangos etarios correspondientes
+        sfs_results = sfs_svm_fixed(df = df_dataset, feature_cols = candidate_features,
+                                target_col = "age_group", k = 2, C = 10, gamma = "scale", cv = 5)
 
-        # ## Obtengo un conjunto de las mejores features luego de hacer el SVM SFFS multivariado
-        # top_features_multiv = sfs_results['features'][4]
+        ## Obtengo un conjunto de las mejores features luego de hacer el SVM SFFS multivariado
+        top_features_multiv = sfs_results['features'][1]
 
         ## Hago el clustering con las mejores features luego de hacer el SVM SFFS multivariado
         cluster_top_features_multiv = aplicar_clustering_giros(df_dataset, 
                                 feature_cols = sfs_features_results['features'][4])
-        
-        ## Hago la graficación de la distribución de rangos etarios por clúster y de clústers por rango etario
-        cluster_age, age_cluster = plot_cluster_age_distributions(cluster_top_features_multiv['df'])
+
+        ## ======================================================
+        ## VERSIÓN MODIFICADA DE GRUPOS ETARIOS (BINARIA)
+        ## ======================================================
+
+        ## Hago una copia del dataframe con los valores originales
+        df_dataset_binary = df_dataset.copy()
+
+        ## Hago un reagrupamiento de modo que construyo dos conjuntos que están determinados
+        ## Asigno como grupo etario 0 a las personas de edad menor o igual a 75, y 1 a las personas
+        ## con una edad mayor a 75 años (se extiende la asignación a los giros)
+        df_dataset_binary["age_group_binary"] = np.where(df_dataset_binary["Edad"] <= 75, 0, 1)
+
+        ## SVM Univariado: Resultados al hacer los tests de clasificación univariada usando una SVM
+        ## pero en este caso aplicado al problema de clasificación binaria con las clases como antes      
+        results_svm_bin, svm_predictions_bin = rbf_svm_univariate_feature_error(df = df_dataset_binary, 
+            feature_cols = feature_cols, target_col = "age_group_binary", C = 10, gamma = 0.1, 
+            n_splits = 5)
+
+        ## Hago la graficación de las features según el error de predicción medio en las K-Folds
+        plot_svm_feature_error_ranking(results_svm_bin, top_k = 10)
 
         ## ======================================================
         ## CONSTRUCCIÓN Y GUARDADO DE GRÁFICOS
@@ -439,8 +458,19 @@ if __name__== '__main__':
             ## Imprimo mensaje de aviso
             print("Generando gráficos de features vs edad y regresión [...]")
 
-            ## Obs
             ## Hago los gráficos correspondientes y los guardo en la ruta de salida
             save_regression_plots(df = df_dataset, results_df = results_df, feature_cols = feature_cols,
-                output_dir = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Regresion/".format(root),
-                x_col = "Edad", only_significant = False)
+                        output_dir = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Regresion/"
+                        .format(root), x_col = "Edad", only_significant = False)
+
+        ## En caso de que quiera graficar las matrices de confusión usando un modelo de clasificación
+        ## SVM con hiperparámetros dados y con un algoritmo K-Fold Cross Validation para validación
+        if graficar_matconf:
+
+            ## Imprimo mensaje de aviso
+            print("Generando matrices de confusión [...]")
+
+            ## Construyo matrices de confusión estilo Wilcoxon
+            plot_svm_univariate_confusion_matrices(predictions = svm_predictions, feature_cols = feature_cols,
+            save_dir = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Confusion/".format(root),
+            C = 1, gamma = "scale")

@@ -9,6 +9,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import (GridSearchCV, StratifiedKFold)
 from sklearn.metrics import (accuracy_score, balanced_accuracy_score, f1_score, roc_auc_score)
+from sklearn.metrics import confusion_matrix
+from matplotlib import pyplot as plt
+import os
+from datetime import datetime
 
 def compute_information_gain_features(df, feature_cols, target_col = "age_group",
     discrete_target = True, random_state = 42):
@@ -68,13 +72,47 @@ def compute_information_gain_features(df, feature_cols, target_col = "age_group"
 def rbf_svm_univariate_feature_error(df, feature_cols, target_col = "age_group", 
     C = 1, gamma = "scale", n_splits = 5):
     """
-    Calcula el error de clasificación univariado por feature utilizando un SVM con kernel RBF,
-    empleando validación cruzada con GroupKFold (separación a nivel de sujeto).
+    Calcula el rendimiento de clasificación univariada por feature utilizando un SVM con kernel RBF
+    y validación cruzada estratificada.
+
+    Para cada feature se entrena un modelo independiente y se evalúa su capacidad predictiva
+    sobre el target especificado. Se reporta la precisión balanceada media, desviación estándar
+    y el error asociado.
+
+    Opcionalmente, genera y guarda matrices de confusión agregadas por feature en formato imagen.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataset que contiene las features y la variable objetivo.
+
+    feature_cols : list of str
+        Lista de columnas numéricas a evaluar individualmente.
+
+    target_col : str, default="age_group"
+        Nombre de la variable objetivo (clases).
+
+    C : float, default=1
+        Parámetro de regularización del SVM.
+
+    gamma : str or float, default="scale"
+        Parámetro del kernel RBF.
+
+    n_splits : int, default=5
+        Número de folds para validación cruzada estratificada.
+
+    save_confusion_dir : str or None, default=None
+        Directorio donde se guardan las matrices de confusión por feature.
+        Si es None, no se generan archivos.
 
     Returns
     -------
-    pd.DataFrame
-        feature | mean_balanced_acc | error | std_acc
+    pandas.DataFrame
+        Tabla con resultados por feature:
+        - feature
+        - mean_balanced_accuracy
+        - std_accuracy
+        - error
     """
 
     ## Obtengo la matriz de datos, cuyas filas son los giros mientras que las columnas son las features
@@ -89,6 +127,9 @@ def rbf_svm_univariate_feature_error(df, feature_cols, target_col = "age_group",
     ## Inicializo una lista vacía en la cual voy a almacenar los resultados de los análisis
     results = []
 
+    ## Inicializo un diccionario en el cual voy a almacenar las predicciones del SVM
+    predictions = {}
+
     ## Itero para cada una de las features que tengo
     for i, feat in enumerate(feature_cols):
 
@@ -97,6 +138,12 @@ def rbf_svm_univariate_feature_error(df, feature_cols, target_col = "age_group",
 
         ## Inicializo una lista en donde voy a guardar los resultados (precisión y error) de cada fold
         fold_scores = []
+
+        ## Inicializo una lista en la cual voy a guardar los grupos etarios reales de los giros
+        y_true_all = []
+
+        ## Inicializo una lista en la cual voy a guardar los grupos etarios predichos de los giros
+        y_pred_all = []
 
         ## Itero para cada uno de los k folds que definí
         for train_idx, test_idx in cv.split(X_feat, y):
@@ -120,13 +167,23 @@ def rbf_svm_univariate_feature_error(df, feature_cols, target_col = "age_group",
             ## Agrego la medida de precisión asociada al fold a la lista correspondiente
             fold_scores.append(balanced_accuracy_score(y_test, y_pred))
 
+            ## Almaceno el grupo etario real del giro en la lista correspondiente
+            y_true_all.extend(y_test)
+
+            ## Almaceno el grupo etario predicho en la lista correspondiente
+            y_pred_all.extend(y_pred)
+
         ## Retorno el resumen de la precisión media asociada al feature para el SVM en todos los folds
         results.append({"feature": feat, "mean_balanced_accuracy": np.mean(fold_scores),
                         "std_accuracy": np.std(fold_scores), "error": 1 - np.mean(fold_scores)})
 
+        ## Agrego los resultados de las predicciones y las etiquetas reales para la feature correspondiente
+        predictions[feat] = {"y_true": np.array(y_true_all), "y_pred": np.array(y_pred_all)}
+
     ## Retorno los resultados de todas las features ordenados descendentemente por la precisión
-    return pd.DataFrame(results).sort_values("mean_balanced_accuracy", ascending = False
-                        ).reset_index(drop = True)
+    ## junto con el diccionario de las precisiones correspondientes para cada una de las features
+    return (pd.DataFrame(results).sort_values("mean_balanced_accuracy", ascending = False)
+    .reset_index(drop = True), predictions)
 
 def evaluar_features_svm_rbf(df, feature_cols, target_col, cv = 5, random_state = 42):
     """

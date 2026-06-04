@@ -7,6 +7,7 @@ import seaborn as sns
 from matplotlib.patches import Patch
 from matplotlib.colors import ListedColormap
 from matplotlib import use
+from sklearn.metrics import confusion_matrix
 
 def graficar_histograma_edades(df, columna_edad = 'Edad', mostrar_porcentaje = False):
     """
@@ -1180,3 +1181,146 @@ def plot_svm_feature_error_ranking(results_svm, top_k = None, annotate = True):
     ## Despliego el gráfico correspondiente
     plt.tight_layout()
     plt.show()
+
+def plot_svm_univariate_confusion_matrices(predictions, feature_cols,
+    target_values = None, save_dir = None, C = 1, gamma = "scale", cmap = "coolwarm"):
+    """
+    Genera matrices de confusión por feature a partir de predicciones de un SVM,
+    con estilo visual tipo Wilcoxon.
+
+    - Matrices de confusión en conteos absolutos (sin normalización)
+    - Escala de color por feature (vmin = 0, vmax = máximo de cada matriz)
+    - Anotaciones con valores absolutos en cada celda
+    - Guardado opcional en formato PNG con timestamp
+    - Estilo gráfico consistente para análisis comparativo entre features
+
+    Parameters
+    ----------
+    predictions : dict
+        Diccionario con predicciones por feature. Cada entrada debe contener:
+        - "y_true": etiquetas reales
+        - "y_pred": etiquetas predichas
+
+    feature_cols : list of str
+        Lista de features evaluadas.
+
+    target_values : array-like or None, default=None
+        Valores posibles de la variable objetivo. Si es None, se infieren
+        desde la primera feature en `predictions`.
+
+    save_dir : str or None, default=None
+        Directorio donde se guardan las imágenes. Si es None, no se guardan archivos.
+
+    C : float, default=1
+        Parámetro de regularización del SVM (solo para anotación en el título).
+
+    gamma : str or float, default="scale"
+        Parámetro del kernel RBF del SVM (solo para anotación en el título).
+
+    cmap : str, default="coolwarm"
+        Colormap utilizado para visualizar la matriz de confusión.
+
+    Returns
+    -------
+    None
+        La función genera y guarda las figuras, pero no retorna valores.
+    """
+
+    ## Agrego configuraciones necesarias para que los gráficos se guarden y no se desplieguen
+    ## en la pantall mientras está ejecutándose la función (se vuelve molesto sino)
+    use("Agg")
+    plt.ioff()
+
+    ## En caso de que yo pase una ruta de guardado como entrada de la función
+    if save_dir is not None:
+
+        ## Configuro el instante de tiempo correspondiente al guardado
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        ## Construyo la ruta de guardado resultante
+        save_dir = os.path.join(save_dir, timestamp)
+
+        ## Creo la ruta de guardado en el directorio
+        os.makedirs(save_dir, exist_ok = True)
+
+    ## En caso de que yo no de valores objetivos como entrada de la función
+    if target_values is None:
+
+        ## Tomo arbitrariamente el primer feature de la lista a procesar
+        any_feat = feature_cols[0]
+
+        ## Configuro la lista de posibles valores objetivos
+        target_values = np.unique(predictions[any_feat]["y_true"])
+
+    ## Construyo una lista vacía en la cual voy a almacenar las matrices de confusión
+    matrices = []
+
+    ## Itero para cada una de las features que voy a analizar
+    for feat in feature_cols:
+
+        ## Selecciono la lista correspondiente a las asignaciones verdaderas de cada giro
+        y_true = predictions[feat]["y_true"]
+
+        ## Selecciono la lista correspondiente a las asignaciones predichas de cada giro
+        y_pred = predictions[feat]["y_pred"]
+
+        ## Construyo la matriz de confusión correspondiente para dicha feature
+        cm = confusion_matrix(y_true, y_pred, labels = target_values)
+
+        ## Agrego la matriz de confusión asociada a la feature a la lista correspondiente
+        matrices.append(cm)
+
+    ## Itero para cada una de las features con sus correspondientes matrices de confusión
+    for feat, cm in zip(feature_cols, matrices):
+
+        ## Configuro el tamaño del gráfico correspondiente
+        plt.figure(figsize = (5, 4))
+
+        ## Despliego la matriz de confusión en el gráfico correspondiente
+        im = plt.imshow(cm, interpolation = "nearest", cmap = cmap, vmin = 0, vmax = cm.max())
+
+        ## Configuro el título del gráfico
+        plt.title(f"Matriz de Confusión SVM\n{feat} | C = {C}, gamma = {gamma}")
+
+        ## Configuro las etiquetas horizontales de la matriz de confusión
+        plt.xticks(range(len(target_values)), target_values)
+
+        ## Configuro las etiquetas verticales de la matriz de confusión
+        plt.yticks(range(len(target_values)), target_values)
+
+        ## Configuro la leyenda horizontal de la matriz de confusión
+        plt.xlabel("Predicho")
+
+        ## Configuro la leyenda vertical de la matriz de confusión
+        plt.ylabel("Real")
+
+        ## Obtengo el valor máximo de la matriz de confusión asociada a la feature correspondiente
+        vmax_feat = cm.max()
+
+        ## Itero para cada una de las filas de la matriz de confusión
+        for i in range(cm.shape[0]):
+
+            ## Itero para cada una de las columnas de la matriz de confusión
+            for j in range(cm.shape[1]):
+
+                ## Obtengo el valor de la matriz de confusión en la i-ésima fila y j-ésima columna
+                val = cm[i, j]
+
+                ## Configuro el texto asociado a la entrada correspondiente de la matriz de confusión
+                plt.text(j, i, f"{val}", ha = "center", va = "center",
+                    color = "white" if val > vmax_feat * 0.5 else "black", fontsize = 9)
+
+        ## Hago el ajuste de padding entre las subgráficas
+        plt.tight_layout()
+
+        ## Configuro el nombre del archivo de la matriz de confusión correspondiente
+        filename = f"{feat}_SVM_C{C}_gamma{gamma}.png".replace(" ", "_")
+
+        ## En caso de que yo haya pasado como argumento una ruta de entrada
+        if save_dir is not None:
+
+            ## Guardo la matriz de confusión como imagen en la ruta correspondiente
+            plt.savefig(os.path.join(save_dir, filename), dpi = 300)
+
+        ## Finalizo el procesamiento y cierro el gráfico de la matriz de confusión
+        plt.close()
