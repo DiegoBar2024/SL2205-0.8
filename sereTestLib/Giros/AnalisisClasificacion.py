@@ -156,7 +156,7 @@ def rbf_svm_univariate_feature_error(df, feature_cols, target_col = "age_group",
 
             ## Construyo un objeto Pipeline especificando el modelo, los hiperparámetros y el escalamiento
             model = Pipeline([("scaler", StandardScaler()),
-                    ("svm", SVC(kernel = "rbf", C = C, gamma = gamma))])
+                    ("svm", SVC(kernel = "rbf", C = C, gamma = gamma, class_weight = "balanced"))])
 
             ## Hago el entrenamiento del modelo SVM con el conjunto de datos de entrenamiento del fold k
             model.fit(X_train, y_train)

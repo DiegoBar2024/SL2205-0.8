@@ -121,3 +121,19 @@ E_j = \frac{1}{N-1} \sum_{i=1}^{N-1} j_i^2
 $$
 
 Captura la intensidad de cambios rápidos en la señal. Valores altos indican movimientos más bruscos o menos suaves.
+
+## 11. Energía de la señal
+
+Para un segmento de señal $x = \{x_1, ..., x_N\}$, la energía total se define como:
+
+$$
+E = \sum_{i=1}^{N} x_i^2
+$$
+
+Esta métrica cuantifica la energía total acumulada en el segmento de señal.
+
+- Valores altos indican movimientos de mayor amplitud sostenida.
+- Valores bajos corresponden a movimientos más pequeños o menos intensos.
+- A diferencia de la energía RMS, esta característica no está normalizada por la duración del segmento, por lo que combina información tanto de amplitud como de longitud temporal del movimiento.
+
+En señales de velocidad angular y aceleración, la energía permite caracterizar la cantidad total de actividad mecánica presente durante un evento de giro.

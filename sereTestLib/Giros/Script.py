@@ -23,6 +23,7 @@ if __name__== '__main__':
     ## Opcion 2: Detectar y extraer features de los giros
     ## Opcion 3: Procesar features de giros previamente extraídas (análisis por persona)
     ## Opcion 4: Procesar features de giros previamente extraídas (análisis por giro)
+    ## Opcion 5: Extender features ya existentes en el parquet (feature store update)
     opcion = 4
 
     ## Obtengo la información correspondiente a todos los pacientes en la base de datos
@@ -129,7 +130,7 @@ if __name__== '__main__':
         df_features = pd.DataFrame(features_giros_total)
 
         ## Hago el guardado del dataframe pandas bajo la extensión de .parquet
-        output_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro.parquet".format(root)
+        output_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro+ind.parquet".format(root)
         df_features.to_parquet(output_path, index = False)
 
     ## En caso de que yo quiera procesar las features de los giros que fueron previamente extraídas
@@ -206,15 +207,19 @@ if __name__== '__main__':
         ## Hago la lectura del archivo .parquet donde guardo el dataframe Pandas que contiene
         ## la lista con los diccionarios con todos los parámetros de los giros detectados
         features_giros_total = pd.read_parquet(
-            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro.parquet".format(root))
-        
+            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v2.parquet".format(root))
+
         ## Hago la lectura de archivo .parquet donde tengo el historial óptimo de features con sfs
         sfs_features_results = pd.read_parquet(
             "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/sfs_features.parquet".format(root))
-        
+
         ## ======================================================
         ## PREPROCESAMIENTO DE LOS DATOS (FEATURES EXTRAÍDAS)
         ## ======================================================
+
+        ## Elimino aquellas columnas correspondientes a los índices que denotan el inicio y la
+        ## terminación de cada uno de los giros (no voy a utilizarlas en esta parte del procesamiento)
+        df_features = features_giros_total.drop(columns = ["start_idx", "end_idx"], errors = "ignore")
 
         ## Me aseguro que el campo "id" del dataframe de features esté en formato string
         features_giros_total["id"] = features_giros_total["id"].astype(str)
@@ -341,8 +346,8 @@ if __name__== '__main__':
         ## Como regla de decisión, tengo que una precisión > 0.85 representa una buena separación
         cluster_eval = evaluar_clustering_por_edad(cluster_results, group_col = "age_group")
 
-        ## Hago la graficación de la distribución de rangos etarios por clúster y de clústers por rango etario
-        cluster_age, age_cluster = plot_cluster_age_distributions(cluster_results["df"])
+        # ## Hago la graficación de la distribución de rangos etarios por clúster y de clústers por rango etario
+        # cluster_age, age_cluster = plot_cluster_age_distributions(cluster_results["df"])
 
         ## ======================================================
         ## RANKING UNIVARIADO DE FEATURES USANDO INFORMACIÓN MUTUA
@@ -360,9 +365,19 @@ if __name__== '__main__':
         ## RANKING UNIVARIADO DE FEATURES USANDO SVM (SUPPORT VECTOR MACHINE)
         ## ======================================================
 
+        ## Configuro un único valor del hiperparámetro C de SVM para usar en todo el pipeline
+        C = 10
+
+        ## Configuro un único valor del hiperparámetro C de SVM para usar en todo el pipeline
+        gamma = "scale"
+
+        ## Configuro la cantidad de splits que voy a hacer con K-Fold Cross Validation
+        n_splits = 5
+
         ## SVM Univariado: Resultados al hacer los tests de clasificación univariada usando una SVM
         results_svm, svm_predictions = rbf_svm_univariate_feature_error(df = df_dataset, 
-                feature_cols = feature_cols, target_col = "age_group", C = 1, gamma = "scale", n_splits = 5)
+                feature_cols = feature_cols, target_col = "age_group", C = C, gamma = gamma, 
+                n_splits = n_splits)
 
         ## Hago la graficación de las features según el error de predicción medio en las K-Folds
         plot_svm_feature_error_ranking(results_svm, top_k = 10)
@@ -370,29 +385,25 @@ if __name__== '__main__':
         ## Obtengo un conjunto de las mejores features luego de hacer el SVM univariado
         top_features_univ = results_svm.nsmallest(5, "error")
 
-        ## Hago el clustering con las mejores features luego de hacer el SVM univariado
-        cluster_top_features_univ = aplicar_clustering_giros(df_dataset, 
-                    feature_cols = np.array(top_features_univ['feature']))
-
         ## ======================================================
         ## RANKING MULTIVARIADO DE FEATURES USANDO SVM (SUPPORT VECTOR MACHINE)
         ## ======================================================
+
+        ## Inicializo una variable que especifique la cantidad máxima de features con las que me quiero quedar
+        k_top_features = 5
 
         ## Sequential Forward Feature Selection (SFFS): Obtengo aquellos conjuntos de features que me dan 
         ## la mejor performance. En otras palabras, elijo el conjunto de las k features que me da mayor 
         ## discriminación de los feature vectors de los giros en los rangos etarios correspondientes
         sfs_results = sfs_svm_fixed(df = df_dataset, feature_cols = candidate_features,
-                                target_col = "age_group", k = 2, C = 10, gamma = "scale", cv = 5)
+                                target_col = "age_group", k = k_top_features, C = C, gamma = gamma, 
+                                cv = n_splits)
 
         ## Obtengo un conjunto de las mejores features luego de hacer el SVM SFFS multivariado
-        top_features_multiv = sfs_results['features'][1]
-
-        ## Hago el clustering con las mejores features luego de hacer el SVM SFFS multivariado
-        cluster_top_features_multiv = aplicar_clustering_giros(df_dataset, 
-                                feature_cols = sfs_features_results['features'][4])
+        top_features_multiv = sfs_results['features'][k_top_features - 1]
 
         ## ======================================================
-        ## VERSIÓN MODIFICADA DE GRUPOS ETARIOS (BINARIA)
+        ## RANKING UNIVARIADO DE FEATURES USANDO SVM (SUPPORT VECTOR MACHINE) -- DOS GRUPOS ETARIOS
         ## ======================================================
 
         ## Hago una copia del dataframe con los valores originales
@@ -406,11 +417,38 @@ if __name__== '__main__':
         ## SVM Univariado: Resultados al hacer los tests de clasificación univariada usando una SVM
         ## pero en este caso aplicado al problema de clasificación binaria con las clases como antes      
         results_svm_bin, svm_predictions_bin = rbf_svm_univariate_feature_error(df = df_dataset_binary, 
-            feature_cols = feature_cols, target_col = "age_group_binary", C = 10, gamma = 0.1, 
-            n_splits = 5)
+            feature_cols = feature_cols, target_col = "age_group_binary", C = C, gamma = gamma, 
+            n_splits = n_splits)
 
         ## Hago la graficación de las features según el error de predicción medio en las K-Folds
         plot_svm_feature_error_ranking(results_svm_bin, top_k = 10)
+
+        ## ======================================================
+        ## RANKING MULTIVARIADO DE FEATURES USANDO SVM (SUPPORT VECTOR MACHINE) -- DOS GRUPOS ETARIOS
+        ## ======================================================
+
+        ## Sequential Forward Feature Selection (SFFS): Obtengo aquellos conjuntos de features que me dan 
+        ## la mejor performance. En otras palabras, elijo el conjunto de las k features que me da mayor 
+        ## discriminación de los feature vectors de los giros en los rangos etarios correspondientes
+        sfs_results_bin = sfs_svm_fixed(df = df_dataset_binary, feature_cols = candidate_features,
+                                target_col = "age_group_binary", k = k_top_features, C = C, gamma = gamma,
+                                cv = n_splits)
+
+        ## Obtengo un conjunto de las mejores features luego de hacer el SVM SFFS multivariado
+        top_features_multiv = sfs_results_bin['features'][k_top_features - 1]
+
+        ## ======================================================
+        ## VISUALIZACIÓN DEL ESPACIO DE FEATURES EN 2D (BINARIO)
+        ## ======================================================
+
+        ## Selecciono las dos features más discriminativas según SFFS o análisis previo
+        feature_x = "wx_jerk_energy"
+        feature_y = "wy_jerk_energy"
+
+        ## Hago la visualización del espacio de features en 2D
+        plot_feature_space_2d(df = df_dataset_binary, feature_x = feature_x,
+            feature_y = feature_y, target_col = "age_group_binary", class_labels = {0: "≤75", 1: ">75"},
+            title = "Espacio de features: energía de jerk en plano horizontal", alpha = 0.5)
 
         ## ======================================================
         ## CONSTRUCCIÓN Y GUARDADO DE GRÁFICOS
@@ -470,7 +508,145 @@ if __name__== '__main__':
             ## Imprimo mensaje de aviso
             print("Generando matrices de confusión [...]")
 
-            ## Construyo matrices de confusión estilo Wilcoxon
+            ## Construyo matrices de confusión estilo Wilcoxon -- Tres Grupos Etarios
             plot_svm_univariate_confusion_matrices(predictions = svm_predictions, feature_cols = feature_cols,
-            save_dir = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Confusion/".format(root),
-            C = 1, gamma = "scale")
+            save_dir = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Confusion/TresGrupos".format(root),
+            C = C, gamma = gamma)
+
+            ## Construyo matrices de confusión estilo Wilcoxon -- Dos Grupos Etarios
+            plot_svm_univariate_confusion_matrices(predictions = svm_predictions_bin, 
+            feature_cols = feature_cols, save_dir = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos"
+            "/Confusion/DosGrupos".format(root), C = C, gamma = gamma)
+
+    ## En caso de que quiera extender features ya existentes en el parquet (feature store update)
+    elif opcion == 5:
+
+        ## ======================================================
+        ## CARGADO DEL DATASET DE GIROS EXISTENTE
+        ## ======================================================
+
+        ## Especifico la ruta del archivo .parquet donde tengo las features existentes para los giros
+        input_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro+ind." \
+        "parquet".format(root)
+
+        ## Hago el cargado de dicho dataframe con los datos previamente computados de los giros
+        df_features = pd.read_parquet(input_path)
+
+        ## Seteo el sistema inercial que voy a usar de referencia para el cálculo de orientación
+        sist_inercial = 'ENU'
+
+        ## Construyo una lista conteniendo los nombres de todas las features que voy a agregar
+        feature_names = ["wx_signal_energy", "wy_signal_energy", "wz_signal_energy",
+            "ax_signal_energy", "ay_signal_energy", "az_signal_energy"]
+
+        ## Hago una copia del dataframe de las features para no modificarlo directamente
+        df_features = df_features.copy()
+
+        ## Itero para cada uno de los nombres de las nuevas features que voy a agregar
+        for name in feature_names:
+
+            ## Genero un nuevo campo en el dataframe correspondiente a la nueva feature
+            df_features[name] = np.nan
+
+        ## Hago el agrupamiento del dataframe de features de giros según la ID de la persona
+        grouped = df_features.groupby("id")
+
+        ## ======================================================
+        ## ITERACIÓN POR PACIENTE Y AGREGADO DE NUEVAS FEATURES
+        ## ======================================================
+
+        ## Itero para cada uno de los pacientes presentes en la base de datos
+        for id_paciente, df_sub in grouped:
+
+            ## Coloco un bloque try-except en caso de que ocurra algún error
+            try:
+
+                ## Despliego un mensaje indicando el paciente que estoy procesando
+                print("Procesando giros del paciente de ID: {}".format(id_paciente))
+
+                ## Hago la lectura de las mediciones de la IMU del individuo
+                ## Las medidas del Shimmer3 vienen en m/s2 para el acelerómetro y grados/s para el giroscopio
+                data, acel, gyro, cant_muestras, periodoMuestreo, tiempo = LecturaDatos(
+                id_persona = id_paciente, lectura_datos_propios = False, 
+                ruta = '{}/sereData/sereData/Registros/MarchaLibre_Sabrina.txt'.format(root))
+
+                ## Hago la conversión de los valores de velocidad angular de grados/s a rad/s
+                gyro = np.deg2rad(gyro)
+
+                ## Defino la frecuencia de muestreo del sistema
+                frec_muestreo = 1 / periodoMuestreo
+
+                ## Hago la estimación de la orientación del sistema de la IMU con respecto al sistema de referencia inercial
+                imu_quat = estimar_orientacion_ekf(acel, gyro, frec_muestreo, sist_inercial)
+
+                ## Hago la rotación de la señal del giroscopio del sistema de la IMU al sistema inercial
+                ang_vel_inercial = rotate_body_to_world(gyro, imu_quat)
+
+                ## Hago la rotación de la señal del acelerómetro del sistema de la IMU al sistema inercial
+                acc_inercial = rotate_body_to_world(acel, imu_quat)
+
+                ## Hago el suavizado de las señales del giroscopio expresadas en el sistema inercial
+                ## con el fin de mitigar las excursiones significativas causadas por el ruido
+                gyro_suav = np.column_stack([moving_average(ang_vel_inercial[:, 0], frec_muestreo),
+                                        moving_average(ang_vel_inercial[:, 1], frec_muestreo),
+                                        moving_average(ang_vel_inercial[:, 2], frec_muestreo)])
+                
+                ## Hago el suavizado de las señales del acelerómetro expresadas en el sistema inercial
+                ## con el fin de mitigar las excursiones significativas causadas por el ruido
+                acc_suav = np.column_stack([moving_average(acc_inercial[:, 0], frec_muestreo),
+                                        moving_average(acc_inercial[:, 1], frec_muestreo),
+                                        moving_average(acc_inercial[:, 2], frec_muestreo)])
+
+                ## Obtengo un diccionario conteniendo las señales de acelerómetro, giroscopio
+                ## y secuencia de cuaterniones correspondinetes al registro completo
+                signals = {"gyro": gyro_suav, "acc": acc_suav, "quat": imu_quat}
+
+                ## Construyo una estructura donde voy a almacenar información de las nuevas features
+                new_values = {name: np.empty(len(df_sub)) for name in feature_names}
+
+                ## Itero para cada uno de los giros detectados en el registro de la persona
+                for i, (_, row) in enumerate(df_sub.iterrows()):
+
+                    ## Obtengo los índices de comienzo y terminación del giro correspondiente
+                    seg = {"start_idx": int(row["start_idx"]), "end_idx": int(row["end_idx"])}
+
+                    ## Hago la segmentación de las señales en el intervalo en el que se produce el giro
+                    data_seg = get_segment(signals, seg)
+
+                    ## Obtengo el diccionario correspondiente con todas las features nuevas
+                    feat_dict = feature_fn_nueva(data_seg, frec_muestreo)
+
+                    ## Itero para cada uno de los nombres de las nuevas features agregadas
+                    for name in feature_names:
+                    
+                        ## Agrego los nombres de las features nuevas al dataframe correspondiente
+                        new_values[name][i] = feat_dict.get(name, np.nan)
+
+                ## Itero para cada uno de los nombres de las nuevas features agregadas
+                for name in feature_names:
+
+                    ## Hago la concatenación del dataframe con las features nuevas y el original
+                    df_features.loc[df_sub.index, name] = new_values[name]
+
+            ## En caso de que ocurra algún error en el procesamiento
+            except Exception as e:
+
+                ## Imprimo el pantalla el número del paciente en el que se produjo el error
+                print(f"Error en paciente {id_paciente}: {e}")
+
+                ## Continúo con el procesamiento en el siguiente paciente
+                continue
+
+        ## ======================================================
+        ## GUARDADO DEL DATASET MODIFICADO
+        ## ======================================================
+
+        ## Construyo la ruta de salida en la que voy a guardar el nuevo dataframe
+        output_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v2" \
+                    ".parquet".format(root)
+
+        ## Hago el guardado del nuevo dataframe en el archivo .parquet
+        df_features.to_parquet(output_path, index = False)
+
+        ## Imprimo en pantalla un mensaje avisando que la actualización con la(s) nuevas features fue exitoso
+        print("Feature agregada y dataset guardado en:", output_path)

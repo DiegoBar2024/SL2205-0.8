@@ -1324,3 +1324,100 @@ def plot_svm_univariate_confusion_matrices(predictions, feature_cols,
 
         ## Finalizo el procesamiento y cierro el gráfico de la matriz de confusión
         plt.close()
+
+def plot_feature_space_2d(df, feature_x, feature_y, target_col, class_labels = None, 
+    title = None, alpha = 0.6, figsize = (7, 6), save_path = None):
+    """
+    Proyecta el espacio de características en 2D y colorea los puntos según la clase.
+
+    Esta función permite visualizar la relación entre dos features arbitrarias
+    dentro del dataset, facilitando el análisis exploratorio de separabilidad
+    entre clases en el espacio de características.
+
+    Es especialmente útil para:
+    - Validar visualmente resultados de selección de features (SFFS)
+    - Analizar separabilidad entre grupos etarios
+    - Detectar solapamiento entre clases
+    - Evaluar estructuras no lineales antes de aplicar SVM
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame que contiene las features y la variable objetivo.
+
+    feature_x : str
+        Nombre de la feature que se usará en el eje X.
+
+    feature_y : str
+        Nombre de la feature que se usará en el eje Y.
+
+    target_col : str
+        Nombre de la columna que contiene las etiquetas de clase.
+
+    class_labels : dict or None, default=None
+        Diccionario opcional para mapear las clases a etiquetas legibles.
+        Ejemplo: {0: "≤75", 1: ">75"}
+
+    title : str or None, default=None
+        Título del gráfico. Si es None, se genera automáticamente.
+
+    alpha : float, default=0.6
+        Nivel de transparencia de los puntos.
+
+    figsize : tuple, default=(7, 6)
+        Tamaño de la figura.
+
+    save_path : str or None, default=None
+        Ruta donde se guarda la figura. Si es None, no se guarda.
+
+    Returns
+    -------
+    None
+        La función genera y muestra el gráfico, sin retornar valores.
+    """
+
+    ## Inicializo y configuro las dimensiones de la figura
+    plt.figure(figsize = figsize)
+
+    ## Obtengo un listado con todas las posibles clases a las que pertenecen los giros
+    classes = df[target_col].unique()
+
+    ## Itero para cada una de las clases
+    for c in classes:
+
+        ## Selecciono únicamente aquellos puntos correspondientes a la clase actual <<c>>
+        subset = df[df[target_col] == c]
+
+        ## Obtengo las etiquetas correspondientes a los puntos de la clase
+        label = class_labels[c] if class_labels is not None else f"Clase {c}"
+
+        ## Hago el diagrama de dispersión con los puntos correspondientes a la clase <<c>> dada
+        plt.scatter(subset[feature_x], subset[feature_y], label = label, alpha = alpha)
+
+    ## Configuro la nomenclatura del eje x
+    plt.xlabel(feature_x)
+
+    ## Configuro la nomenclatura del eje y
+    plt.ylabel(feature_y)
+
+    ## En caso de que no exista un título como entrada a la función
+    if title is None:
+
+        ## Construyo el título del gráfico correspondiente
+        title = f"{feature_x} vs {feature_y} (coloreado por {target_col})"
+
+    ## Despliego el título en el gráfico
+    plt.title(title)
+
+    ## Despliego las leyendas en el gráfico
+    plt.legend()
+    plt.tight_layout()
+
+    ## En caso de que yo de una ruta de guardado de entrada
+    if save_path is not None:
+
+        ## Hago el guardado del gráfico en la ruta correspondiente
+        plt.savefig(save_path, dpi = 300)
+
+    ## Despliego el gráfico
+    plt.show()

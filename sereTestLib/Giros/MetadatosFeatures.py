@@ -2,7 +2,8 @@
 BASE_FEATURES = {"mean": "Media", "peak": "Pico", "rms": "RMS", 
         "time_to_peak": "Tiempo hasta el pico (fracción)", "peak_mean_ratio": "Relación pico/media",
         "skew": "Asimetría", "kurt": "Curtosis", "zcr": "Cruces por cero", 
-        "spec_entropy": "Entropía espectral", "jerk_energy": "Energía de jerk"}
+        "spec_entropy": "Entropía espectral", "jerk_energy": "Energía de jerk",
+        "signal_energy": "Energía de la señal"}
 
 ## Asocio el identificador de las features globales (o sea, las que no se diferencian por eje) 
 ## con su respectivo nombre en español

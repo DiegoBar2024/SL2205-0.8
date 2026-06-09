@@ -143,10 +143,13 @@ def extract_1d_signal_features(seg, fs):
     jerk = np.gradient(seg) * fs
     jerk_energy = np.mean(jerk ** 2)
 
+    ## Obtengo la energía total de la señal (sin normalizar)
+    signal_energy = np.sum(seg ** 2)
+
     ## Retorno un diccionario con las features extraídas del segmento de señal de entrada
     return {"mean": mean, "peak": peak, "rms": rms, "time_to_peak": t_peak, 
             "peak_mean_ratio": peak_mean_ratio, "skew": skew_v, "kurt": kurt_v, "zcr": zcr,
-            "spec_entropy": spectral_entropy, "jerk_energy": jerk_energy}
+            "spec_entropy": spectral_entropy, "jerk_energy": jerk_energy, "signal_energy": signal_energy}
 
 def extraer_features_basicas(imu_quat, segmentos, fs, id, gyro, acc):
     """
@@ -220,7 +223,7 @@ def extraer_features_basicas(imu_quat, segmentos, fs, id, gyro, acc):
 
         ## Inicializo un diccionario donde guardo características del giro como el ID de la persona,
         ## duración del giro en segundos y ángulo de rotación del giro en grados
-        base_record = {"id": id, "duration_s": duration, "angle_deg": angle}
+        base_record = {"id": id, "start_idx": s, "end_idx": e, "duration_s": duration, "angle_deg": angle}
 
         ## Itero para cada una de las señales de los giroscopios y acelerómetros
         for name, signal in signal_map.items():
@@ -379,3 +382,195 @@ def agrupar_por_paciente(array_features):
 
     ## Retorno la lista con las sumarizaciones de los estadísticos de los giros para todas las personas
     return features_por_paciente
+
+def get_segment(signals, seg):
+    """
+    Extrae un segmento de señales IMU a partir de índices de inicio y fin.
+
+    Description
+    -----------
+    Recorta las señales de giroscopio, acelerómetro y cuaterniones
+    correspondientes a un evento (turno) definido por índices temporales.
+
+    Parameters
+    ----------
+    signals : dict
+        Diccionario con las señales completas del sistema IMU:
+        - 'gyro': array (N, 3)
+        - 'acc' : array (N, 3)
+        - 'quat': array (N, 4)
+
+    seg : dict
+        Diccionario con los índices del segmento:
+        - 'start_idx': índice inicial del turno
+        - 'end_idx'  : índice final del turno
+        - opcionalmente 'turn_id'
+
+    Returns
+    -------
+    dict
+        Diccionario con las señales recortadas del segmento:
+        - 'gyro': array (M, 3)
+        - 'acc' : array (M, 3)
+        - 'quat': array (M, 4)
+
+    Raises
+    ------
+    ValueError
+        Si el índice final es menor o igual al inicial.
+    """
+
+    ## Obtengo los índices de muestra en los que comienza y termina el giro correspondiente
+    s, e = int(seg["start_idx"]), int(seg["end_idx"])
+
+    ## Chequeo: En caso de que los índices del segmento de giro no sean válidos
+    if e <= s:
+
+        ## Disparo una excepción indicando el error correspondiente
+        raise ValueError(f"Invalid segment: start = {s}, end = {e}")
+
+    ## Retorno un diccionario con las correspondientes segmentaciones de giroscopio, acelerómetro
+    ## y cuaternión en el tramo de giro correspondiente
+    return {"gyro": signals["gyro"][s:e], "acc": signals["acc"][s:e], "quat": signals["quat"][s:e]}
+
+def add_feature_to_dataset(df, segments, feature_name, feature_fn, signals, fs):
+    """
+    Añade una nueva feature al dataset de giros sin recomputar el resto de variables.
+
+    Description
+    -----------
+    Calcula una feature a nivel de cada segmento de giro y la incorpora como una
+    nueva columna en el DataFrame existente, preservando todas las features previas.
+
+    El cálculo se realiza de forma independiente por segmento utilizando una función
+    de feature personalizada.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataset de giros, donde cada fila corresponde a un evento.
+
+    segments : list of dict
+        Lista de segmentos de giro con:
+        - 'start_idx'
+        - 'end_idx'
+        - opcionalmente 'turn_id'
+
+    feature_name : str
+        Nombre de la nueva feature a agregar como columna en el DataFrame.
+
+    feature_fn : callable
+        Función que recibe:
+            - data (dict con gyro, acc, quat)
+            - fs (float)
+        y devuelve un valor escalar por segmento.
+
+    signals : dict
+        Señales completas del sistema IMU:
+        - 'gyro': array (N, 3)
+        - 'acc' : array (N, 3)
+        - 'quat': array (N, 4)
+
+    fs : float
+        Frecuencia de muestreo en Hz.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame con la nueva columna añadida.
+
+    Raises
+    ------
+    ValueError
+        Si el número de filas del DataFrame no coincide con el número de segmentos,
+        o si se detecta desalineación en los índices de segmentos.
+    """
+
+    ## Chequeo: En caso de que el tamaño del dataframe no coincida con la cantidad de giros
+    if len(df) != len(segments):
+
+        ## Despliego el mensaje de error correspondiente
+        raise ValueError("El tamaño del dataframe debe ser igual a la cantidad de giros")
+
+    new_values = np.empty(len(df))
+
+    ## Itero para cada uno de los segmentos de giro
+    for i, seg in enumerate(segments):
+
+        ## En caso de que haya una inconsistencia con el orden de los segmentos
+        if "turn_id" in seg and seg["turn_id"] != i:
+
+            ## Despliego la excepción con el mensajede error correspondiente
+            raise ValueError("Inconsistencia en el ordenamiento de los segmentos")
+
+        ## Hago la segmentación de los tramos de acelerómetro, giroscopio y cuaterniones en el tramo de giro
+        data = get_segment(signals, seg)
+
+        ## Asigno el valor de la nueva feature sobre los tramos de señales en el giro dado
+        new_values[i] = feature_fn(data, fs)
+
+    ## Hago una copia del dataframe original para no modificar el original
+    df = df.copy()
+
+    ## Agrego el vector conteniendo el cálculo de la nueva feature para todos los giros
+    df[feature_name] = new_values
+
+    ## Retorno el dataframe resultante de concatenarlo con los nuevos valores de la feature
+    return df
+
+def feature_fn_nueva(data, fs):
+    """
+    Calcula una o múltiples features a partir de un segmento de señales IMU.
+
+    Description
+    -----------
+    Función genérica de extracción de características que recibe un segmento
+    de señales (giroscopio, acelerómetro y cuaterniones) y devuelve una o más
+    features asociadas al mismo.
+
+    La función puede devolver:
+        - un valor escalar (una sola feature)
+        - un diccionario de features (múltiples features)
+
+    Este diseño permite integrar fácilmente nuevas métricas sin modificar
+    el pipeline de procesamiento.
+
+    Parameters
+    ----------
+    data : dict
+        Diccionario con las señales del segmento:
+        - 'gyro': array (M, 3)
+        - 'acc' : array (M, 3)
+        - 'quat': array (M, 4)
+
+    fs : float
+        Frecuencia de muestreo en Hz.
+
+    Returns
+    -------
+    float or dict
+        - float: valor único de la feature
+        - dict: conjunto de features con nombre como clave y valor escalar
+    """
+
+    ## Selecciono la secuencia temporal asociada a las medidas del giroscopio crudo
+    gyro = data["gyro"]
+
+    ## Selecciono la secuencia temporal asociada a las medidas del acelerómetro crudo
+    acc = data["acc"]
+
+    ## Inicializo un diccionario en el cual voy a guardar las features
+    features = {}
+
+    ## Hago el cálculo correspondiente a la energía de la señal para los tres ejes del giroscopio
+    features["wx_signal_energy"] = np.sum(gyro[:, 0] ** 2)
+    features["wy_signal_energy"] = np.sum(gyro[:, 1] ** 2)
+    features["wz_signal_energy"] = np.sum(gyro[:, 2] ** 2)
+
+    ## Hago el cálculo correspondiente a la energía de la señal para los tres ejes del acelerómetro
+    features["ax_signal_energy"] = np.sum(acc[:, 0] ** 2)
+    features["ay_signal_energy"] = np.sum(acc[:, 1] ** 2)
+    features["az_signal_energy"] = np.sum(acc[:, 2] ** 2)
+
+    ## Retorno el diccionario con las features correspondientes al cálculo correspondiente
+    return features
