@@ -92,12 +92,15 @@ def extract_1d_signal_features(seg, fs):
         - peak: valor pico absoluto
         - rms: valor RMS (energía efectiva)
         - time_to_peak: instante relativo del pico dentro del segmento (0-1)
-        - peak_mean_ratio: relación entre pico y media (estabilidad del movimiento)
+        - peak_mean_ratio: relación entre pico y media
         - skew: asimetría de la distribución
         - kurt: curtosis (presencia de outliers o impulsos)
         - zcr: tasa de cruces por cero (oscilación)
         - spec_entropy: entropía espectral (complejidad en frecuencia)
-        - jerk_energy: energía de la derivada (suavidad / brusquedad del movimiento)
+        - spec_cent: centroide espectral (frecuencia media ponderada)
+        - dfar: dominancia espectral (inversa de flatness espectral)
+        - jerk_energy: energía de la derivada (brusquedad del movimiento)
+        - signal_energy: energía total de la señal
     """
 
     ## Obtengo el valor pico máximo correspondiente al segmento de señal de entrada
@@ -146,10 +149,21 @@ def extract_1d_signal_features(seg, fs):
     ## Obtengo la energía total de la señal (sin normalizar)
     signal_energy = np.sum(seg ** 2)
 
+    ## Obtengo el centroide espectral de la señal
+    freqs = np.fft.rfftfreq(len(seg), d = 1/fs)
+    spectral_centroid = np.sum(freqs * fft) / (np.sum(fft) + 1e-12)
+
+    ## Obtengo la dominancia espectral de la señal
+    geometric_mean = np.exp(np.mean(np.log(fft + 1e-12)))
+    arithmetic_mean = np.mean(fft)
+    spectral_flatness = geometric_mean / (arithmetic_mean + 1e-12)
+    spectral_dominance = 1 / (spectral_flatness + 1e-12)
+
     ## Retorno un diccionario con las features extraídas del segmento de señal de entrada
     return {"mean": mean, "peak": peak, "rms": rms, "time_to_peak": t_peak, 
             "peak_mean_ratio": peak_mean_ratio, "skew": skew_v, "kurt": kurt_v, "zcr": zcr,
-            "spec_entropy": spectral_entropy, "jerk_energy": jerk_energy, "signal_energy": signal_energy}
+            "spec_entropy": spectral_entropy, "jerk_energy": jerk_energy, "signal_energy": signal_energy,
+            "spec_cent": spectral_centroid, "dfar": spectral_dominance}
 
 def extraer_features_basicas(imu_quat, segmentos, fs, id, gyro, acc):
     """
@@ -221,9 +235,27 @@ def extraer_features_basicas(imu_quat, segmentos, fs, id, gyro, acc):
         ## Obtengo la estimación del ángulo de rotación correspondiente al giro
         angle = ang_deg[i]
 
+        ## Extraigo los segmentos del giro correspondientes al acelerómetro y al giroscopio
+        gyro_seg = signal_map["wx"][s:e], signal_map["wy"][s:e], signal_map["wz"][s:e]
+        acc_seg = signal_map["ax"][s:e], signal_map["ay"][s:e], signal_map["az"][s:e]
+
+        ## Hago la organización de dichos segmentos de giroscopio y acelerómetro en matrices (M,3)
+        gyro_seg = np.vstack(gyro_seg).T
+        acc_seg = np.vstack(acc_seg).T
+
+        ## Hago la diferenciación temporal de los segmentos de giroscopio y acelerómetro
+        gyro_jerk = np.gradient(gyro_seg, axis = 0) * fs
+        acc_jerk = np.gradient(acc_seg, axis = 0) * fs
+
+        ## Obtengo la energía promedio de las diferenciaciones del segmento de giroscopio y el
+        ## acelerómetro en los ejes en el plano horizontal
+        gyro_horz_jerk_energy = np.mean(gyro_jerk[:, 0] ** 2 + gyro_jerk[:, 1] ** 2)
+        acc_horz_jerk_energy = np.mean(acc_jerk[:, 0] ** 2 + acc_jerk[:, 1] ** 2)
+
         ## Inicializo un diccionario donde guardo características del giro como el ID de la persona,
         ## duración del giro en segundos y ángulo de rotación del giro en grados
-        base_record = {"id": id, "start_idx": s, "end_idx": e, "duration_s": duration, "angle_deg": angle}
+        base_record = {"id": id, "start_idx": s, "end_idx": e, "duration_s": duration, "angle_deg": angle,
+                "gyro_horz_jerk_energy": gyro_horz_jerk_energy, "acc_horz_jerk_energy": acc_horz_jerk_energy}
 
         ## Itero para cada una de las señales de los giroscopios y acelerómetros
         for name, signal in signal_map.items():
@@ -553,24 +585,28 @@ def feature_fn_nueva(data, fs):
         - dict: conjunto de features con nombre como clave y valor escalar
     """
 
-    ## Selecciono la secuencia temporal asociada a las medidas del giroscopio crudo
     gyro = data["gyro"]
-
-    ## Selecciono la secuencia temporal asociada a las medidas del acelerómetro crudo
     acc = data["acc"]
 
-    ## Inicializo un diccionario en el cual voy a guardar las features
     features = {}
 
-    ## Hago el cálculo correspondiente a la energía de la señal para los tres ejes del giroscopio
-    features["wx_signal_energy"] = np.sum(gyro[:, 0] ** 2)
-    features["wy_signal_energy"] = np.sum(gyro[:, 1] ** 2)
-    features["wz_signal_energy"] = np.sum(gyro[:, 2] ** 2)
+    # ============================================================
+    # Horizontal plane signals (XY)
+    # ============================================================
+    gyro_h = np.sqrt(gyro[:, 0]**2 + gyro[:, 1]**2)
+    acc_h  = np.sqrt(acc[:, 0]**2 + acc[:, 1]**2)
 
-    ## Hago el cálculo correspondiente a la energía de la señal para los tres ejes del acelerómetro
-    features["ax_signal_energy"] = np.sum(acc[:, 0] ** 2)
-    features["ay_signal_energy"] = np.sum(acc[:, 1] ** 2)
-    features["az_signal_energy"] = np.sum(acc[:, 2] ** 2)
+    # ============================================================
+    # Jerk energy function
+    # ============================================================
+    def jerk_energy(x):
+        jerk = np.gradient(x) * fs
+        return np.mean(jerk ** 2)
 
-    ## Retorno el diccionario con las features correspondientes al cálculo correspondiente
+    # ============================================================
+    # Horizontal jerk energy features (NEW CORE IDEA)
+    # ============================================================
+    features["gyro_horz_jerk_energy"] = jerk_energy(gyro_h)
+    features["acc_horz_jerk_energy"] = jerk_energy(acc_h)
+
     return features

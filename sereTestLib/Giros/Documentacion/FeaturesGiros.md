@@ -137,3 +137,43 @@ Esta métrica cuantifica la energía total acumulada en el segmento de señal.
 - A diferencia de la energía RMS, esta característica no está normalizada por la duración del segmento, por lo que combina información tanto de amplitud como de longitud temporal del movimiento.
 
 En señales de velocidad angular y aceleración, la energía permite caracterizar la cantidad total de actividad mecánica presente durante un evento de giro.
+
+## 12. Centroide espectral
+
+El centroide espectral se define como el “centro de masa” del espectro de magnitud:
+
+$$
+C = \frac{\sum_i f_i X_i}{\sum_i X_i + \varepsilon}
+$$
+
+donde:
+- $f_i$ es la frecuencia asociada al bin espectral $i$
+- $X_i = |\mathcal{F}(x)_i|$ es la magnitud espectral
+
+Esta métrica indica la localización promedio de la energía en el dominio de frecuencia.
+
+- Valores bajos indican predominancia de bajas frecuencias (movimientos lentos o suaves).
+- Valores altos indican presencia de altas frecuencias (movimientos rápidos o abruptos).
+- En señales IMU, se interpreta como un indicador de “rapidez cinemática” del movimiento.
+
+## 13. Dominancia espectral
+
+La dominancia espectral cuantifica cuán concentrada está la energía en el espectro.
+
+Primero se define la **planitud espectral**:
+
+$$
+F = \frac{\left(\prod_i X_i\right)^{1/N}}{\frac{1}{N}\sum_i X_i + \varepsilon}
+$$
+
+A partir de ella, la dominancia espectral se define como su inversa conceptual:
+
+$$
+D = \frac{1}{F + \varepsilon}
+$$
+
+Esta métrica mide el grado de concentración energética en pocas componentes frecuenciales.
+
+- Valores altos indican espectros dominados por pocas frecuencias (señales estructuradas).
+- Valores bajos indican espectros más planos (ruido o actividad distribuida).
+- En giros IMU, ayuda a diferenciar movimientos organizados de patrones más complejos o inestables.

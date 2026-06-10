@@ -262,7 +262,7 @@ if __name__== '__main__':
         
                 ## Me quedo con la magnitud del valor medio que voy a usar para la visualización
                 df_plot[f"{axis}_mean"] = np.abs(df_plot[f"{axis}_mean"])
-        
+
         ## Obtengo una lista con todos los posibles pares de features de los giros
         pairs = list(combinations(feature_cols, 2))
 
@@ -450,6 +450,16 @@ if __name__== '__main__':
             feature_y = feature_y, target_col = "age_group_binary", class_labels = {0: "≤75", 1: ">75"},
             title = "Espacio de features: energía de jerk en plano horizontal", alpha = 0.5)
 
+        ## Selecciono las energias de las diferenciaciones de acelerómetro y giroscopio cuyos
+        ## ejes se encuentran en el plano horizontal
+        feature_x = "gyro_horz_jerk_energy"
+        feature_y = "acc_horz_jerk_energy"
+
+        ## Hago la visualización del espacio de features en 2D
+        plot_feature_space_2d(df = df_dataset_binary, feature_x = feature_x,
+        feature_y = feature_y, target_col = "age_group_binary", class_labels = {0: "≤75", 1: ">75"},
+        title = "Espacio de features: energía de jerk en plano horizontal", alpha = 0.5)
+
         ## ======================================================
         ## CONSTRUCCIÓN Y GUARDADO DE GRÁFICOS
         ## ======================================================
@@ -526,7 +536,7 @@ if __name__== '__main__':
         ## ======================================================
 
         ## Especifico la ruta del archivo .parquet donde tengo las features existentes para los giros
-        input_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro+ind." \
+        input_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v2." \
         "parquet".format(root)
 
         ## Hago el cargado de dicho dataframe con los datos previamente computados de los giros
@@ -536,8 +546,8 @@ if __name__== '__main__':
         sist_inercial = 'ENU'
 
         ## Construyo una lista conteniendo los nombres de todas las features que voy a agregar
-        feature_names = ["wx_signal_energy", "wy_signal_energy", "wz_signal_energy",
-            "ax_signal_energy", "ay_signal_energy", "az_signal_energy"]
+        feature_names = [
+        "gyro_horz_jerk_energy", "acc_horz_jerk_energy"]
 
         ## Hago una copia del dataframe de las features para no modificarlo directamente
         df_features = df_features.copy()

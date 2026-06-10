@@ -3,11 +3,14 @@ BASE_FEATURES = {"mean": "Media", "peak": "Pico", "rms": "RMS",
         "time_to_peak": "Tiempo hasta el pico (fracción)", "peak_mean_ratio": "Relación pico/media",
         "skew": "Asimetría", "kurt": "Curtosis", "zcr": "Cruces por cero", 
         "spec_entropy": "Entropía espectral", "jerk_energy": "Energía de jerk",
-        "signal_energy": "Energía de la señal"}
+        "signal_energy": "Energía de la señal", "spec_cent": "Centroide espectral", 
+        "dfar": "Dominancia espectral"}
 
 ## Asocio el identificador de las features globales (o sea, las que no se diferencian por eje) 
 ## con su respectivo nombre en español
-GLOBAL_FEATURES = {"angle_deg": "Ángulo de giro (grados)", "duration_s": "Duración del giro (s)"}
+GLOBAL_FEATURES = {"angle_deg": "Ángulo de giro (grados)", "duration_s": "Duración del giro (s)",
+        "gyro_horz_jerk_energy": "Energía de jerk de velocidad angular en plano horizontal (XY)",
+        "acc_horz_jerk_energy": "Energía de jerk de aceleración en plano horizontal (XY)"}
 
 ## Defino una lista con los nombres de todos los ejes de las señales
 ## Tenemos ahora los tres ejes del giroscopio y tres ejes del acelerómetro
