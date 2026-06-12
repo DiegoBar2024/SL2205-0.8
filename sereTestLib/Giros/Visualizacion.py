@@ -345,6 +345,11 @@ def plot_turn_features_by_age_group(df, feature_cols, output_dir, feature_names 
         seguro para archivos (usado para los nombres de los PNG generados).
     """
 
+    ## Agrego configuraciones necesarias para que los gráficos se guarden y no se desplieguen
+    ## en la pantall mientras está ejecutándose la función (se vuelve molesto sino)
+    use("Agg")
+    plt.ioff()
+
     ## Construyo el timestamp en el cual indica el instante en el que se generan los gráficos
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 

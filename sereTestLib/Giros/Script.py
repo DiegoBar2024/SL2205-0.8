@@ -457,8 +457,8 @@ if __name__== '__main__':
 
         ## Hago la visualización del espacio de features en 2D
         plot_feature_space_2d(df = df_dataset_binary, feature_x = feature_x,
-        feature_y = feature_y, target_col = "age_group_binary", class_labels = {0: "≤75", 1: ">75"},
-        title = "Espacio de features: energía de jerk en plano horizontal", alpha = 0.5)
+            feature_y = feature_y, target_col = "age_group_binary", class_labels = {0: "≤75", 1: ">75"},
+            title = "Espacio de features: energía de jerk en plano horizontal", alpha = 0.5)
 
         ## ======================================================
         ## CONSTRUCCIÓN Y GUARDADO DE GRÁFICOS
