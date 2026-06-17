@@ -116,7 +116,7 @@ if __name__== '__main__':
 
                 ## Almaceno las features de los giros de dicho paciente a la lista general de features de giros de pacientes
                 features_giros_total.extend(features_giros)
-            
+
             ## En caso de que ocurra algún error en el procesamiento de los giros de los pacientes
             except:
 
@@ -224,6 +224,16 @@ if __name__== '__main__':
         ## Me aseguro que el campo "id" del dataframe de features esté en formato string
         features_giros_total["id"] = features_giros_total["id"].astype(str)
 
+        ## Agrego como nueva feature la norma L2 de la energía de jerk de las componentes de la
+        ## aceleración en el plano horizontal de la marcha
+        features_giros_total["acc_horz_jerk_energy_L2"] = np.sqrt(
+            features_giros_total["ax_jerk_energy"] ** 2 + features_giros_total["ay_jerk_energy"] ** 2)
+
+        ## Agrego como nueva feature la norma L2 de la energía de jerk de las componentes de la
+        ## velocidad angular en el plano horizontal de la marcha
+        features_giros_total["gyro_horz_jerk_energy_L2"] = np.sqrt(
+            features_giros_total["wx_jerk_energy"] ** 2 + features_giros_total["wy_jerk_energy"] ** 2)
+
         ## Selecciono y ordeno las columnas de features por giro para asegurar consistencia
         array_features = features_giros_total[["id"] + FEATURE_COLUMNS].copy()
 
@@ -264,10 +274,10 @@ if __name__== '__main__':
 
         ## Itero para cada una de las señales del giroscopio en los tres ejes
         for axis in gyro_axes:
-        
+
             ## En caso de que yo tenga como feature el valor medio de la señal
             if f"{axis}_mean" in df_plot.columns:
-        
+
                 ## Me quedo con la magnitud del valor medio que voy a usar para la visualización
                 df_plot[f"{axis}_mean"] = np.abs(df_plot[f"{axis}_mean"])
 
@@ -349,7 +359,7 @@ if __name__== '__main__':
         ## Hago clustering para todos mis giros con mi conjunto de features correspondiente
         cluster_results = aplicar_clustering_giros(df = df_dataset.copy(),
                     feature_cols = valid_cluster_features, k_range = range(2, 7), random_state = 42)
-        
+
         ## Evalúo qué tan bien el clustering separa los grupos etarios
         ## Como regla de decisión, tengo que una precisión > 0.85 representa una buena separación
         cluster_eval = evaluar_clustering_por_edad(cluster_results, group_col = "age_group")
@@ -484,7 +494,7 @@ if __name__== '__main__':
         results_svm_no_fall, svm_predictions_no_fall = rbf_svm_univariate_feature_error(
             df = df_no_fall, feature_cols = feature_cols, target_col = "age_group_binary",
             C = C, gamma = gamma, n_splits = n_splits)
-        
+
         ## Hago la graficación de las features según el error de predicción medio en las K-Folds
         ## para el ranking univariado con división etaria binaria para personas sin caídas
         plot_svm_feature_error_ranking(results_svm_no_fall, top_k = 10)

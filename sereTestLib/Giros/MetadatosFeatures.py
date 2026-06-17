@@ -10,7 +10,9 @@ BASE_FEATURES = {"mean": "Media", "peak": "Pico", "rms": "RMS",
 ## con su respectivo nombre en español
 GLOBAL_FEATURES = {"angle_deg": "Ángulo de giro (grados)", "duration_s": "Duración del giro (s)",
         "gyro_horz_jerk_energy": "Energía de jerk de velocidad angular en plano horizontal (XY)",
-        "acc_horz_jerk_energy": "Energía de jerk de aceleración en plano horizontal (XY)"}
+        "acc_horz_jerk_energy": "Energía de jerk de aceleración en plano horizontal (XY)",
+        "acc_horz_jerk_energy_L2": "Norma L2 de la energía de jerk del acelerómetro en el plano horizontal (XY)",
+        "gyro_horz_jerk_energy_L2": "Norma L2 de la energía de jerk del giroscopio en el plano horizontal (XY)"}
 
 ## Defino una lista con los nombres de todos los ejes de las señales
 ## Tenemos ahora los tres ejes del giroscopio y tres ejes del acelerómetro
