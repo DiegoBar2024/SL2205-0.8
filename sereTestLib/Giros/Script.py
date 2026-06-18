@@ -534,6 +534,29 @@ if __name__== '__main__':
             title = "Espacio de features: energía de jerk en plano horizontal", alpha = 0.5)
 
         ## ======================================================
+        ## TESTS DE HIPÓTESIS DE SUMA DE RANGOS DE WILCOXON - AGRUPACIÓN ETARIA BINARIA
+        ## Y SEPARADOS SEGÚN CAIDAS/NO CAIDAS
+        ## ======================================================
+
+        ## Hago el test de Wilcoxon con agrupación etaria binaria para giros correspondientes 
+        ## a personas que no tienen ninguna caída por año
+        results_wilcoxon_no_fall = pairwise_wilcoxon_rank_sum(df_no_fall, valid_features, 
+                                group_col = "age_group_binary")
+
+        ## Construyo las matrices con los resultados de tests de Wilcoxon para giros correspondientes
+        ## a personas que no tienen ninguna caída por año (a partir de los resultados de los tests)
+        matrices_wilcoxon_no_fall = wilcoxon_pairwise_matrices(results_wilcoxon_no_fall)
+
+        ## Hago el test de Wilcoxon con agrupación etaria binaria para giros correspondientes
+        ## a personas que tienen al menos una caída por año
+        results_wilcoxon_fall = pairwise_wilcoxon_rank_sum(df_fall, valid_features, 
+                                group_col = "age_group_binary")
+        
+        ## Construyo las matrices con los resultados de tests de Wilcoxon para giros correspondientes
+        ## a personas que no tienen al menos una caída al año (a partir de los resultados de los tests)
+        matrices_wilcoxon_fall = wilcoxon_pairwise_matrices(results_wilcoxon_fall)
+
+        ## ======================================================
         ## CONSTRUCCIÓN Y GUARDADO DE GRÁFICOS
         ## ======================================================
 
@@ -567,10 +590,22 @@ if __name__== '__main__':
             ## Imprimo mensaje de aviso
             print("Generando matrices de significación de Wilcoxon [...]")
 
-            ## Grafico y guardo los resultados de aplicar el test de Wilcoxon dos a dos
+            ## Grafico y guardo los resultados de aplicar el test de Wilcoxon dos a dos para 3 grupos etarios
             plot_wilcoxon_significance_matrices(results_wilcoxon, 
-                        "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Wilcoxon/".format(root),
-                        True, FEATURE_NAMES)
+                        "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Wilcoxon/TresGrupos"
+                        .format(root), True, FEATURE_NAMES)
+
+            ## Grafico y guardo los resultados de aplicar el test de Wilcoxon dos a dos para 2 grupos etarios
+            ## y únicamente para personas que no hayan tenido ninguna caída por año
+            plot_wilcoxon_significance_matrices(results_wilcoxon_no_fall, 
+                        "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Wilcoxon/DosGrupos/NoFallers"
+                        .format(root), True, FEATURE_NAMES)
+
+            ## Grafico y guardo los resultados de aplicar el test de Wilcoxon dos a dos para 2 grupos etarios
+            ## y únicamente para personas que hayan tenido al menos una caída por año
+            plot_wilcoxon_significance_matrices(results_wilcoxon_fall, 
+                        "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Wilcoxon/DosGrupos/Fallers"
+                        .format(root), True, FEATURE_NAMES)
 
         ## En caso de que quiera graficar la variación de la feature en función de la edad junto
         ## con los correspondientes resultados de las regresiones lineal y polinomial
