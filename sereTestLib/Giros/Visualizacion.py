@@ -1118,7 +1118,8 @@ def plot_cluster_age_distributions(df, cluster_col = "cluster", age_col = "age_g
     ## Retorno las tablas dinámicas al agrupar por rango etario y por clúster
     return cluster_age, age_cluster
 
-def plot_svm_feature_error_ranking(results_svm, top_k = None, annotate = True):
+def plot_svm_feature_error_ranking(results_svm, top_k = None, annotate = True, title = None,
+                        C = None, gamma = None):
     """
     Visualiza el ranking de features basado en el error de clasificación
     obtenido mediante SVM univariado.
@@ -1136,6 +1137,19 @@ def plot_svm_feature_error_ranking(results_svm, top_k = None, annotate = True):
 
     annotate : bool
         Si True, muestra el valor numérico del error sobre cada barra.
+
+    title : str or None
+        Título del gráfico. Si es None, se genera automáticamente un título
+        por defecto. En este caso, si se proporcionan los hiperparámetros
+        C y gamma, estos se añaden al título.
+
+    C : float or None
+        Parámetro de regularización del SVM. Si se proporciona junto con
+        gamma, se incluye en el título del gráfico.
+
+    gamma : float or str or None
+        Parámetro del kernel RBF del SVM. Si se proporciona junto con
+        C, se incluye en el título del gráfico.
 
     Returns
     -------
@@ -1171,7 +1185,24 @@ def plot_svm_feature_error_ranking(results_svm, top_k = None, annotate = True):
     ## Configuro el título y las leyendas del gráfico
     plt.xticks(rotation = 45, ha = "right")
     plt.ylabel("Error de clasificación (SVM univariado)")
-    plt.title("Ranking de features por capacidad discriminativa (menor error = mejor)")
+
+    ## En caso de que no pase ningún título de entrada
+    if title is None:
+
+        ## Construyo un título por defecto para mostrar en el gráfico
+        title = "Ranking de features por capacidad discriminativa (menor error = mejor)"
+
+    ## En caso de que yo de valores de hiperparámetros de C y gamma de entrada
+    if C is not None or gamma is not None:
+
+        ## Construyo el texto conteniendo los valores de los hiperparámetros C y gamma
+        hp_text = [f"C = {C}", f"gamma = {gamma}"]
+
+        ## Agrego el texto auxiliar al título del gráfico correspondiente
+        title += " | " + ", ".join(hp_text)
+
+    ## Despliego el título correspondiente en el gráfico
+    plt.title(title)
 
     ## En caso de que quiera hacer anotaciones numéricas en el gráfico con el valor del error
     if annotate:

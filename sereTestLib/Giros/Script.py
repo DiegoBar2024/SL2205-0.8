@@ -207,7 +207,7 @@ if __name__== '__main__':
         ## Hago la lectura del archivo .parquet donde guardo el dataframe Pandas que contiene
         ## la lista con los diccionarios con todos los parámetros de los giros detectados
         features_giros_total = pd.read_parquet(
-            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v2.parquet".format(root))
+            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v3.parquet".format(root))
 
         ## Hago la lectura de archivo .parquet donde tengo el historial óptimo de features con sfs
         sfs_features_results = pd.read_parquet(
@@ -398,7 +398,9 @@ if __name__== '__main__':
                 n_splits = n_splits)
 
         ## Hago la graficación de las features según el error de predicción medio en las K-Folds
-        plot_svm_feature_error_ranking(results_svm, top_k = 10)
+        plot_svm_feature_error_ranking(results_svm, top_k = 10, annotate = True,
+        title = "Ranking univariado de features con SVM – clasificación por grupo etario",
+        C = C, gamma = gamma)
 
         ## Obtengo un conjunto de las mejores features luego de hacer el SVM univariado
         top_features_univ = results_svm.nsmallest(5, "error")
@@ -445,7 +447,9 @@ if __name__== '__main__':
             n_splits = n_splits)
 
         ## Hago la graficación de las features según el error de predicción medio en las K-Folds
-        plot_svm_feature_error_ranking(results_svm_bin, top_k = 10)
+        plot_svm_feature_error_ranking(results_svm_bin, top_k = 10, annotate = True,
+        title = "Ranking univariado de features con SVM optimizado (división etaria binaria) " \
+        "– dataset completo", C = C, gamma = gamma)
 
         ## ======================================================
         ## RANKING MULTIVARIADO DE FEATURES USANDO SVM (SUPPORT VECTOR MACHINE) -- DOS GRUPOS ETARIOS
@@ -485,8 +489,8 @@ if __name__== '__main__':
             title = "Espacio de features: energía de jerk en plano horizontal", alpha = 0.5)
 
         ## ======================================================
-        ## RANKING FEATURES SVM UNIVARIADO - DIVISION ETARIA BINARIA SEPARADOS 
-        ## SEGÚN CAIDAS/NO CAIDAS
+        ## RANKING FEATURES SVM UNIVARIADO - DIVISION ETARIA BINARIA 
+        ## SEPARADOS SEGÚN CAIDAS/NO CAIDAS
         ## ======================================================
 
         ## SVM Univariado con división etaria binaria (>75, <75) para aquellos giros asociados
@@ -497,7 +501,17 @@ if __name__== '__main__':
 
         ## Hago la graficación de las features según el error de predicción medio en las K-Folds
         ## para el ranking univariado con división etaria binaria para personas sin caídas
-        plot_svm_feature_error_ranking(results_svm_no_fall, top_k = 10)
+        plot_svm_feature_error_ranking(results_svm_no_fall, top_k = 10, annotate = True,
+            title = "Ranking univariado de features con SVM (división etaria binaria) – personas sin caídas",
+            C = C, gamma = gamma)
+
+        ## Hago el SFFS Multivariado para los resultados de los giros asociados a personas sin caídas
+        sfs_results_no_fall = sfs_svm_fixed(df = df_no_fall, feature_cols = feature_cols,
+            target_col = "age_group_binary", k = k_top_features, C = C, gamma = gamma,
+            cv = n_splits)
+
+        ## Obtengo un conjunto de las mejores features luego de hacer el SVM SFFS multivariado
+        top_features_multiv_no_fall = sfs_results_no_fall['features'][k_top_features - 1]
 
         ## SVM Univariado con división etaria binaria (>75, <75) para aquellos giros asociados
         ## a las personas para las que se registra al menos una caída por año
@@ -507,7 +521,17 @@ if __name__== '__main__':
 
         ## Hago la graficación de las features según el error de predicción medio en las K-Folds
         ## para el ranking univariado con división etaria binaria para personas con al menos una caida
-        plot_svm_feature_error_ranking(results_svm_fall, top_k = 10)
+        plot_svm_feature_error_ranking(results_svm_fall, top_k = 10, annotate = True,
+            title = "Ranking univariado de features con SVM (división etaria binaria) – personas con " \
+            "al menos una caída", C = C, gamma = gamma)
+
+        ## Hago el SFFS Multivariado para los resultados de los giros asociados a personas con caidas
+        sfs_results_fall = sfs_svm_fixed(df = df_fall, feature_cols = feature_cols,
+            target_col = "age_group_binary", k = k_top_features, C = C, gamma = gamma,
+            cv = n_splits)
+
+        ## Obtengo un conjunto de las mejores features luego de hacer el SVM SFFS multivariado
+        top_features_multiv_fall = sfs_results_fall['features'][k_top_features - 1]
 
         ## ======================================================
         ## VISUALIZACIÓN DEL ESPACIO DE FEATURES EN 2D
@@ -551,10 +575,82 @@ if __name__== '__main__':
         ## a personas que tienen al menos una caída por año
         results_wilcoxon_fall = pairwise_wilcoxon_rank_sum(df_fall, valid_features, 
                                 group_col = "age_group_binary")
-        
+
         ## Construyo las matrices con los resultados de tests de Wilcoxon para giros correspondientes
         ## a personas que no tienen al menos una caída al año (a partir de los resultados de los tests)
         matrices_wilcoxon_fall = wilcoxon_pairwise_matrices(results_wilcoxon_fall)
+
+        ## ======================================================
+        ## ESTIMACIÓN DEL ERROR DE PREDICCIÓN EN 3 CLASES: JOVENES NO CAEDORES,
+        ## MAYORES CAEDORES Y MAYORES NO CAEDORES -- AGRUPACIÓN ETARIA BINARIA + CAÍDAS
+        ## ======================================================
+
+        ## Hago una copia del dataset de giros con agrupación etaria y de riesgo de caídas
+        df_turns = df_dataset_binary.copy()
+
+        ## Construyo una nueva columna en la cual voy a agregar la clase del SVM a la que va a
+        ## pertenecer cada giro (análisis de error en 3 clases)
+        df_turns["svm_class"] = np.nan
+
+        ## Asigno como clase 0 a los giros correspondientes a personas menores a 75 años
+        df_turns.loc[df_turns["age_group"] == 0, "svm_class"] = 0
+
+        ## Asigno como clase 1 a los giros correspondientes a aquellas personas mayores a 75 años
+        ## las cuales no tienen registrada ninguna caída por año
+        df_turns.loc[(df_turns["age_group"] == 1) & (df_turns["caida_bin"] == 0), "svm_class"] = 1
+
+        ## Asigno como clase 1 a los giros correspondientes a aquellas personas mayores a 75 años
+        ## las cuales tienen registrada al menos una caída por año
+        df_turns.loc[(df_turns["age_group"] == 1) & (df_turns["caida_bin"] == 1), "svm_class"] = 2
+
+        ## Elimino todos aquellos giros del dataset los cuales no estén asignados a ninguna clase
+        df_turns = df_turns.dropna(subset = ["svm_class"])
+
+        ## Me aseguro que el campo de la clase SVM a la que corresponde cada giro es de tipo entero
+        df_turns["svm_class"] = df_turns["svm_class"].astype(int)
+
+        ## Hago el ranking univariado de features correspondientes a esta segmentación de clases
+        results_svm, svm_predictions = rbf_svm_univariate_feature_error(df = df_turns, 
+        feature_cols = feature_cols, target_col = "svm_class", C = C, gamma = gamma, 
+        n_splits = n_splits)
+
+        ## Hago la graficación de las features según el error de predicción medio en las K-Folds
+        plot_svm_feature_error_ranking(results_svm, top_k = 10, annotate = True,
+        title = "Ranking univariado de características mediante SVM con kernel RBF para discriminación " \
+        "de tres clases (edad y riesgo de caídas)", C = C, gamma = gamma)
+
+        ## ======================================================
+        ## RANKING SVM UNIVARIADO CON TUNEADO DE HIPERPARÁMETROS Y DIVISIÓN
+        ## ETARIA BINARIA (DATASET COMPLETO Y LUEGO SEGMENTANDO CAIDAS/NO CAIDAS)
+        ## ======================================================
+
+        ## Hago el ranking de features de giros univariado para división etaria binaria con
+        ## tuneado de hiperparámetros de SVM para todo el dataset completo (sin dividir caídas)
+        results_svm_bin_tun = evaluar_features_svm_rbf(df = df_dataset_binary, feature_cols = feature_cols,
+            target_col = "age_group_binary", cv = n_splits)
+
+        ## Despliego el ranking de features correspondiente a la evaluación anterior de SVM + tuning
+        plot_svm_feature_error_ranking(results_svm_bin_tun, top_k = 10, annotate = True,
+        title = "Ranking univariado de features con SVM y ajuste de hiperparámetros (grupos etarios binarios)")
+
+        ## Hago el ranking de features de giros univariado para división etaria binaria con tuneado de 
+        ## hiperparámetros de SVM para los giros correspondientes a personas sin ninguna caída por año
+        results_svm_bin_no_fall_tun = evaluar_features_svm_rbf(df = df_no_fall, feature_cols = feature_cols, 
+            target_col = "age_group_binary", cv = n_splits)
+
+        ## Despliego el ranking de features correspondiente a la evaluación anterior de SVM + tuning
+        plot_svm_feature_error_ranking(results_svm_bin_no_fall_tun, top_k = 10, annotate = True,
+        title = "Ranking univariado de features con SVM optimizado (C, γ) – grupo sin caídas")
+
+        ## Hago el ranking de features de giros univariado para división etaria binaria con tuneado de 
+        ## hiperparámetros de SVM para los giros correspondientes a personas con al menos una caída por año
+        results_svm_bin_fall_tun = evaluar_features_svm_rbf(df = df_fall, feature_cols = feature_cols,
+            target_col = "age_group_binary", cv = n_splits)
+
+        ## Despliego el ranking de features correspondiente a la evaluación anterior de SVM + tuning
+        plot_svm_feature_error_ranking(results_svm_bin_fall_tun, top_k = 10, annotate = True,
+        title = "Ranking de features con SVM optimizado (división etaria binaria) – personas con al" \
+        " menos una caída")
 
         ## ======================================================
         ## CONSTRUCCIÓN Y GUARDADO DE GRÁFICOS
@@ -654,8 +750,21 @@ if __name__== '__main__':
         sist_inercial = 'ENU'
 
         ## Construyo una lista conteniendo los nombres de todas las features que voy a agregar
+        axes = ["ax", "ay", "az", "wx", "wy", "wz"]
+
+        rwe_feats = [
+            "rwe_hf",
+            "rwe_mf",
+            "rwe_lf",
+            "rwe_hf_lf_ratio",
+            "rwe_balance"
+        ]
+
         feature_names = [
-        "gyro_horz_jerk_energy", "acc_horz_jerk_energy"]
+            f"{axis}_{feat}"
+            for axis in axes
+            for feat in rwe_feats
+        ]
 
         ## Hago una copia del dataframe de las features para no modificarlo directamente
         df_features = df_features.copy()
@@ -760,7 +869,7 @@ if __name__== '__main__':
         ## ======================================================
 
         ## Construyo la ruta de salida en la que voy a guardar el nuevo dataframe
-        output_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v2" \
+        output_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v3" \
                     ".parquet".format(root)
 
         ## Hago el guardado del nuevo dataframe en el archivo .parquet

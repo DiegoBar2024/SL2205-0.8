@@ -4,7 +4,11 @@ BASE_FEATURES = {"mean": "Media", "peak": "Pico", "rms": "RMS",
         "skew": "Asimetría", "kurt": "Curtosis", "zcr": "Cruces por cero", 
         "spec_entropy": "Entropía espectral", "jerk_energy": "Energía de jerk",
         "signal_energy": "Energía de la señal", "spec_cent": "Centroide espectral", 
-        "dfar": "Dominancia espectral"}
+        "dfar": "Dominancia espectral", "rwe_hf": "Energía relativa wavelet - alta frecuencia",
+        "rwe_mf": "Energía relativa wavelet - media frecuencia",
+        "rwe_lf": "Energía relativa wavelet - baja frecuencia",
+        "rwe_hf_lf_ratio": "Relación energía HF/LF (wavelet)",
+        "rwe_balance": "Balance espectral HF - LF"}
 
 ## Asocio el identificador de las features globales (o sea, las que no se diferencian por eje) 
 ## con su respectivo nombre en español

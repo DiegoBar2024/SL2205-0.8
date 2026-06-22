@@ -177,3 +177,123 @@ Esta métrica mide el grado de concentración energética en pocas componentes f
 - Valores altos indican espectros dominados por pocas frecuencias (señales estructuradas).
 - Valores bajos indican espectros más planos (ruido o actividad distribuida).
 - En giros IMU, ayuda a diferenciar movimientos organizados de patrones más complejos o inestables.
+
+## 14. Características multirresolución basadas en wavelets (Relative Wavelet Energy - RWE)
+
+Esta sección introduce un nuevo conjunto de características basadas en el análisis multirresolución mediante wavelets discretas, aplicado a señales unidimensionales $x = \{x_1, ..., x_N\}$ de acelerómetro o giroscopio.
+
+El objetivo es capturar cómo se distribuye la energía de la señal a través de distintas escalas temporales (bandas de frecuencia implícitas), lo cual permite caracterizar estructuras dinámicas no estacionarias del movimiento.
+
+### 14.1 Descomposición wavelet
+
+Se utiliza la transformada wavelet discreta (DWT):
+
+$$
+\mathcal{W}(x) \rightarrow \{A_L, D_L, D_{L-1}, ..., D_1\}
+$$
+
+donde:
+- $A_L$: coeficientes de aproximación (bajas frecuencias)
+- $D_l$: coeficientes de detalle en el nivel $l$
+
+### 14.2 Energía por subbanda
+
+La energía de cada subbanda se define como:
+
+$$
+E_l = \sum_i D_l(i)^2
+$$
+
+La energía total de detalles es:
+
+$$
+E_{tot} = \sum_{l=1}^{L} E_l
+$$
+
+### 14.3 Relative Wavelet Energy (RWE)
+
+La energía relativa de cada subbanda se define como:
+
+$$
+\text{RWE}_l = \frac{E_l}{E_{tot} + \varepsilon}
+$$
+
+Esta normalización permite comparar señales independientemente de su amplitud absoluta.
+
+### 14.4 Agrupación fisiológica de bandas
+
+Para interpretación cinemática se agrupan las subbandas en regiones funcionales:
+
+- Alta frecuencia (HF): transitorios rápidos, cambios bruscos
+- Media frecuencia (MF): dinámica intermedia del movimiento
+- Baja frecuencia (LF): estructura global del giro
+
+$$
+\text{HF} = \text{RWE}_{D1} + \text{RWE}_{D2}
+$$
+
+$$
+\text{MF} = \text{RWE}_{D3}
+$$
+
+$$
+\text{LF} = \text{RWE}_{D4}
+$$
+
+### 14.5 Features derivadas
+
+A partir de estas bandas se definen características compactas:
+
+#### Energía relativa en alta frecuencia
+
+$$
+\text{rwe\_hf} = \text{HF}
+$$
+
+Captura la proporción de energía asociada a cambios rápidos y transitorios del movimiento.
+
+#### Energía relativa en media frecuencia
+
+$$
+\text{rwe\_mf} = \text{MF}
+$$
+
+Representa la componente intermedia del movimiento, asociada a la dinámica principal del giro.
+
+#### Energía relativa en baja frecuencia
+
+$$
+\text{rwe\_lf} = \text{LF}
+$$
+
+Captura la estructura lenta y global del movimiento.
+
+#### Relación HF/LF
+
+$$
+\text{rwe\_hf\_lf\_ratio} = \frac{\text{HF}}{\text{LF} + \varepsilon}
+$$
+
+Mide el balance entre actividad rápida y estructura lenta del giro.
+
+#### Balance espectral wavelet
+
+$$
+\text{rwe\_balance} = \text{HF} - \text{LF}
+$$
+
+Resume la dominancia relativa entre componentes rápidas y lentas.
+
+### 14.6 Interpretación en análisis de movimiento
+
+Estas características permiten caracterizar diferencias en patrones motores:
+
+- Movimientos más bruscos o inestables tienden a incrementar HF
+- Movimientos más suaves o controlados incrementan LF
+- Diferencias en HF/LF pueden reflejar cambios en control motor asociados a edad o condición neuromotora
+
+Estas métricas son complementarias a la energía de jerk, ya que:
+- Jerk captura derivadas temporales locales (dominio temporal)
+- RWE captura distribución de energía multiescala (dominio frecuencia-tiempo)
+
+Por lo tanto, aportan información estructural parcialmente ortogonal al resto del conjunto de features.

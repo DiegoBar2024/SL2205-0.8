@@ -185,7 +185,8 @@ def rbf_svm_univariate_feature_error(df, feature_cols, target_col = "age_group",
     return (pd.DataFrame(results).sort_values("mean_balanced_accuracy", ascending = False)
     .reset_index(drop = True), predictions)
 
-def evaluar_features_svm_rbf(df, feature_cols, target_col, cv = 5, random_state = 42):
+def evaluar_features_svm_rbf(df, feature_cols, target_col, cv = 5, random_state = 42,
+            range_C = [0.1, 1, 10, 100], range_gamma = ["scale", 0.01, 0.1]):
     """
     Evalúa el poder discriminativo univariado de cada feature usando un SVM con kernel RBF.
 
@@ -205,7 +206,7 @@ def evaluar_features_svm_rbf(df, feature_cols, target_col, cv = 5, random_state 
     cv_outer = StratifiedKFold(n_splits = cv, shuffle = True, random_state = random_state)
 
     ## Construyo la grilla de valores posibles de parámetros
-    param_grid = {"model__C": [0.1, 1, 10, 100], "model__gamma": ["scale", 0.01, 0.1]}
+    param_grid = {"model__C": range_C, "model__gamma": range_gamma}
 
     ## Inicializo una lista vacía en la cual voy a almacenar los resultados de los análisis
     results = []

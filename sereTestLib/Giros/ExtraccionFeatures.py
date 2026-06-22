@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import skew, kurtosis
 from scipy.spatial.transform import Rotation as R
+import pywt
 
 def estimar_angulos_giro(imu_quat, segmentos):
     """
@@ -65,7 +66,7 @@ def estimar_angulos_giro(imu_quat, segmentos):
 
 def extract_1d_signal_features(seg, fs):
     """
-    Extrae características estadísticas, dinámicas y frecuenciales
+    Extrae características estadísticas, dinámicas, frecuenciales y multiresolución
     de una señal 1D correspondiente a un segmento de movimiento.
 
     Esta función está diseñada para ser reutilizable sobre cualquier
@@ -88,6 +89,7 @@ def extract_1d_signal_features(seg, fs):
     dict
         Diccionario con características del segmento:
 
+        --- Estadísticas temporales ---
         - mean: valor medio de la señal
         - peak: valor pico absoluto
         - rms: valor RMS (energía efectiva)
@@ -96,11 +98,22 @@ def extract_1d_signal_features(seg, fs):
         - skew: asimetría de la distribución
         - kurt: curtosis (presencia de outliers o impulsos)
         - zcr: tasa de cruces por cero (oscilación)
+
+        --- Dominio frecuencial ---
         - spec_entropy: entropía espectral (complejidad en frecuencia)
         - spec_cent: centroide espectral (frecuencia media ponderada)
         - dfar: dominancia espectral (inversa de flatness espectral)
+
+        --- Energía en tiempo ---
         - jerk_energy: energía de la derivada (brusquedad del movimiento)
         - signal_energy: energía total de la señal
+
+        --- Descomposición wavelet (RWE) ---
+        - rwe_hf: energía relativa en altas frecuencias (D1 + D2)
+        - rwe_mf: energía relativa en frecuencias medias (D3)
+        - rwe_lf: energía relativa en bajas frecuencias (D4)
+        - rwe_hf_lf_ratio: relación entre alta y baja frecuencia
+        - rwe_balance: diferencia entre energía alta y baja frecuencia
     """
 
     ## Obtengo el valor pico máximo correspondiente al segmento de señal de entrada
@@ -159,11 +172,24 @@ def extract_1d_signal_features(seg, fs):
     spectral_flatness = geometric_mean / (arithmetic_mean + 1e-12)
     spectral_dominance = 1 / (spectral_flatness + 1e-12)
 
+    ## Hago la descomposición en DWT con 4 niveles para calcular la RWE
+    coeffs = pywt.wavedec(seg, wavelet = "db4", level = 4)
+    energies = np.array([np.sum(c ** 2) for c in coeffs[1:]])
+    total = np.sum(energies) + 1e-12
+    rwe = energies / total
+
+    ## Hago el calculo de RWE (Relative Wavelet Energy) en base a la descomposición en DWT
+    d1, d2, d3, d4 = rwe
+    hf = d1 + d2
+    mf = d3
+    lf = d4
+
     ## Retorno un diccionario con las features extraídas del segmento de señal de entrada
     return {"mean": mean, "peak": peak, "rms": rms, "time_to_peak": t_peak, 
             "peak_mean_ratio": peak_mean_ratio, "skew": skew_v, "kurt": kurt_v, "zcr": zcr,
             "spec_entropy": spectral_entropy, "jerk_energy": jerk_energy, "signal_energy": signal_energy,
-            "spec_cent": spectral_centroid, "dfar": spectral_dominance}
+            "spec_cent": spectral_centroid, "dfar": spectral_dominance, "rwe_hf": hf,"rwe_mf": mf,
+            "rwe_lf": lf, "rwe_hf_lf_ratio": hf / (lf + 1e-12), "rwe_balance": hf - lf}
 
 def extraer_features_basicas(imu_quat, segmentos, fs, id, gyro, acc):
     """
@@ -584,29 +610,5 @@ def feature_fn_nueva(data, fs):
         - float: valor único de la feature
         - dict: conjunto de features con nombre como clave y valor escalar
     """
-
-    gyro = data["gyro"]
-    acc = data["acc"]
-
-    features = {}
-
-    # ============================================================
-    # Horizontal plane signals (XY)
-    # ============================================================
-    gyro_h = np.sqrt(gyro[:, 0]**2 + gyro[:, 1]**2)
-    acc_h  = np.sqrt(acc[:, 0]**2 + acc[:, 1]**2)
-
-    # ============================================================
-    # Jerk energy function
-    # ============================================================
-    def jerk_energy(x):
-        jerk = np.gradient(x) * fs
-        return np.mean(jerk ** 2)
-
-    # ============================================================
-    # Horizontal jerk energy features (NEW CORE IDEA)
-    # ============================================================
-    features["gyro_horz_jerk_energy"] = jerk_energy(gyro_h)
-    features["acc_horz_jerk_energy"] = jerk_energy(acc_h)
 
     return features
