@@ -8,7 +8,10 @@ BASE_FEATURES = {"mean": "Media", "peak": "Pico", "rms": "RMS",
         "rwe_mf": "Energía relativa wavelet - media frecuencia",
         "rwe_lf": "Energía relativa wavelet - baja frecuencia",
         "rwe_hf_lf_ratio": "Relación energía HF/LF (wavelet)",
-        "rwe_balance": "Balance espectral HF - LF"}
+        "rwe_balance": "Balance espectral HF - LF",
+        "std": "Desviación estándar (variabilidad de la señal)",
+        "iqr": "Rango intercuartílico (dispersión robusta)",
+        "cv": "Coeficiente de variación (variabilidad normalizada)"}
 
 ## Asocio el identificador de las features globales (o sea, las que no se diferencian por eje) 
 ## con su respectivo nombre en español

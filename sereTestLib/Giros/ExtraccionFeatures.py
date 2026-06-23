@@ -2,6 +2,7 @@ import numpy as np
 from scipy.stats import skew, kurtosis
 from scipy.spatial.transform import Rotation as R
 import pywt
+from scipy.stats import iqr
 
 def estimar_angulos_giro(imu_quat, segmentos):
     """
@@ -98,6 +99,9 @@ def extract_1d_signal_features(seg, fs):
         - skew: asimetría de la distribución
         - kurt: curtosis (presencia de outliers o impulsos)
         - zcr: tasa de cruces por cero (oscilación)
+        - std: desviación estándar (dispersión global de la señal)
+        - iqr: rango intercuartil (robustez frente a outliers)
+        - cv: coeficiente de variación (variabilidad normalizada)
 
         --- Dominio frecuencial ---
         - spec_entropy: entropía espectral (complejidad en frecuencia)
@@ -184,12 +188,22 @@ def extract_1d_signal_features(seg, fs):
     mf = d3
     lf = d4
 
+    ## Hago el cálculo de la desviación estándar correspondiente al segmento de señal de entrada
+    std_val = np.std(seg)
+
+    ## Hago el cálaculo del rango intercuartil (IQR) correspondiente al segmento de señal de entrada
+    iqr_val = iqr(seg)
+
+    ## Hago el cálculo del coeficiente de variación correspondiente al segmento de señal de entrada
+    cv_val = std_val / (np.abs(mean) + 1e-8)
+
     ## Retorno un diccionario con las features extraídas del segmento de señal de entrada
     return {"mean": mean, "peak": peak, "rms": rms, "time_to_peak": t_peak, 
             "peak_mean_ratio": peak_mean_ratio, "skew": skew_v, "kurt": kurt_v, "zcr": zcr,
             "spec_entropy": spectral_entropy, "jerk_energy": jerk_energy, "signal_energy": signal_energy,
             "spec_cent": spectral_centroid, "dfar": spectral_dominance, "rwe_hf": hf,"rwe_mf": mf,
-            "rwe_lf": lf, "rwe_hf_lf_ratio": hf / (lf + 1e-12), "rwe_balance": hf - lf}
+            "rwe_lf": lf, "rwe_hf_lf_ratio": hf / (lf + 1e-12), "rwe_balance": hf - lf,
+            "std": std_val, "iqr": iqr_val, "cv": cv_val}
 
 def extraer_features_basicas(imu_quat, segmentos, fs, id, gyro, acc):
     """

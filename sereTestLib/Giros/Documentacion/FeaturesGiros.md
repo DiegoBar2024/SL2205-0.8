@@ -297,3 +297,68 @@ Estas métricas son complementarias a la energía de jerk, ya que:
 - RWE captura distribución de energía multiescala (dominio frecuencia-tiempo)
 
 Por lo tanto, aportan información estructural parcialmente ortogonal al resto del conjunto de features.
+
+## 15. Desviación estándar (Standard Deviation)
+
+La desviación estándar mide la dispersión de los valores de la señal respecto a su media.
+
+$$
+\sigma = \sqrt{\frac{1}{N} \sum_{i=1}^{N} (x_i - \mu)^2}
+$$
+
+donde:
+- $\mu$ es la media de la señal
+- $x_i$ son los valores del segmento
+
+### Interpretación
+
+- Valores altos indican alta variabilidad en el movimiento
+- Valores bajos indican señales más estables o constantes
+- Es una medida global de dispersión alrededor del valor medio
+
+En señales IMU (giroscopio y acelerómetro), la desviación estándar captura la intensidad de fluctuaciones del movimiento durante el giro.
+
+## 16. Rango intercuartil (Interquartile Range - IQR)
+
+El rango intercuartílico mide la dispersión central de la señal, ignorando valores extremos.
+
+Se define como:
+
+$$
+IQR = Q_3 - Q_1
+$$
+
+donde:
+- $Q_1$ es el primer cuartil (percentil 25)
+- $Q_3$ es el tercer cuartil (percentil 75)
+
+### Interpretación
+
+- Es robusto frente a outliers
+- Captura la variabilidad “típica” del movimiento
+- Valores altos indican señales con amplia dispersión central
+- Valores bajos indican señales más concentradas
+
+En análisis de movimiento, el IQR es especialmente útil cuando existen picos o artefactos que pueden sesgar otras métricas como la desviación estándar.
+
+## 17. Coeficiente de variación (Coefficient of Variation - CV)
+
+El coeficiente de variación normaliza la dispersión respecto a la media de la señal.
+
+Se define como:
+
+$$
+CV = \frac{\sigma}{|\mu| + \varepsilon}
+$$
+
+donde:
+- $\sigma$ es la desviación estándar
+- $\mu$ es la media de la señal
+
+### Interpretación
+
+- Permite comparar variabilidad entre señales con diferentes escalas
+- Valores altos indican alta variabilidad relativa
+- Valores bajos indican comportamiento más estable respecto al nivel medio
+
+En señales de giroscopio y acelerómetro, el CV es especialmente útil para comparar sujetos o movimientos con amplitudes muy diferentes.

@@ -207,7 +207,7 @@ if __name__== '__main__':
         ## Hago la lectura del archivo .parquet donde guardo el dataframe Pandas que contiene
         ## la lista con los diccionarios con todos los parámetros de los giros detectados
         features_giros_total = pd.read_parquet(
-            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v3.parquet".format(root))
+            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v4.parquet".format(root))
 
         ## Hago la lectura de archivo .parquet donde tengo el historial óptimo de features con sfs
         sfs_features_results = pd.read_parquet(
@@ -740,7 +740,7 @@ if __name__== '__main__':
         ## ======================================================
 
         ## Especifico la ruta del archivo .parquet donde tengo las features existentes para los giros
-        input_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v2." \
+        input_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v3." \
         "parquet".format(root)
 
         ## Hago el cargado de dicho dataframe con los datos previamente computados de los giros
@@ -752,19 +752,11 @@ if __name__== '__main__':
         ## Construyo una lista conteniendo los nombres de todas las features que voy a agregar
         axes = ["ax", "ay", "az", "wx", "wy", "wz"]
 
-        rwe_feats = [
-            "rwe_hf",
-            "rwe_mf",
-            "rwe_lf",
-            "rwe_hf_lf_ratio",
-            "rwe_balance"
-        ]
+        ## Construyo la lista con las abreviaciones de las features que voy a agregar al dataset
+        rwe_feats = ["std","iqr","cv"]
 
-        feature_names = [
-            f"{axis}_{feat}"
-            for axis in axes
-            for feat in rwe_feats
-        ]
+        ## Hago la concetenación de las abreviaciones con los nombres de los ejes
+        feature_names = [f"{axis}_{feat}" for axis in axes for feat in rwe_feats]
 
         ## Hago una copia del dataframe de las features para no modificarlo directamente
         df_features = df_features.copy()
@@ -869,7 +861,7 @@ if __name__== '__main__':
         ## ======================================================
 
         ## Construyo la ruta de salida en la que voy a guardar el nuevo dataframe
-        output_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v3" \
+        output_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v4" \
                     ".parquet".format(root)
 
         ## Hago el guardado del nuevo dataframe en el archivo .parquet
