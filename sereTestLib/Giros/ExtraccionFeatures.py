@@ -118,6 +118,24 @@ def extract_1d_signal_features(seg, fs):
         - rwe_lf: energía relativa en bajas frecuencias (D4)
         - rwe_hf_lf_ratio: relación entre alta y baja frecuencia
         - rwe_balance: diferencia entre energía alta y baja frecuencia
+
+        --- Jerk-based dynamics (nuevas features) ---
+        Estas features se calculan a partir de la magnitud del jerk
+        (derivada discreta de la señal) y capturan la estructura temporal
+        del cambio dinámico del movimiento:
+
+        - jerk_burstiness:
+            relación entre el pico y la media del jerk.
+            Mide si el movimiento es impulsivo o suavemente distribuido.
+
+        - jerk_concentration:
+            proporción de energía del jerk contenida en el 20% superior.
+            Mide la concentración temporal de la actividad (sparsity).
+
+        - jerk_spectral_centroid:
+            centroide espectral del jerk.
+            Mide la rapidez de variación del patrón de aceleración/velocidad
+            en el dominio frecuencia-tiempo.
     """
 
     ## Obtengo el valor pico máximo correspondiente al segmento de señal de entrada
@@ -197,13 +215,30 @@ def extract_1d_signal_features(seg, fs):
     ## Hago el cálculo del coeficiente de variación correspondiente al segmento de señal de entrada
     cv_val = std_val / (np.abs(mean) + 1e-8)
 
+    ## Hago el cálculo de la magnitud de jerk (mangitud de la derivada discreta del segmento de señal)
+    jerk_mag = np.abs(jerk)
+
+    ## Hago el cálculo del valor del jerk burstiness para el segmento de señal
+    jerk_burstiness = np.max(jerk_mag) / (np.mean(jerk_mag) + 1e-8)
+
+    ## Hago el cálculo del valor de la concentración de jerk para el segmento de señal
+    jerk_energy_local = jerk_mag ** 2
+    thr = np.percentile(jerk_energy_local, 80)
+    jerk_concentration = np.sum(jerk_energy_local[jerk_energy_local >= thr]) / (np.sum(jerk_energy_local) + 1e-8)
+
+    ## Hago el cálculo del centroide espectral del jerk para el segmento de señal
+    jerk_fft = np.abs(np.fft.rfft(jerk_mag))
+    jerk_freqs = np.fft.rfftfreq(len(jerk_mag), d = 1/fs)
+    jerk_spectral_centroid = np.sum(jerk_freqs * jerk_fft) / (np.sum(jerk_fft) + 1e-8)
+
     ## Retorno un diccionario con las features extraídas del segmento de señal de entrada
     return {"mean": mean, "peak": peak, "rms": rms, "time_to_peak": t_peak, 
             "peak_mean_ratio": peak_mean_ratio, "skew": skew_v, "kurt": kurt_v, "zcr": zcr,
             "spec_entropy": spectral_entropy, "jerk_energy": jerk_energy, "signal_energy": signal_energy,
             "spec_cent": spectral_centroid, "dfar": spectral_dominance, "rwe_hf": hf,"rwe_mf": mf,
             "rwe_lf": lf, "rwe_hf_lf_ratio": hf / (lf + 1e-12), "rwe_balance": hf - lf,
-            "std": std_val, "iqr": iqr_val, "cv": cv_val}
+            "std": std_val, "iqr": iqr_val, "cv": cv_val, "jerk_burstiness": jerk_burstiness,
+            "jerk_concentration": jerk_concentration, "jerk_spectral_centroid": jerk_spectral_centroid}
 
 def extraer_features_basicas(imu_quat, segmentos, fs, id, gyro, acc):
     """
@@ -625,4 +660,72 @@ def feature_fn_nueva(data, fs):
         - dict: conjunto de features con nombre como clave y valor escalar
     """
 
-    return features
+    eps = 1e-8
+
+    def compute_jerk_features(signal):
+        """
+        Compute jerk-based features for a 3D signal.
+        """
+
+        jerk = np.gradient(signal, axis=0) * fs
+        jmag = np.linalg.norm(jerk, axis=1)
+        energy = jmag ** 2
+
+        # -----------------------------
+        # 1. Burstiness (max / mean)
+        # -----------------------------
+        burstiness = np.max(jmag) / (np.mean(jmag) + eps)
+
+        # ----------------------------------------
+        # 2. Temporal concentration (top 20% energy)
+        # ----------------------------------------
+        thr = np.percentile(energy, 80)
+        concentration = np.sum(energy[energy >= thr]) / (np.sum(energy) + eps)
+
+        # -----------------------------
+        # 3. Spectral centroid
+        # -----------------------------
+        fft = np.abs(np.fft.rfft(jmag))
+        freqs = np.fft.rfftfreq(len(jmag), d=1/fs)
+
+        spectral_centroid = np.sum(freqs * fft) / (np.sum(fft) + eps)
+
+        return burstiness, concentration, spectral_centroid
+
+    # =========================
+    # GYROSCOPE JERK FEATURES
+    # =========================
+    gyro_b, gyro_c, gyro_sc = compute_jerk_features(data["gyro"])
+
+    # =========================
+    # ACCELEROMETER JERK FEATURES
+    # =========================
+    acc_b, acc_c, acc_sc = compute_jerk_features(data["acc"])
+
+    return {
+        # Gyroscope jerk features (computed from 3D magnitude)
+        "wx_jerk_burstiness": gyro_b,
+        "wx_jerk_concentration": gyro_c,
+        "wx_jerk_spectral_centroid": gyro_sc,
+
+        "wy_jerk_burstiness": gyro_b,
+        "wy_jerk_concentration": gyro_c,
+        "wy_jerk_spectral_centroid": gyro_sc,
+
+        "wz_jerk_burstiness": gyro_b,
+        "wz_jerk_concentration": gyro_c,
+        "wz_jerk_spectral_centroid": gyro_sc,
+
+        # Accelerometer jerk features (same logic)
+        "ax_jerk_burstiness": acc_b,
+        "ax_jerk_concentration": acc_c,
+        "ax_jerk_spectral_centroid": acc_sc,
+
+        "ay_jerk_burstiness": acc_b,
+        "ay_jerk_concentration": acc_c,
+        "ay_jerk_spectral_centroid": acc_sc,
+
+        "az_jerk_burstiness": acc_b,
+        "az_jerk_concentration": acc_c,
+        "az_jerk_spectral_centroid": acc_sc,
+    }

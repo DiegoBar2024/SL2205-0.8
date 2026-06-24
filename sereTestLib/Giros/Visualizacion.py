@@ -1457,3 +1457,79 @@ def plot_feature_space_2d(df, feature_x, feature_y, target_col, class_labels = N
 
     ## Despliego el gráfico
     plt.show()
+
+def plot_error_space(df, x_feat, y_feat, title = ""):
+    """
+    Visualiza el espacio de características en 2D diferenciando tipos de aciertos y errores de clasificación.
+
+    Descripción
+    -----------
+    Esta función genera un gráfico de dispersión en el plano definido por dos variables
+    (features), donde cada punto representa una observación del dataset. Los puntos se
+    colorean y estilizan según el tipo de resultado obtenido por el clasificador, definido
+    en la columna "error_type".
+
+    Se distinguen cuatro categorías:
+        - young_correct: muestras de la clase joven correctamente clasificadas.
+        - old_correct: muestras de la clase mayor correctamente clasificadas.
+        - young_to_old: muestras de la clase joven clasificadas erróneamente como mayores.
+        - old_to_young: muestras de la clase mayor clasificadas erróneamente como jóvenes.
+
+    Este tipo de visualización permite analizar la estructura espacial de los errores del
+    modelo, identificar regiones de confusión y evaluar la dirección del sesgo de clasificación
+    en el espacio de features. Además, facilita la comparación entre distintos subconjuntos
+    de datos (por ejemplo, personas con y sin caídas).
+
+    Parámetros
+    ----------
+    df : pandas.DataFrame
+        DataFrame que contiene las features y la columna "error_type" previamente calculada.
+
+    x_feat : str
+        Nombre de la feature utilizada para el eje X.
+
+    y_feat : str
+        Nombre de la feature utilizada para el eje Y.
+
+    title : str, default=""
+        Título del gráfico.
+
+    Retorna
+    -------
+    None
+        La función genera y muestra un gráfico de dispersión, sin retornar valores.
+    """
+
+    ## Inicializo la figura correspondiente al diagrama de dispersión
+    fig, ax = plt.subplots()
+
+    ## Construyo un diccionario en el cual asocio cada tipo de resultado con un color específico
+    styles = {"young_correct": {"color": "green", "marker": "o"}, "old_correct": {"color": "blue",
+        "marker": "o"}, "young_to_old": {"color": "red", "marker": "x"}, "old_to_young": {
+        "color": "orange", "marker": "x"}}
+
+    ## Itero para cada uno de los tipos de error que tengo
+    for label, style in styles.items():
+
+        ## Construyo un subdataframe seleccionando únicamente las observaciones que tienen como
+        ## resultado de clasificación el tipo de error actual
+        sub = df[df["error_type"] == label]
+
+        ## Grafico los puntos correspondientes a los objetos asociados con el tipo de error actual
+        ax.scatter(sub[x_feat], sub[y_feat], c = style["color"], marker = style["marker"],
+            label = label, alpha = 0.7)
+
+    ## Configuro nomenclatura del eje de las abscisas del gráfico de dispersión
+    ax.set_xlabel(x_feat)
+
+    ## Configuro nomenclatura del eje de las ordenadas del gráfico de dispersión
+    ax.set_ylabel(y_feat)
+
+    ## Configuro el título del gráfico de dispersión
+    ax.set_title(title)
+
+    ## Despliego las leyendas del gráfico de dispersión
+    ax.legend()
+
+    ## Despliego el gráfico de dispersión
+    plt.show()

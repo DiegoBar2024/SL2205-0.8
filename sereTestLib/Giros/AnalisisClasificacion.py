@@ -13,6 +13,7 @@ from sklearn.metrics import confusion_matrix
 from matplotlib import pyplot as plt
 import os
 from datetime import datetime
+from sklearn.model_selection import LeaveOneOut
 
 def compute_information_gain_features(df, feature_cols, target_col = "age_group",
     discrete_target = True, random_state = 42):
@@ -422,3 +423,144 @@ def sfs_svm_fixed(df, feature_cols, target_col, k = 5, C = 1.0, gamma = "scale",
 
     ## Retorno el historial en forma de un dataframe pandas
     return pd.DataFrame(history)
+
+def svm_loo_predict(df, feature_cols, target_col = "age_group_binary", C = 1, gamma = "scale"):
+    """
+    Predicción de clases mediante SVM con kernel RBF utilizando validación cruzada Leave-One-Out (LOO).
+
+    Descripción
+    -----------
+    Este método entrena un clasificador SVM independiente para cada observación del dataset,
+    utilizando validación cruzada Leave-One-Out (LOO). En cada iteración, se entrena el modelo
+    con N-1 muestras y se predice la clase de la muestra restante. Este procedimiento proporciona
+    predicciones out-of-sample para cada observación sin sesgo de entrenamiento.
+
+    El modelo utilizado es un pipeline que incluye estandarización de las variables y un SVM
+    con kernel RBF, permitiendo capturar relaciones no lineales en el espacio de features.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataset que contiene las features y la variable objetivo.
+
+    feature_cols : list of str
+        Lista de columnas numéricas utilizadas como variables predictoras.
+
+    target_col : str, default="age_group"
+        Nombre de la columna objetivo que contiene las clases.
+
+    C : float, default=1.0
+        Parámetro de regularización del SVM.
+
+    gamma : str or float, default="scale"
+        Parámetro del kernel RBF del SVM.
+
+    Returns
+    -------
+    numpy.ndarray
+        Vector de predicciones out-of-sample para cada observación del dataset,
+        obtenido mediante validación Leave-One-Out.
+    """
+
+    ## Obtengo la matriz de datos de todos los valores de las features de los giros
+    X = df[feature_cols].values
+
+    ## Obtengo el conjunto de valores de todas las etiquetas con el grupo etario
+    y = df[target_col].values
+
+    ## Construyo un objeto que me permita hacer la validación LOO
+    loo = LeaveOneOut()
+
+    ## Construyo un numpy array en la cual voy a almacenar las predicciones de cada modelo SVM
+    y_pred = np.zeros(len(y), dtype = int)
+
+    ## Itero para cada una de las iteraciones de LOO (es decir, cada observación individual)
+    for train_idx, test_idx in loo.split(X):
+
+        ## Inicializo el modelo de SVM que voy a utilizar para hacer la clasificación en el fold actual
+        model = Pipeline([("scaler", StandardScaler()),
+                ("svm", SVC(kernel = "rbf", C = C, gamma = gamma, class_weight = "balanced"))])
+
+        ## Entreno el modelo con todos los puntos que tengo excepto por el que separé en el fold LOO
+        model.fit(X[train_idx], y[train_idx])
+
+        ## Hago la predicción usando el modelo entrenado en el único punto de validación
+        y_pred[test_idx[0]] = model.predict(X[test_idx])[0]
+
+    ## Retorno el vector con todas las predicciones al usar un método de SVM LOO
+    return y_pred
+
+def compute_error_type(y_true, y_pred):
+    """
+    Clasifica el tipo de error de predicción en un problema de clasificación binaria.
+
+    Description
+    -----------
+    Esta función compara las etiquetas reales (`y_true`) con las predicciones (`y_pred`)
+    y asigna una categoría cualitativa a cada observación según el tipo de acierto o error.
+
+    En particular, distingue entre predicciones correctas y dos tipos de errores direccionales:
+    confusión de clase joven a mayor edad y confusión de clase mayor a joven.
+
+    Esta descomposición permite analizar no solo la tasa de error del clasificador,
+    sino también la dirección del sesgo de clasificación en el espacio de features.
+
+    Parameters
+    ----------
+    y_true : array-like de forma (n_samples,)
+        Etiquetas reales de las observaciones.
+
+    y_pred : array-like de forma (n_samples,)
+        Etiquetas predichas por el modelo.
+
+    Returns
+    -------
+    numpy.ndarray de dtype object
+        Vector con la misma longitud que las entradas, donde cada elemento indica:
+
+        - "correct" : predicción correcta
+        - "young_to_old" : clase joven clasificada como mayor
+        - "old_to_young" : clase mayor clasificada como joven
+        - "unknown" : caso no contemplado (etiquetas fuera del esquema binario esperado)
+    """
+
+    ## Construyo un numpy array en el cual voy a almacenar las etiquetas asociadas al resultado
+    ## de clasificación de cada giro
+    labels = np.empty(len(y_true), dtype = object)
+
+    ## Itero para cada una de las observaciones que tengo
+    for i in range(len(y_true)):
+
+        ## En caso de que un giro asociado a una persona joven haya sido correctamente clasificado
+        if y_true[i] == 0 and y_pred[i] == 0:
+
+            ## Configuro la etiqueta correspondiente al resultado de inferencia del giro
+            labels[i] = "young_correct"
+
+        ## En caso de que un giro asociado a una persona mayor haya sido correctamente clasificado
+        elif y_true[i] == 1 and y_pred[i] == 1:
+
+            ## Configuro la etiqueta correspondiente al resultado de inferencia del giro
+            labels[i] = "old_correct"
+
+        ## En caso de que un giro asociado a una persona joven haya sido incorrectamente clasificado
+        elif y_true[i] == 0 and y_pred[i] == 1:
+
+            ## Configuro la etiqueta correspondiente al resultado de inferencia del giro
+            labels[i] = "young_to_old"
+
+        ## En caso de que un giro asociado a una persona mayor haya sido incorrectamente clasificado
+        elif y_true[i] == 1 and y_pred[i] == 0:
+
+            ## Configuro la etiqueta correspondiente al resultado de inferencia del giro
+            labels[i] = "old_to_young"
+
+        ## En caso de que no sea ninguna de las anteriores opciones
+        else:
+
+            ## Configuro la etiqueta 'unknown' para indicar un caso no contemplado
+            labels[i] = "unknown"
+
+    ## Retorno el numpy array conteniendo las etiquetas asociadas al resultado de clasificación
+    ## de cada uno de los giros
+    return labels

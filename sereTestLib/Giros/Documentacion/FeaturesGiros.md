@@ -362,3 +362,82 @@ donde:
 - Valores bajos indican comportamiento más estable respecto al nivel medio
 
 En señales de giroscopio y acelerómetro, el CV es especialmente útil para comparar sujetos o movimientos con amplitudes muy diferentes.
+
+## 18. Burstiness del jerk
+
+La burstiness del jerk mide cuán “impulsivo” o “concentrado en picos” es el movimiento, comparando el valor máximo de la magnitud del jerk con su valor medio.
+
+Sea el jerk vectorial:
+
+$$
+\mathbf{j}_i = \frac{d\mathbf{x}_i}{dt}
+$$
+
+y su magnitud:
+
+$$
+j_i = \|\mathbf{j}_i\|
+$$
+
+La burstiness se define como:
+
+$$
+\text{burstiness} = \frac{\max(j_i)}{\mathbb{E}[j_i] + \varepsilon}
+$$
+
+### Interpretación
+
+- Valores altos indican movimientos con picos abruptos de aceleración o corrección.
+- Valores bajos indican movimientos más distribuidos y suaves.
+- Es una medida de “impulsividad cinemática” del giro.
+
+Esta métrica es complementaria a la energía del jerk, ya que no depende de la energía total sino de su distribución instantánea.
+
+## 19. Concentración temporal de energía del jerk
+
+Esta característica mide cómo se distribuye la energía del jerk a lo largo del tiempo dentro de un segmento de movimiento.
+
+Primero se define la energía instantánea del jerk:
+
+$$
+e_i = j_i^2
+$$
+
+Luego se calcula la proporción de energía contenida en el 20% superior de los valores:
+
+$$
+\text{concentration} =
+\frac{\sum_{e_i \in P_{80}} e_i}{\sum_{i=1}^{N} e_i + \varepsilon}
+$$
+
+donde \(P_{80}\) representa el conjunto de valores de energía por encima del percentil 80.
+
+### Interpretación
+
+- Valores altos: energía concentrada en pocos eventos → movimientos más “explosivos”.
+- Valores bajos: energía distribuida de forma homogénea → control motor más suave.
+- Captura la estructura temporal del esfuerzo dentro del giro.
+
+## 20. Centroide espectral del jerk
+
+El centroide espectral del jerk mide la localización promedio de la energía del jerk en el dominio de la frecuencia.
+
+Sea la transformada de Fourier del jerk:
+
+$$
+X_i = |\mathcal{F}(j)_i|
+$$
+
+y las frecuencias asociadas \(f_i\), el centroide espectral se define como:
+
+$$
+C = \frac{\sum_i f_i X_i}{\sum_i X_i + \varepsilon}
+$$
+
+### Interpretación
+
+- Valores bajos: predominan componentes lentas → movimiento suave y controlado.
+- Valores altos: predominan componentes rápidas → correcciones rápidas o vibraciones.
+- Captura la “rapidez estructural” del jerk.
+
+Esta métrica es independiente de la energía total y complementa las medidas de magnitud.

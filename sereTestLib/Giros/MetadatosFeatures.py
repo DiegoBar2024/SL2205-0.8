@@ -11,7 +11,10 @@ BASE_FEATURES = {"mean": "Media", "peak": "Pico", "rms": "RMS",
         "rwe_balance": "Balance espectral HF - LF",
         "std": "Desviación estándar (variabilidad de la señal)",
         "iqr": "Rango intercuartílico (dispersión robusta)",
-        "cv": "Coeficiente de variación (variabilidad normalizada)"}
+        "cv": "Coeficiente de variación (variabilidad normalizada)",
+        "jerk_burstiness": "Burstiness del jerk (pico / media de la magnitud del jerk)",
+        "jerk_concentration": "Concentración temporal de energía del jerk (proporción en el 20% superior)",
+        "jerk_spectral_centroid": "Centroide espectral del jerk (distribución de frecuencias del jerk)"}
 
 ## Asocio el identificador de las features globales (o sea, las que no se diferencian por eje) 
 ## con su respectivo nombre en español
