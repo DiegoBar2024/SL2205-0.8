@@ -1533,3 +1533,170 @@ def plot_error_space(df, x_feat, y_feat, title = ""):
 
     ## Despliego el gráfico de dispersión
     plt.show()
+
+def plot_turn_3x2(turn_signal, title = "Giro", normalize = False):
+    """
+    Visualiza un segmento de giro en una disposición 3x2.
+
+    Esta función genera una figura con seis subgráficos organizados en una grilla
+    de 2 filas por 3 columnas, permitiendo analizar simultáneamente las señales
+    del giroscopio y del acelerómetro durante un giro detectado.
+
+    Estructura de la visualización:
+        - Fila 1: componentes del giroscopio (x, y, z)
+        - Fila 2: componentes del acelerómetro (x, y, z)
+
+    Parameters
+    ----------
+    turn_signal : dict
+        Diccionario que contiene las señales del giro. Debe incluir:
+            - "gyro": array (N x 3) con las componentes del giroscopio
+            - "acc" : array (N x 3) con las componentes del acelerómetro
+
+    title : str, opcional
+        Título global de la figura. Por defecto es "Turn".
+
+    normalize : bool, opcional
+        Si es True, normaliza cada eje de las señales (media 0, desviación estándar 1)
+        antes de la visualización. Esto facilita la comparación de la forma de las señales
+        entre distintos giros, independientemente de su magnitud.
+
+    Returns
+    -------
+    None
+        La función no retorna valores; únicamente genera una figura en pantalla.
+    """
+
+    ## Obtengo el segmento de la señal de giroscopio correspondiente al giro actual
+    gyro = turn_signal["gyro"]
+
+    ## Obtengo el segmento de la señal de acelerómetro correspondiente al giro actual
+    acc = turn_signal["acc"]
+
+    ## En caso de que yo quiera hacer una normalización de las señales del segmento de giro
+    if normalize:
+
+        ## Hago la normalización por componente (z-score) del segmento de giroscopio asociada al giro 
+        ## usando la media y desviación estándar
+        gyro = (gyro - gyro.mean(axis = 0)) / (gyro.std(axis = 0) + 1e-8)
+
+        ## Hago la normalización por compontente (z-score) del segmento de acelerómetro asociada al giro 
+        ## usando la media y desviación estándar
+        acc = (acc - acc.mean(axis = 0)) / (acc.std(axis = 0) + 1e-8)
+
+    ## Construyo el vector de índices temporales en el cual voy a graficar los segmentos de las señales en el giro
+    t = np.arange(len(gyro))
+
+    ## Defino la grilla donde voy a desplegar los gráficos de los segmentos en cada uno de los ejes para cada sensor
+    fig, axs = plt.subplots(2, 3, figsize = (14, 6), sharex = True)
+
+    ## Grafico el segmento de la señal del giroscopio en el giro en el eje x
+    axs[0, 0].plot(t, gyro[:, 0])
+    axs[0, 0].set_title("Gyro X")
+    axs[0, 0].grid()
+
+    ## Grafico el segmento de la señal del giroscopio en el giro en el eje y
+    axs[0, 1].plot(t, gyro[:, 1])
+    axs[0, 1].set_title("Gyro Y")
+    axs[0, 1].grid()
+
+    ## Grafico el segmento de la señal del giroscopio en el giro en el eje z
+    axs[0, 2].plot(t, gyro[:, 2])
+    axs[0, 2].set_title("Gyro Z")
+    axs[0, 2].grid()
+
+    ## Grafico el segmento de la señal del acelerómetro en el giro en el eje x
+    axs[1, 0].plot(t, acc[:, 0])
+    axs[1, 0].set_title("Acc X")
+    axs[1, 0].grid()
+
+    ## Grafico el segmento de la señal del acelerómetro en el giro en el eje y
+    axs[1, 1].plot(t, acc[:, 1])
+    axs[1, 1].set_title("Acc Y")
+    axs[1, 1].grid()
+
+    ## Grafico el segmento de la señal del acelerómetro en el giro en el eje z
+    axs[1, 2].plot(t, acc[:, 2])
+    axs[1, 2].set_title("Acc Z")
+    axs[1, 2].grid()
+
+    ## Configuro el título global del conjunto de gráficos
+    fig.suptitle(title, fontsize = 14)
+
+    ## Despliego el gráfico correspondiente
+    plt.tight_layout()
+    plt.show()
+
+def sample_and_plot_turns(df, condition, turns_map, title, n = 2, seed = 42, normalize = True):
+    """
+    Filtra, muestrea y visualiza giros representativos a partir de un conjunto de datos.
+
+    Esta función aplica una condición lógica sobre un DataFrame de giros, selecciona
+    una muestra aleatoria de los casos que cumplen dicha condición, recupera los
+    segmentos de señal correspondientes desde un diccionario de referencia (`turns_map`)
+    y genera visualizaciones comparativas de las señales de giroscopio y acelerómetro
+    para cada giro seleccionado.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame que contiene los giros y sus características asociadas. Debe incluir
+        al menos las columnas:
+        - "id": identificador del sujeto
+        - "start_idx": índice inicial del giro
+        - "end_idx": índice final del giro
+
+    condition : callable
+        Función que recibe el DataFrame `df` y devuelve una máscara booleana
+        para filtrar los giros de interés.
+
+    turns_map : dict
+        Diccionario que mapea cada giro mediante la clave:
+        (id, start_idx, end_idx)
+        hacia un diccionario con las señales asociadas, típicamente:
+        - "gyro": señal del giroscopio (N x 3)
+        - "acc" : señal del acelerómetro (N x 3)
+
+    title : str
+        Título base utilizado en las figuras generadas.
+
+    n : int, opcional
+        Número máximo de giros a muestrear y visualizar. Por defecto es 2.
+
+    seed : int, opcional
+        Semilla aleatoria utilizada para garantizar reproducibilidad del muestreo.
+
+    normalize : bool, opcional
+        Si es True, aplica normalización tipo z-score por componente a las señales
+        antes de la visualización, facilitando la comparación de la forma de los giros
+        independientemente de su magnitud.
+
+    Returns
+    -------
+    None
+        La función no retorna valores. Su salida consiste en la generación de figuras
+        para cada giro seleccionado.
+    """
+
+    ## En base al conjunto de todos los giros, hago el filtrado de los giros que cumplen
+    ## con la condición que yo paso como parámetro
+    candidates = df[condition(df)]
+
+    ## Hago un muestreo aleatorio de hasta n giros del conjunto de candidatos
+    sampled = candidates.sample(n = min(n, len(candidates)), random_state = seed)
+
+    ## Itero para cada uno de los giros muestreados
+    for _, row in sampled.iterrows():
+
+        ## Obtengo la clave única asociada a dicho giro, la cual está compuesta por el ID de la persona
+        ## a la que pertenece, el índice de muestra de comienzo de giro, y el índice de muestra de fin de giro
+        key = (int(row["id"]), row["start_idx"], row["end_idx"])
+
+        ## Obtengo (en caso de existir) los segmentos de las señales de acelerómetro y giroscopio asociados a dicho giro
+        turn = turns_map.get(key)
+
+        ## En caso de que el giro exista en el diccionario
+        if turn is not None:
+
+            ## Grafico los segmentos de señales de acelerómetro y giroscopio del giro
+            plot_turn_3x2(turn, title = title, normalize = normalize)

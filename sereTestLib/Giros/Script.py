@@ -8,6 +8,7 @@ sys.path.append("{}/SL2205-0.8/SL2205-0.8/sereTestLib/Cinematica".format(root))
 from LecturaDatosPacientes import *
 from LecturaDatos import *
 import numpy as np
+import pickle
 from itertools import combinations
 from Visualizacion import *
 from Preprocesamiento import *
@@ -209,6 +210,17 @@ if __name__== '__main__':
         features_giros_total = pd.read_parquet(
             "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v5.parquet".format(root))
 
+        ## Hago la lectura del archivo .pickle el cual contiene los segmentos de señales de acelerómetro
+        ## y giroscopio correspondientes a los giros, rotados a una base inerc
+        with open("{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/turns_raw_segments.pickle".format(root), "rb") as f:
+            turns_raw = pickle.load(f)
+
+        ## Hago la lectura del archivo .pickle el cual contiene los segmentos de señales de acelerómetro
+        ## y giroscopio correspondientes a los giros y suavizados (a partir de las cuales se calcualn 
+        ## las features), rotados a una base inercial
+        with open("{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/turns_smoothed_segments.pickle".format(root), "rb") as f:
+            turns_smooth = pickle.load(f)
+        
         ## Hago la lectura de archivo .parquet donde tengo el historial óptimo de features con sfs
         sfs_features_results = pd.read_parquet(
             "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/sfs_features.parquet".format(root))
@@ -217,9 +229,13 @@ if __name__== '__main__':
         ## PREPROCESAMIENTO DE LOS DATOS (FEATURES EXTRAÍDAS)
         ## ======================================================
 
-        ## Elimino aquellas columnas correspondientes a los índices que denotan el inicio y la
-        ## terminación de cada uno de los giros (no voy a utilizarlas en esta parte del procesamiento)
-        df_features = features_giros_total.drop(columns = ["start_idx", "end_idx"], errors = "ignore")
+        ## Obtengo el diccionario conteniendo el conjunto de IDs, indices de comienzo y indices de
+        ## terminación de cada uno de los giros detectados (uso los giros suavizados pero es arbitrario)
+        turns_map = {(t["id"], t["start_idx"], t["end_idx"]): t for t in turns_smooth}
+
+        # ## Elimino aquellas columnas correspondientes a los índices que denotan el inicio y la
+        # ## terminación de cada uno de los giros (no voy a utilizarlas en esta parte del procesamiento)
+        # df_features = features_giros_total.drop(columns = ["start_idx", "end_idx"], errors = "ignore")
 
         ## Me aseguro que el campo "id" del dataframe de features esté en formato string
         features_giros_total["id"] = features_giros_total["id"].astype(str)
@@ -235,7 +251,7 @@ if __name__== '__main__':
             features_giros_total["wx_jerk_energy"] ** 2 + features_giros_total["wy_jerk_energy"] ** 2)
 
         ## Selecciono y ordeno las columnas de features por giro para asegurar consistencia
-        array_features = features_giros_total[["id"] + FEATURE_COLUMNS].copy()
+        array_features = features_giros_total[["id", "start_idx", "end_idx"] + FEATURE_COLUMNS].copy()
 
         ## Obtengo únicamente información de la edad y la ID asociada a cada paciente
         df_patients = pacientes[["sampleid", "Edad", "Caida"]].copy()
@@ -554,8 +570,10 @@ if __name__== '__main__':
         ## contiene las predicciones asociadas a cada uno de los giros mediante el algoritmo SVM LOO
         df_no_fall["y_pred"] = y_pred_no_fall
 
-        ## Hago el cálculo del tipo de error de clasificación para todos los giros con el algoritmo SVM LOO
-        df_no_fall["error_type"] = compute_error_type(df_no_fall["age_group_binary"].values, y_pred_no_fall)
+        ## Hago el cálculo del tipo de error de clasificación para todos los giros con el 
+        ## algoritmo SVM LOO
+        df_no_fall["error_type"] = compute_error_type(df_no_fall["age_group_binary"].values, 
+            y_pred_no_fall)
 
         ## Selecciono las 2 features óptimas según el proceso SFS con SVM 
         ## correspondientes al dataset de giros asociados a personas que tienen al menos una caida
@@ -574,7 +592,8 @@ if __name__== '__main__':
         ## contiene las predicciones asociadas a cada uno de los giros mediante el algoritmo SVM LOO
         df_fall["y_pred"] = y_pred_fall
 
-        ## Hago el cálculo del tipo de error de clasificación para todos los giros con el algoritmo SVM LOO
+        ## Hago el cálculo del tipo de error de clasificación para todos los giros 
+        ## con el algoritmo SVM LOO (Leave One Out)
         df_fall["error_type"] = compute_error_type(df_fall["age_group_binary"].values, y_pred_fall)
 
         ## Hago la graficación del diagrama de dispersión para los no caedores
@@ -584,6 +603,30 @@ if __name__== '__main__':
         ## Hago la graficación del diagrama de dispersión para los caedores
         plot_error_space(df_fall, features_fall[0], features_fall[1],
                         title = "Giros de personas con al menos una caída (SVM LOO)")
+
+        ## ======================================================
+        ## GRAFICACIÓN DE GIROS EN EL TIEMPO
+        ## ======================================================
+
+        ## Establezco las condiciones que deben cumplir ambos grupos de giros que voy a muestrear
+        group_A_cond = lambda df: df["gyro_horz_jerk_energy_L2"] > 1
+        group_B_cond = lambda df: df["az_peak_mean_ratio"] > 1.3
+
+        ## Hago el muestreo aleatorio y graficación de n giros correspondientes a cada grupo
+        sample_and_plot_turns(df_fall, group_A_cond, turns_map, title = "Fallers - gyro_horz_jerk_energy_L2 > 1",
+                            n = 2, seed = 42)
+        sample_and_plot_turns(df_fall, group_B_cond, turns_map, title = "Fallers - az_peak_mean_ratio > 1.3", 
+                            n = 2, seed = 42)
+
+        ## ======================================================
+        ## ANÁLISIS DE DIRECCIONES DOMINANTES USANDO PCA PARA FALLERS - NO FALLERS
+        ## ======================================================
+
+        ## Hago el análisis de PCA para fallers
+        expl_fall, cum_fall = run_pca(df_fall, feature_cols, "FALL")
+
+        ## Hago el análsis de PCA para no fallers
+        expl_nofall, cum_nofall = run_pca(df_no_fall, feature_cols, "NO FALL")
 
         ## ======================================================
         ## VISUALIZACIÓN DEL ESPACIO DE FEATURES EN 2D

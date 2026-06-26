@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 import os
 from datetime import datetime
 from sklearn.model_selection import LeaveOneOut
+from sklearn.decomposition import PCA
 
 def compute_information_gain_features(df, feature_cols, target_col = "age_group",
     discrete_target = True, random_state = 42):
@@ -564,3 +565,22 @@ def compute_error_type(y_true, y_pred):
     ## Retorno el numpy array conteniendo las etiquetas asociadas al resultado de clasificación
     ## de cada uno de los giros
     return labels
+
+def run_pca(df, feature_cols, label="dataset"):
+
+    X = df[feature_cols].dropna()
+
+    X_scaled = StandardScaler().fit_transform(X)
+
+    pca = PCA()
+    pca.fit(X_scaled)
+
+    explained = pca.explained_variance_ratio_
+    cumulative = np.cumsum(explained)
+
+    print(f"\n{label}")
+    print("PC1 variance:", explained[0])
+    print("PC1-3 cumulative:", cumulative[2])
+    print("PC1-5 cumulative:", cumulative[4])
+
+    return explained, cumulative
