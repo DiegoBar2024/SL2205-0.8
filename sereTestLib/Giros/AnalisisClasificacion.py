@@ -566,21 +566,54 @@ def compute_error_type(y_true, y_pred):
     ## de cada uno de los giros
     return labels
 
-def run_pca(df, feature_cols, label="dataset"):
+def run_pca(df, feature_cols):
+    """
+    Aplica PCA sobre un conjunto de features numéricas estandarizadas y devuelve la varianza explicada.
 
+    Esta función realiza un análisis exploratorio de componentes principales (PCA) sobre un subconjunto
+    de columnas de un DataFrame, previamente estandarizadas, con el objetivo de estimar la dimensionalidad
+    efectiva del espacio de features y su estructura de redundancia lineal.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame de entrada que contiene las features.
+    feature_cols : list of str
+        Lista de columnas numéricas sobre las que se aplicará PCA.
+
+    Returns
+    -------
+    explained : np.ndarray
+        Proporción de varianza explicada por cada componente principal.
+    cumulative : np.ndarray
+        Varianza explicada acumulada.
+
+    Notes
+    -----
+    - Las filas con valores faltantes en las features seleccionadas son eliminadas antes del análisis.
+    - Los datos son estandarizados (media 0, varianza 1) antes de aplicar PCA.
+    - PCA produce combinaciones lineales ortogonales de las features originales, por lo que
+    los componentes no son directamente interpretables en términos físicos.
+    - Este análisis se utiliza con fines exploratorios para evaluar la estructura global del espacio de features.
+    """
+
+    ## Elimino filas con valores faltantes en las features seleccionadas
     X = df[feature_cols].dropna()
 
+    ## Estandarizo las features (media 0, varianza 1) como paso previo al PCA
     X_scaled = StandardScaler().fit_transform(X)
 
+    ## Instancio el modelo de PCA
     pca = PCA()
+
+    ## Ajusto el PCA a los datos estandarizados
     pca.fit(X_scaled)
 
+    ## Obtengo la proporción de varianza explicada por cada componente principal
     explained = pca.explained_variance_ratio_
+
+    ## Calculo la varianza explicada acumulada
     cumulative = np.cumsum(explained)
 
-    print(f"\n{label}")
-    print("PC1 variance:", explained[0])
-    print("PC1-3 cumulative:", cumulative[2])
-    print("PC1-5 cumulative:", cumulative[4])
-
+    ## Retorno la varianza explicada por componente y su acumulado
     return explained, cumulative

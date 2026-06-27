@@ -12,6 +12,8 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import r2_score
 import statsmodels.api as sm
 from sklearn.metrics import accuracy_score
+from sklearn.covariance import MinCovDet
+from sklearn.decomposition import PCA
 
 def kruskal_wallis_features(df, feature_cols, group_col = "age_group"):
     """
@@ -641,3 +643,121 @@ def regression_analysis(df, feature_cols, x_col = "age", poly_degree = 2, alpha 
     ## Retorno los resultados en forma de un dataframe ordenados según la significación
     return (pd.DataFrame(results).sort_values(by = ["significant", "p_value"],
             ascending = [False, True]).reset_index(drop = True))
+
+def univariate_outliers(df, feature_cols, method = "iqr", iqr_factor = 1.5, z_thresh = 3.0):
+    """
+    Detecta outliers univariados por feature y devuelve la unión de todos ellos.
+
+    Esta función identifica valores atípicos de forma independiente para cada variable
+    en `feature_cols`, utilizando un método estadístico univariado. Luego combina los
+    resultados mediante una operación OR (unión lógica), generando una máscara global
+    de outliers.
+
+    Se pueden utilizar dos métodos de detección:
+        - IQR (rango intercuartílico): basado en la dispersión robusta de la distribución.
+        - Z-score: basado en desviaciones estándar respecto a la media.
+
+    Parámetros
+    ----------
+    df : pandas.DataFrame
+        DataFrame de entrada que contiene las variables a analizar.
+
+    feature_cols : list of str
+        Lista de nombres de columnas sobre las cuales se realizará la detección
+        de outliers univariados.
+
+    method : str, default="iqr"
+        Método de detección de outliers a utilizar:
+            - "iqr": utiliza el rango intercuartílico.
+            - "zscore": utiliza desviaciones estándar (z-score).
+
+    iqr_factor : float, default=1.5
+        Factor multiplicativo del rango intercuartílico utilizado para definir los
+        límites inferior y superior en el método IQR.
+
+    z_thresh : float, default=3.0
+        Umbral en valor absoluto del z-score para considerar un punto como outlier
+        cuando se utiliza el método "zscore".
+
+    Retorna
+    -------
+    pandas.DataFrame
+        DataFrame con las siguientes columnas adicionales:
+            - "{feature}_outlier": indicador booleano de outlier por feature.
+            - "outlier_flag": indicador global (unión de todos los outliers).
+            - "outlier_score": número de features en las que cada observación
+            fue marcada como outlier.
+
+    Notas
+    -----
+    - La lógica de detección es univariada: cada feature se evalúa de forma independiente.
+    - La variable `outlier_flag` representa la unión lógica (OR) entre todas las features.
+    - `outlier_score` permite identificar outliers consistentes en múltiples dimensiones.
+    """
+
+    ## Hago una copia del dataframe de entrada
+    df = df.copy()
+
+    ## Inicializo una máscara booleana global donde voy a acumular los outliers detectados
+    outlier_mask = np.zeros(len(df), dtype = bool)
+
+    ## Itero para cada una de las features que voy a analizar de forma univariada
+    for feat in feature_cols:
+
+        ## Selecciono la columna correspondiente a la feature actual
+        x = df[feat]
+
+        ## En caso de que el método seleccionado sea IQR (rango intercuartílico)
+        if method == "iqr":
+
+            ## Calculo el primer cuartil de la distribución
+            q1 = x.quantile(0.25)
+
+            ## Calculo el tercer cuartil de la distribución
+            q3 = x.quantile(0.75)
+
+            ## Calculo el rango intercuartílico (IQR)
+            iqr = q3 - q1
+
+            ## Defino el límite inferior para detección de outliers
+            lower = q1 - iqr_factor * iqr
+
+            ## Defino el límite superior para detección de outliers
+            upper = q3 + iqr_factor * iqr
+
+            ## Marco como outliers aquellos valores fuera de los límites definidos
+            feat_outliers = (x < lower) | (x > upper)
+
+        ## En caso de que el método seleccionado sea Z-score
+        elif method == "zscore":
+
+            ## Calculo la media de la feature actual
+            mu = x.mean()
+
+            ## Calculo la desviación estándar de la feature (con estabilidad numérica)
+            sigma = x.std(ddof = 0) + 1e-8
+
+            ## Normalizo la feature utilizando z-score
+            z = (x - mu) / sigma
+
+            ## Marco como outliers aquellos valores cuyo z-score supera el umbral
+            feat_outliers = np.abs(z) > z_thresh
+
+        ## En caso de que se ingrese un método no soportado, lanzo un error
+        else:
+            raise ValueError("method must be 'iqr' or 'zscore'")
+
+        ## Guardo el indicador de outliers de la feature actual en el DataFrame
+        df[f"{feat}_outlier"] = feat_outliers
+
+        ## Actualizo la máscara global de outliers aplicando una unión lógica (OR)
+        outlier_mask |= feat_outliers.values
+
+    ## Guardo la máscara global de outliers en el DataFrame final
+    df["outlier_flag"] = outlier_mask
+
+    ## Calculo un score de outliers como la suma de features en las que cada muestra es outlier
+    df["outlier_score"] = df[[f"{f}_outlier" for f in feature_cols]].sum(axis = 1)
+
+    ## Retorno el dataframe con el indicador de outlier para cada giro
+    return df

@@ -605,6 +605,30 @@ if __name__== '__main__':
                         title = "Giros de personas con al menos una caída (SVM LOO)")
 
         ## ======================================================
+        ## ANÁLISIS DE OUTLIERS DISTINGUIENDO CAEDORES/NO CAEDORES
+        ## ======================================================
+
+        ## Hago la detección de outliers para el conjunto de los caedores
+        outliers_fall = univariate_outliers(df_fall, [features_fall[0], features_fall[1]])
+
+        ## Construyo el etiquetado de outliers para los caedores
+        outliers_fall["outlier_label"] = outliers_fall["outlier_flag"].map({True: "outlier", False: "normal"})
+
+        ## Hago el gráfico de dispersión en el plano diferenciando outliers/no outliers para caedores
+        plot_feature_space_2d(df = outliers_fall, feature_x = features_fall[0], feature_y = features_fall[1],
+                        target_col = "outlier_label", title = 'Outliers Fallers')   
+
+        ## Hago la detección de outliers para el conjunto de los no caedores
+        outliers_no_fall = univariate_outliers(df_no_fall, [features_no_fall[0], features_no_fall[1]])
+
+        ## Construyo el etiquetado de outliers para los no caedores
+        outliers_no_fall["outlier_label"] = outliers_no_fall["outlier_flag"].map({True: "outlier", False: "normal"})
+
+        ## Hago el gráfico de dispersión en el plano diferenciando outliers/no outliers para no caedores
+        plot_feature_space_2d(df = outliers_no_fall, feature_x = features_no_fall[0], 
+                        feature_y = features_no_fall[1], target_col = "outlier_label", title = 'Outliers No Fallers')   
+
+        ## ======================================================
         ## GRAFICACIÓN DE GIROS EN EL TIEMPO
         ## ======================================================
 
