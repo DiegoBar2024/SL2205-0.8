@@ -599,10 +599,42 @@ if __name__== '__main__':
         ## Hago la graficación del diagrama de dispersión para los no caedores
         plot_error_space(df_no_fall, features_no_fall[0], features_no_fall[1],
                         title = "Giros de personas sin ninguna caída (SVM LOO)")
-
+        
         ## Hago la graficación del diagrama de dispersión para los caedores
         plot_error_space(df_fall, features_fall[0], features_fall[1],
                         title = "Giros de personas con al menos una caída (SVM LOO)")
+
+        ## ======================================================
+        ## ANÁLISIS DE CLASIFICACIONES ERRÓNEAS EN BASE A LA ID DE LA PERSONA
+        ## ======================================================
+
+        ## Selecciono únicamente los giros clasificados erróneamente de 0 → 1 para los no caedores
+        df_no_fall_fp = df_no_fall[df_no_fall["error_type"] == "young_to_old"].copy()
+
+        ## Hago la distribución de IDs para los giros clasificados erróneamente de 0 → 1
+        plot_id_distribution(df_no_fall_fp, group_col = "id",
+            title = "No caedores - Distribución de IDs (young_to_old)")
+
+        ## Selecciono únicamente los giros clasificados erróneamente de 1 → 0 para los no caedores
+        df_no_fall_fn = df_no_fall[df_no_fall["error_type"] == "old_to_young"].copy()
+
+        ## Hago la distribución de IDs para los giros clasificados erróneamente de 1 → 0
+        plot_id_distribution(df_no_fall_fn, group_col = "id", 
+            title = "No caedores - Distribución de IDs (old_to_young)")
+
+        ## Selecciono únicamente los giros clasificados erróneamente de 0 → 1 para los caedores
+        df_fall_fp = df_fall[df_fall["error_type"] == "young_to_old"].copy()
+
+        ## Hago la distribución de IDs para los giros clasificados erróneamente de 0 → 1
+        plot_id_distribution(df_fall_fp, group_col = "id",
+            title = "Caedores - Distribución de IDs (young_to_old)")
+
+        ## Selecciono únicamente los giros clasificados erróneamente de 1 → 0 para los caedores
+        df_fall_fn = df_fall[df_fall["error_type"] == "old_to_young"].copy()
+
+        ## Hago la distribución de IDs para los giros clasificados erróneamente de 1 → 0
+        plot_id_distribution(df_fall_fn, group_col = "id",
+            title = "Caedores - Distribución de IDs (old_to_young)")
 
         ## ======================================================
         ## ANÁLISIS DE OUTLIERS DISTINGUIENDO CAEDORES/NO CAEDORES
