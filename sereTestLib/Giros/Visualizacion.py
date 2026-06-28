@@ -8,6 +8,7 @@ from matplotlib.patches import Patch
 from matplotlib.colors import ListedColormap
 from matplotlib import use
 from sklearn.metrics import confusion_matrix
+import math
 
 def graficar_histograma_edades(df, columna_edad = 'Edad', mostrar_porcentaje = False):
     """
@@ -1700,3 +1701,85 @@ def sample_and_plot_turns(df, condition, turns_map, title, n = 2, seed = 42, nor
 
             ## Grafico los segmentos de señales de acelerómetro y giroscopio del giro
             plot_turn_3x2(turn, title = title, normalize = normalize)
+
+def plot_id_distribution(df, group_col, id_col = "id", normalize = False, title = None,
+                        figsize = (10, 5), save_path = None):
+    """
+    Visualiza la distribución de IDs de pacientes por categoría de agrupamiento
+    utilizando un estilo de barras explícito (tipo histograma categórico).
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame con los datos.
+
+    group_col : str
+        Columna de agrupamiento.
+
+    id_col : str
+        Columna de identificador de paciente.
+
+    normalize : bool
+        Si True, muestra porcentajes en lugar de conteos.
+
+    title : str or None
+        Título del gráfico.
+
+    figsize : tuple
+        Tamaño de la figura.
+
+    save_path : str or None
+        Ruta opcional para guardar la figura.
+
+    Returns
+    -------
+    None
+    """
+
+    ## Verifico que existan las columnas necesarias en el dataframe
+    required = {id_col, group_col}
+    missing = required - set(df.columns)
+
+    ## En caso de faltar columnas, lanzo error
+    if missing:
+        raise ValueError(f"Faltan columnas requeridas: {missing}")
+
+    ## Cuento ocurrencias por grupo
+    conteos = df[group_col].value_counts().sort_index()
+
+    ## En caso de normalización, convierto a porcentaje
+    if normalize:
+        conteos = conteos / conteos.sum() * 100
+
+    ## Creo la figura
+    plt.figure(figsize = figsize)
+
+    ## Dibujo barras estilo “histograma categórico”
+    plt.bar(conteos.index.astype(str), conteos.values, edgecolor = "black")
+
+    ## Configuro título
+    if title is None:
+        title = f"Distribución de IDs por {group_col}"
+    plt.title(title)
+
+    ## Etiquetas de ejes
+    plt.xlabel(group_col)
+    plt.ylabel("Porcentaje (%)" if normalize else "Número de muestras")
+
+    ## Grid estilo análisis exploratorio
+    plt.grid(axis = "y", linestyle = "--", alpha = 0.7)
+
+    ## Agrego valores encima de cada barra
+    for i, v in enumerate(conteos.values):
+        label = f"{v:.1f}%" if normalize else str(int(v))
+        plt.text(i, v, label, ha = "center", va = "bottom")
+
+    ## Ajuste de layout
+    plt.tight_layout()
+
+    ## Guardado opcional
+    if save_path is not None:
+        plt.savefig(save_path, dpi = 300)
+
+    ## Muestro figura
+    plt.show()

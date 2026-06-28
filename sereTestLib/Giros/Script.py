@@ -426,7 +426,7 @@ if __name__== '__main__':
         ## ======================================================
 
         ## Inicializo una variable que especifique la cantidad máxima de features con las que me quiero quedar
-        k_top_features = 5
+        k_top_features = 2
 
         ## Sequential Forward Feature Selection (SFFS): Obtengo aquellos conjuntos de features que me dan 
         ## la mejor performance. En otras palabras, elijo el conjunto de las k features que me da mayor 
@@ -609,24 +609,44 @@ if __name__== '__main__':
         ## ======================================================
 
         ## Hago la detección de outliers para el conjunto de los caedores
-        outliers_fall = univariate_outliers(df_fall, [features_fall[0], features_fall[1]])
+        outliers_fall, outliers_fall_by_feat = univariate_outliers(
+            df_fall, [features_fall[0], features_fall[1]])
 
         ## Construyo el etiquetado de outliers para los caedores
-        outliers_fall["outlier_label"] = outliers_fall["outlier_flag"].map({True: "outlier", False: "normal"})
+        outliers_fall["outlier_label"] = outliers_fall["outlier_flag"].map(
+            {True: "outlier", False: "normal"})
 
-        ## Hago el gráfico de dispersión en el plano diferenciando outliers/no outliers para caedores
-        plot_feature_space_2d(df = outliers_fall, feature_x = features_fall[0], feature_y = features_fall[1],
-                        target_col = "outlier_label", title = 'Outliers Fallers')   
+        ## Construyo un diccionario donde separo los outliers por feature
+        outlier_dfs_fall = {feat: df_fall.loc[idx].copy()
+            for feat, idx in outliers_fall_by_feat.items()}
+
+        ## Hago el gráfico de distribución de IDs para la primera feature (fallers)
+        plot_id_distribution(outlier_dfs_fall[features_fall[0]], group_col = "id",
+            title = "Fallers - Distribución de IDs para {}".format(features_fall[0]))
+
+        ## Hago el gráfico de distribución de IDs para la segunda feature (fallers)
+        plot_id_distribution(outlier_dfs_fall[features_fall[1]], group_col = "id",
+            title = "Fallers - Distribución de IDs para {}".format(features_fall[1]))
+
+        ## Hago el gráfico de dispersión en el espacio de features diferenciando outliers/no outliers (fallers)
+        plot_feature_space_2d(df = outliers_fall, feature_x = features_fall[0],
+            feature_y = features_fall[1], target_col = "outlier_label", title = "Outliers Fallers",)
 
         ## Hago la detección de outliers para el conjunto de los no caedores
-        outliers_no_fall = univariate_outliers(df_no_fall, [features_no_fall[0], features_no_fall[1]])
+        outliers_no_fall, outliers_no_fall_by_feat = univariate_outliers(df_no_fall, 
+            [features_no_fall[0], features_no_fall[1]])
 
         ## Construyo el etiquetado de outliers para los no caedores
-        outliers_no_fall["outlier_label"] = outliers_no_fall["outlier_flag"].map({True: "outlier", False: "normal"})
+        outliers_no_fall["outlier_label"] = outliers_no_fall["outlier_flag"].map(
+            {True: "outlier", False: "normal"})
 
-        ## Hago el gráfico de dispersión en el plano diferenciando outliers/no outliers para no caedores
-        plot_feature_space_2d(df = outliers_no_fall, feature_x = features_no_fall[0], 
-                        feature_y = features_no_fall[1], target_col = "outlier_label", title = 'Outliers No Fallers')   
+        ## Construyo un diccionario donde separo los outliers por feature
+        outlier_dfs_no_fall = {feat: df_no_fall.loc[idx].copy()
+            for feat, idx in outliers_no_fall_by_feat.items()}
+
+        ## Hago el gráfico de dispersión en el espacio de features diferenciando outliers/no outliers (no fallers)
+        plot_feature_space_2d(df = outliers_no_fall, feature_x = features_no_fall[0],
+            feature_y = features_no_fall[1], target_col = "outlier_label", title = "Outliers No Fallers")
 
         ## ======================================================
         ## GRAFICACIÓN DE GIROS EN EL TIEMPO

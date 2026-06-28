@@ -646,18 +646,22 @@ def regression_analysis(df, feature_cols, x_col = "age", poly_degree = 2, alpha 
 
 def univariate_outliers(df, feature_cols, method = "iqr", iqr_factor = 1.5, z_thresh = 3.0):
     """
-    Detecta outliers univariados por feature y devuelve la unión de todos ellos.
+    Detecta outliers univariados por feature y devuelve tanto la detección individual
+    por variable como la unión global de todos ellos.
 
     Esta función identifica valores atípicos de forma independiente para cada variable
     en `feature_cols`, utilizando un método estadístico univariado. Luego combina los
     resultados mediante una operación OR (unión lógica), generando una máscara global
     de outliers.
 
+    Además de la detección global, se conserva la información de outliers por feature,
+    permitiendo analizar la contribución individual de cada variable a los valores atípicos.
+
     Se pueden utilizar dos métodos de detección:
         - IQR (rango intercuartílico): basado en la dispersión robusta de la distribución.
         - Z-score: basado en desviaciones estándar respecto a la media.
 
-    Parámetros
+    Parameters
     ----------
     df : pandas.DataFrame
         DataFrame de entrada que contiene las variables a analizar.
@@ -679,7 +683,7 @@ def univariate_outliers(df, feature_cols, method = "iqr", iqr_factor = 1.5, z_th
         Umbral en valor absoluto del z-score para considerar un punto como outlier
         cuando se utiliza el método "zscore".
 
-    Retorna
+    Returns
     -------
     pandas.DataFrame
         DataFrame con las siguientes columnas adicionales:
@@ -692,6 +696,7 @@ def univariate_outliers(df, feature_cols, method = "iqr", iqr_factor = 1.5, z_th
     -----
     - La lógica de detección es univariada: cada feature se evalúa de forma independiente.
     - La variable `outlier_flag` representa la unión lógica (OR) entre todas las features.
+    - La información por feature permite analizar qué variables están generando cada outlier.
     - `outlier_score` permite identificar outliers consistentes en múltiples dimensiones.
     """
 
@@ -700,6 +705,9 @@ def univariate_outliers(df, feature_cols, method = "iqr", iqr_factor = 1.5, z_th
 
     ## Inicializo una máscara booleana global donde voy a acumular los outliers detectados
     outlier_mask = np.zeros(len(df), dtype = bool)
+
+    ## Inicializo el diccionario donde voy a almacenar los outliers por feature
+    outliers_by_feature = {}
 
     ## Itero para cada una de las features que voy a analizar de forma univariada
     for feat in feature_cols:
@@ -750,6 +758,9 @@ def univariate_outliers(df, feature_cols, method = "iqr", iqr_factor = 1.5, z_th
         ## Guardo el indicador de outliers de la feature actual en el DataFrame
         df[f"{feat}_outlier"] = feat_outliers
 
+        ## Guardo los índices de outliers de la feature actual en el diccionario
+        outliers_by_feature[feat] = df.index[feat_outliers].tolist()
+
         ## Actualizo la máscara global de outliers aplicando una unión lógica (OR)
         outlier_mask |= feat_outliers.values
 
@@ -759,5 +770,5 @@ def univariate_outliers(df, feature_cols, method = "iqr", iqr_factor = 1.5, z_th
     ## Calculo un score de outliers como la suma de features en las que cada muestra es outlier
     df["outlier_score"] = df[[f"{f}_outlier" for f in feature_cols]].sum(axis = 1)
 
-    ## Retorno el dataframe con el indicador de outlier para cada giro
-    return df
+    ## Retorno el dataframe con el indicador de outlier para cada giro + diccionario por feature
+    return df, outliers_by_feature
