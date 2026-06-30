@@ -167,7 +167,7 @@ def graficar_caidas_por_rango_etario(df, columna_edad = "Edad",
     plt.tight_layout()
     plt.show()
 
-def plot_signal_with_events(x, events, fs = 200, title = "Señal y los eventos de giro"):
+def plot_signal_with_events(x, events, fs = 200, title = "Señal y los eventos de giro", save_path = None):
     """
     Grafica una señal continua y resalta los segmentos correspondientes a eventos.
 
@@ -175,7 +175,7 @@ def plot_signal_with_events(x, events, fs = 200, title = "Señal y los eventos d
     definidos como eventos se superponen en color rojo. Esto permite identificar
     visualmente cuándo ocurren los eventos sin perder la continuidad de la señal.
 
-    Parámetros
+    Parameters
     ----------
     x : np.ndarray
         Señal unidimensional a visualizar.
@@ -192,7 +192,16 @@ def plot_signal_with_events(x, events, fs = 200, title = "Señal y los eventos d
     title : str, opcional (default="Signal with events")
         Título del gráfico.
 
-    Descripción
+    save_path : str or None, opcional (default=None)
+        Ruta completa donde se guardará la figura.
+        Si es None, la figura solo se muestra en pantalla y no se guarda.
+
+        Si se especifica, la función:
+            - Crea automáticamente el directorio contenedor si no existe
+            - Guarda la figura en formato PNG (o extensión implícita en el nombre)
+            - Usa alta resolución (dpi=300)
+
+    Description
     -----------
     La función:
         1. Construye un eje temporal a partir de la frecuencia de muestreo.
@@ -200,18 +209,21 @@ def plot_signal_with_events(x, events, fs = 200, title = "Señal y los eventos d
         3. Grafica la señal completa en azul.
         4. Superpone los segmentos correspondientes a eventos en rojo utilizando NaN
         para evitar la conexión entre tramos no contiguos.
+        5. Opcionalmente guarda la figura en disco.
 
-    Notas
+    Notes
     -----
     - El uso de valores NaN permite mantener la continuidad visual de la señal
     mientras se resaltan únicamente los segmentos de interés.
     - Esta función es útil para visualizar eventos detectados en señales de sensores,
     como giros en datos de IMU.
+    - El guardado es opcional y controlado mediante `save_path`.
 
-    Retorna
+    Returns
     -------
     None
-        La función no retorna valores. Muestra el gráfico en pantalla.
+        La función no retorna valores. Muestra el gráfico en pantalla y,
+        si corresponde, lo guarda en disco.
     """
 
     ## Obtengo la cantidad total de muestras de la señal
@@ -228,7 +240,7 @@ def plot_signal_with_events(x, events, fs = 200, title = "Señal y los eventos d
 
         ## Localizo aquellos intervalos de la señal en las cuales se producen los giros en base
         ## a los indices de inicio y terminación calculados antes
-        event_mask[e["start_idx"]:e["end_idx"]] = True
+        event_mask[e["start_idx"]: e["end_idx"]] = True
 
     ## Configuro el tamaño de la gráfica de la señal y los eventos de giro
     plt.figure(figsize = (12, 4))
@@ -250,7 +262,25 @@ def plot_signal_with_events(x, events, fs = 200, title = "Señal y los eventos d
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.show()
+
+    ## En caso de que se haya definido una ruta de guardado para la figura
+    if save_path is not None:
+
+        ## Extraigo el directorio a partir de la ruta completa del archivo
+        ## (elimina el nombre del archivo y deja solo la carpeta contenedora)
+        dir_name = os.path.dirname(save_path)
+
+        ## Verifico que la ruta del directorio no esté vacía
+        ## (esto ocurre cuando save_path es solo un nombre de archivo sin carpeta)
+        if dir_name != "":
+
+            ## Creo el directorio en caso de que no exista previamente
+            ## exist_ok=True evita errores si la carpeta ya fue creada
+            os.makedirs(dir_name, exist_ok = True)
+
+        ## Guardo la figura actual en la ruta especificada
+        ## dpi=300 asegura una buena resolución para análisis o publicación
+        plt.savefig(save_path, dpi = 300)
 
 def plot_feature_distributions_by_age_group(df, feature_cols, age_col, output_dir, feature_names = None):
     """
@@ -1736,50 +1766,246 @@ def plot_id_distribution(df, group_col, id_col = "id", normalize = False, title 
     None
     """
 
-    ## Verifico que existan las columnas necesarias en el dataframe
+    ## Defino el conjunto de columnas requeridas para el análisis
     required = {id_col, group_col}
+
+    ## Verifico qué columnas están ausentes en el DataFrame
     missing = required - set(df.columns)
 
-    ## En caso de faltar columnas, lanzo error
+    ## En caso de faltar columnas necesarias, lanzo un error explícito
     if missing:
         raise ValueError(f"Faltan columnas requeridas: {missing}")
 
-    ## Cuento ocurrencias por grupo
+    ## Calculo la distribución de frecuencias por grupo
     conteos = df[group_col].value_counts().sort_index()
 
-    ## En caso de normalización, convierto a porcentaje
+    ## En caso de activar normalización, convierto los conteos a porcentaje
     if normalize:
         conteos = conteos / conteos.sum() * 100
 
-    ## Creo la figura
+    ## Creo la figura con el tamaño especificado
     plt.figure(figsize = figsize)
 
-    ## Dibujo barras estilo “histograma categórico”
+    ## Dibujo barras tipo histograma categórico para cada grupo
     plt.bar(conteos.index.astype(str), conteos.values, edgecolor = "black")
 
-    ## Configuro título
+    ## Configuro el título del gráfico
     if title is None:
         title = f"Distribución de IDs por {group_col}"
     plt.title(title)
 
-    ## Etiquetas de ejes
+    ## Configuro etiqueta del eje X (variable de agrupamiento)
     plt.xlabel(group_col)
+
+    ## Configuro etiqueta del eje Y según si está normalizado o no
     plt.ylabel("Porcentaje (%)" if normalize else "Número de muestras")
 
-    ## Grid estilo análisis exploratorio
-    plt.grid(axis = "y", linestyle = "--", alpha = 0.7)
+    ## Activo grilla horizontal para facilitar lectura visual
+    plt.grid(axis="y", linestyle="--", alpha=0.7)
 
-    ## Agrego valores encima de cada barra
+    ## Agrego etiquetas numéricas sobre cada barra
     for i, v in enumerate(conteos.values):
+
+        ## Formateo el valor según sea porcentaje o conteo absoluto
         label = f"{v:.1f}%" if normalize else str(int(v))
+
+        ## Dibujo el texto centrado encima de cada barra
         plt.text(i, v, label, ha = "center", va = "bottom")
 
-    ## Ajuste de layout
+    ## Ajusto automáticamente el layout para evitar solapamientos
     plt.tight_layout()
 
-    ## Guardado opcional
+    ## Si se especifica una ruta, guardo la figura en disco
     if save_path is not None:
         plt.savefig(save_path, dpi = 300)
 
-    ## Muestro figura
+    ## Muestro la figura final
+    plt.show()
+
+def plot_pca_loading_stacked(load_df, K = 10, title = "Distribución de loadings del PCA"):
+    """
+    Visualiza la distribución de contribuciones de las features originales
+    en los primeros K componentes principales mediante un gráfico de barras apiladas.
+
+    Este gráfico permite analizar cómo se distribuye la influencia de cada feature
+    del espacio original a lo largo de las direcciones principales del PCA.
+
+    Cada barra representa una feature, y está descompuesta en segmentos
+    correspondientes a los K primeros componentes principales.
+
+    Parameters
+    ----------
+    load_df : pandas.DataFrame
+        DataFrame en formato largo generado por `pc_loading_distributions`, con columnas:
+            - feature : nombre de la feature original
+            - loading : contribución normalizada
+            - pc      : índice del componente principal
+
+    K : int, optional (default=10)
+        Número de componentes principales a visualizar.
+
+    title : str, optional
+        Título del gráfico.
+
+    Returns
+    -------
+    None
+        La función genera una visualización y no retorna valores.
+    """
+
+    ## Filtro únicamente los primeros K componentes principales
+    df = load_df[load_df["pc"] < K].copy()
+
+    ## Reorganizo el DataFrame a formato matricial:
+    ## filas = features originales
+    ## columnas = componentes principales (PCs)
+    ## valores = contribuciones normalizadas (loadings)
+    pivot = df.pivot(index = "feature", columns = "pc", values = "loading").fillna(0)
+
+    ## Ordeno las features según su contribución total acumulada
+    ## (esto facilita la interpretación visual priorizando features más relevantes)
+    pivot = pivot.loc[pivot.sum(axis = 1).sort_values(ascending = False).index]
+
+    ## Creo la figura y los ejes del gráfico
+    fig, ax = plt.subplots(figsize = (14, 6))
+
+    ## Inicializo la base acumulada para el gráfico de barras apiladas
+    bottom = None
+
+    ## Itero sobre los primeros K componentes principales
+    for k in range(K):
+
+        ## Extraigo los valores de loading correspondientes al PC actual
+        values = pivot[k].values
+
+        ## Dibujo la barra correspondiente a este componente principal
+        ## Si 'bottom' es None, dibujo desde cero
+        ax.bar(pivot.index, values, bottom = bottom, label = f"PC{k+1}")
+
+        ## Inicializo o actualizo la base acumulada para el apilamiento
+        if bottom is None:
+            bottom = values.copy()
+        else:
+            bottom += values
+
+    ## Configuro el título del gráfico
+    ax.set_title(title)
+
+    ## Configuro la etiqueta del eje Y (contribución normalizada)
+    ax.set_ylabel("Contribución normalizada del loading")
+
+    ## Configuro la etiqueta del eje X (features originales)
+    ax.set_xlabel("Features")
+
+    ## Roto las etiquetas del eje X para mejorar la legibilidad
+    ax.tick_params(axis = 'x', rotation = 90)
+
+    ## Agrego la leyenda indicando cada componente principal
+    ax.legend(ncol = 2, fontsize = 9)
+
+    ## Ajusto el layout para evitar solapamientos
+    plt.tight_layout()
+
+    ## Muestro el gráfico
+    plt.show()
+
+def plot_pca_feature_contributions(load_df, K = 10, N = 10,
+        title = "Contribución de features por componente principal"):
+    """
+    Visualiza la distribución de contribuciones de las features originales
+    en los primeros K componentes principales del PCA.
+
+    Para cada componente principal, se seleccionan únicamente las N features
+    con mayor contribución (loading normalizado), y se representa su magnitud
+    mediante un heatmap con anotaciones numéricas.
+
+    Este gráfico permite interpretar directamente qué variables dominan cada
+    dirección principal del espacio PCA.
+
+    Parameters
+    ----------
+    load_df : pandas.DataFrame
+        DataFrame en formato largo generado por `pc_loading_distributions`,
+        con columnas:
+            - feature
+            - loading
+            - pc
+
+    K : int
+        Número de componentes principales a analizar.
+
+    N : int
+        Número de features más relevantes a mostrar por cada componente.
+
+    title : str
+        Título del gráfico.
+
+    Returns
+    -------
+    None
+    """
+
+    ## Filtro únicamente los primeros K componentes principales del análisis PCA
+    df = load_df[load_df["pc"] < K].copy()
+
+    ## Ordeno los datos por componente principal y por magnitud de contribución
+    ## para asegurar que las features más relevantes aparezcan primero
+    df = df.sort_values(["pc", "loading"], ascending = [True, False])
+
+    ## Selecciono únicamente las N features más importantes dentro de cada PC
+    df = df.groupby("pc").head(N)
+
+    ## Reorganizo los datos a formato matricial donde:
+    ## - filas representan componentes principales (PCs)
+    ## - columnas representan features originales
+    ## - valores representan loadings normalizados
+    pivot = df.pivot(index = "pc", columns = "feature", values = "loading").fillna(0)
+
+    ## Ordeno los componentes principales de menor a mayor (PC1 → PCK)
+    pivot = pivot.sort_index()
+
+    ## Inicializo la figura y el eje donde voy a representar el heatmap
+    fig, ax = plt.subplots(figsize = (14, 6))
+
+    ## Represento la matriz de loadings como un heatmap
+    im = ax.imshow(pivot.values, aspect = "auto")
+
+    ## Configuro las posiciones de los ticks del eje Y según el número de PCs
+    ax.set_yticks(np.arange(len(pivot.index)))
+
+    ## Etiqueto cada fila como PC1, PC2, ..., PCK para facilitar interpretación
+    ax.set_yticklabels([f"PC{k+1}" for k in pivot.index])
+
+    ## Configuro las posiciones de los ticks del eje X según el número de features
+    ax.set_xticks(np.arange(len(pivot.columns)))
+
+    ## Etiqueto cada columna con el nombre de la feature original
+    ax.set_xticklabels(pivot.columns, rotation = 90)
+
+    ## Asigno el título del gráfico
+    ax.set_title(title)
+
+    ## Recorro todas las celdas del heatmap para añadir valores numéricos
+    ## Itero para cada una de los componentes principales PCs (filas)
+    for i in range(pivot.shape[0]):
+
+        ## Itero para cada una de las features (columnas)
+        for j in range(pivot.shape[1]):
+
+            ## Obtengo el valor de loading normalizado en la celda actual
+            val = pivot.values[i, j]
+
+            ## Solo muestro valores relevantes para evitar saturación visual
+            if val > 1e-3:
+
+                ## Escribo el valor dentro de la celda correspondiente
+                ax.text(j, i, f"{val:.2g}", ha = "center", va = "center", fontsize = 7, color = "black")
+
+    ## Agrego barra de color para interpretar magnitudes globales
+    plt.colorbar(im, ax = ax, label = "Loading normalizado")
+
+    ## Ajusto el layout para evitar solapamiento de etiquetas
+    plt.tight_layout()
+
+    ## Despliego el gráfico final
     plt.show()

@@ -49,7 +49,7 @@ if __name__== '__main__':
     elif opcion == 2:
 
         ## Configuro una variable que me de a elegir si quiero graficar datos o no
-        graficar = False
+        graficar = True
 
         ## Seteo el sistema inercial que voy a usar de referencia para el cálculo de orientación
         sist_inercial = 'ENU'
@@ -105,18 +105,29 @@ if __name__== '__main__':
                 if graficar:
 
                     ## Hago la graficación de los tramos en los que se detectan giros de los que no
-                    plot_signal_with_events(ang_vel_inercial[:,2], giros)
+                    plot_signal_with_events(acc_suav[:,0], giros, fs = frec_muestreo,
+                            save_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/GirosTemporales/Suavizadas/{}/ax.png".format(root, id_paciente))
+                    plot_signal_with_events(acc_suav[:,1], giros, fs = frec_muestreo,
+                            save_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/GirosTemporales/Suavizadas/{}/ay.png".format(root, id_paciente))
+                    plot_signal_with_events(acc_suav[:,2], giros, fs = frec_muestreo,
+                            save_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/GirosTemporales/Suavizadas/{}/az.png".format(root, id_paciente))
+                    plot_signal_with_events(gyro_suav[:,0], giros, fs = frec_muestreo,
+                            save_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/GirosTemporales/Suavizadas/{}/wx.png".format(root, id_paciente))
+                    plot_signal_with_events(gyro_suav[:,1], giros, fs = frec_muestreo,
+                            save_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/GirosTemporales/Suavizadas/{}/wy.png".format(root, id_paciente))
+                    plot_signal_with_events(gyro_suav[:,2], giros, fs = frec_muestreo,
+                            save_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/GirosTemporales/Suavizadas/{}/wz.png".format(root, id_paciente))
 
-                ## Extraigo los segmentos de acelerómetros y giroscopios separados por giros
-                segmentos = extraer_segmentos_giros(acel, gyro, giros)
+                # ## Extraigo los segmentos de acelerómetros y giroscopios separados por giros
+                # segmentos = extraer_segmentos_giros(acel, gyro, giros)
 
-                ## Hago la extracción de features correspondientes a los giros, pasando como argumento
-                ## señales tanto de acelerómetro como giroscopio preprocesadas
-                features_giros = extraer_features_basicas(imu_quat, segmentos, frec_muestreo, 
-                                                        id_paciente, gyro_suav, acc_suav)
+                # ## Hago la extracción de features correspondientes a los giros, pasando como argumento
+                # ## señales tanto de acelerómetro como giroscopio preprocesadas
+                # features_giros = extraer_features_basicas(imu_quat, segmentos, frec_muestreo, 
+                #                                         id_paciente, gyro_suav, acc_suav)
 
-                ## Almaceno las features de los giros de dicho paciente a la lista general de features de giros de pacientes
-                features_giros_total.extend(features_giros)
+                # ## Almaceno las features de los giros de dicho paciente a la lista general de features de giros de pacientes
+                # features_giros_total.extend(features_giros)
 
             ## En caso de que ocurra algún error en el procesamiento de los giros de los pacientes
             except:
@@ -616,6 +627,7 @@ if __name__== '__main__':
             title = "No caedores - Distribución de IDs (young_to_old)")
 
         ## Selecciono únicamente los giros clasificados erróneamente de 1 → 0 para los no caedores
+        ## (giros de personas mayores de edad mayor a 75 mal clasificados)
         df_no_fall_fn = df_no_fall[df_no_fall["error_type"] == "old_to_young"].copy()
 
         ## Hago la distribución de IDs para los giros clasificados erróneamente de 1 → 0
@@ -623,6 +635,7 @@ if __name__== '__main__':
             title = "No caedores - Distribución de IDs (old_to_young)")
 
         ## Selecciono únicamente los giros clasificados erróneamente de 0 → 1 para los caedores
+        ## (giros de personas jovenes de edad menor a 75 mal clasificados)
         df_fall_fp = df_fall[df_fall["error_type"] == "young_to_old"].copy()
 
         ## Hago la distribución de IDs para los giros clasificados erróneamente de 0 → 1
@@ -699,10 +712,28 @@ if __name__== '__main__':
         ## ======================================================
 
         ## Hago el análisis de PCA para fallers
-        expl_fall, cum_fall = run_pca(df_fall, feature_cols, "FALL")
+        expl_fall, cum_fall, pca_fall = run_pca(df_fall, feature_cols)
 
         ## Hago el análsis de PCA para no fallers
-        expl_nofall, cum_nofall = run_pca(df_no_fall, feature_cols, "NO FALL")
+        expl_nofall, cum_nofall, pca_nofall = run_pca(df_no_fall, feature_cols)
+
+        ## Obtengo la distribución de las direcciones dominantes de PCA con respecto al feature set original
+        ## para aquellos giros asociados a personas que tienen al menos una caída
+        ## Porcentaje de contribuciones relativas de cada feature a las componentes principales
+        load_fall = pc_loading_distributions(W = pca_fall.components_, feature_cols = feature_cols, K = 10)
+
+        ## Obtengo la distribución de las direcciones dominantes de PCA con respecto al feature set original
+        ## para aquellos giros asociados a personas que no tienen ninguna caída
+        ## Porcentaje de contribuciones relativas de cada feature a las componentes principales
+        load_nofall = pc_loading_distributions(W = pca_nofall.components_, feature_cols = feature_cols, K = 10)
+
+        ## Hago la gráfica de las distribuciones de las componentes de PCA en el feature set original 
+        ## para caedores
+        plot_pca_feature_contributions(load_fall, K = 10, N = 10, title = "Fallers - PCA loadings")
+
+        ## Hago la gráfica de las distribuciones de las componentes de PCA en el feature set original 
+        ## para no caedores
+        plot_pca_feature_contributions(load_nofall, K = 10, N = 10, title = "Non-fallers - PCA loadings")
 
         ## ======================================================
         ## VISUALIZACIÓN DEL ESPACIO DE FEATURES EN 2D

@@ -568,16 +568,23 @@ def compute_error_type(y_true, y_pred):
 
 def run_pca(df, feature_cols):
     """
-    Aplica PCA sobre un conjunto de features numéricas estandarizadas y devuelve la varianza explicada.
+    Aplica PCA sobre un conjunto de features numéricas estandarizadas y devuelve
+    la varianza explicada junto con el modelo ajustado.
 
-    Esta función realiza un análisis exploratorio de componentes principales (PCA) sobre un subconjunto
-    de columnas de un DataFrame, previamente estandarizadas, con el objetivo de estimar la dimensionalidad
-    efectiva del espacio de features y su estructura de redundancia lineal.
+    Esta función realiza un análisis exploratorio de componentes principales (PCA)
+    sobre un subconjunto de columnas de un DataFrame, previamente estandarizadas,
+    con el objetivo de estimar la dimensionalidad efectiva del espacio de features
+    y su estructura de redundancia lineal.
+
+    A diferencia de versiones anteriores, esta implementación devuelve también el
+    objeto PCA ajustado, lo que permite acceder a los vectores propios (loadings)
+    y realizar análisis estructural del espacio de features.
 
     Parameters
     ----------
     df : pandas.DataFrame
         DataFrame de entrada que contiene las features.
+
     feature_cols : list of str
         Lista de columnas numéricas sobre las que se aplicará PCA.
 
@@ -585,16 +592,27 @@ def run_pca(df, feature_cols):
     -------
     explained : np.ndarray
         Proporción de varianza explicada por cada componente principal.
+
     cumulative : np.ndarray
         Varianza explicada acumulada.
 
+    pca : sklearn.decomposition.PCA
+        Objeto PCA ajustado al conjunto de datos estandarizado.
+        Permite acceder a:
+            - pca.components_ : vectores propios (loadings)
+            - pca.explained_variance_
+            - pca.mean_
+            - otras propiedades del modelo
+
     Notes
     -----
-    - Las filas con valores faltantes en las features seleccionadas son eliminadas antes del análisis.
+    - Las filas con valores faltantes en las features seleccionadas son eliminadas
+    antes del análisis.
     - Los datos son estandarizados (media 0, varianza 1) antes de aplicar PCA.
-    - PCA produce combinaciones lineales ortogonales de las features originales, por lo que
-    los componentes no son directamente interpretables en términos físicos.
-    - Este análisis se utiliza con fines exploratorios para evaluar la estructura global del espacio de features.
+    - PCA produce combinaciones lineales ortogonales de las features originales,
+    por lo que los componentes no son directamente interpretables en términos físicos.
+    - Esta función permite tanto análisis de varianza explicada como análisis estructural
+    del espacio de features mediante los loadings del PCA.
     """
 
     ## Elimino filas con valores faltantes en las features seleccionadas
@@ -616,4 +634,87 @@ def run_pca(df, feature_cols):
     cumulative = np.cumsum(explained)
 
     ## Retorno la varianza explicada por componente y su acumulado
-    return explained, cumulative
+    return explained, cumulative, pca
+
+def pc_loading_distributions(W, feature_cols, K = 10):
+    """
+    Analiza la distribución de contribuciones de las features originales
+    en los primeros K componentes principales del PCA.
+
+    Esta función toma la matriz de loadings del PCA (componentes principales)
+    y descompone cada uno de los primeros K vectores propios en términos de
+    las features originales, normalizando las contribuciones para poder
+    interpretarlas como distribuciones de peso.
+
+    El objetivo es estudiar qué variables del espacio original dominan cada
+    dirección principal del espacio decorrelacionado.
+
+    Parameters
+    ----------
+    W : np.ndarray
+        Matriz de componentes principales del PCA con forma (n_components, n_features).
+        Cada fila corresponde a un autovector del espacio PCA.
+
+    feature_cols : list of str
+        Lista con los nombres de las features originales, en el mismo orden
+        que las columnas usadas para ajustar el PCA.
+
+    K : int, optional (default=10)
+        Número de componentes principales a analizar. Si K excede el número
+        disponible de componentes, se ajusta automáticamente.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame en formato largo (long-format) con las siguientes columnas:
+
+        - feature : nombre de la feature original
+        - loading : contribución normalizada (en valor absoluto) de la feature
+                    en el componente principal correspondiente
+        - pc      : índice del componente principal (0 = PC1)
+
+    Notes
+    -----
+    - Los loadings se normalizan usando la suma de valores absolutos,
+    por lo que representan una distribución de contribución relativa.
+    - Esta normalización elimina la interpretación de signo y se enfoca
+    en magnitud de influencia.
+    - Permite analizar dominancia estructural de features en cada dirección
+    del espacio PCA sin necesidad de reconstrucción.
+    """
+
+    ## Me aseguro de no exceder el número de componentes disponibles en la matriz W
+    K = min(K, W.shape[0])
+
+    ## Inicializo una lista donde voy a almacenar los DataFrames de cada componente principal
+    results = []
+
+    ## Itero sobre los primeros K componentes principales del PCA
+    for k in range(K):
+
+        ## Extraigo el k-ésimo vector propio (loadings del PCA)
+        w = W[k]
+
+        ## Tomo el valor absoluto de los loadings para analizar contribución sin signo
+        w_abs = np.abs(w)
+
+        ## Normalizo los loadings para que formen una distribución (suma = 1)
+        w_norm = w_abs / (np.sum(w_abs) + 1e-12)
+
+        ## Construyo un DataFrame donde asocio cada feature con su contribución
+        df = pd.DataFrame({
+
+            ## Nombre de la feature original
+            "feature": feature_cols,
+
+            ## Peso normalizado de la feature en este componente principal
+            "loading": w_norm,
+
+            ## Identificador del componente principal (PC index)
+            "pc": k})
+
+        ## Agrego el resultado de este componente a la lista global
+        results.append(df)
+
+    ## Concateno todos los DataFrames en uno solo en formato largo
+    return pd.concat(results, ignore_index = True)
