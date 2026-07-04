@@ -244,10 +244,6 @@ if __name__== '__main__':
         ## terminación de cada uno de los giros detectados (uso los giros suavizados pero es arbitrario)
         turns_map = {(t["id"], t["start_idx"], t["end_idx"]): t for t in turns_smooth}
 
-        # ## Elimino aquellas columnas correspondientes a los índices que denotan el inicio y la
-        # ## terminación de cada uno de los giros (no voy a utilizarlas en esta parte del procesamiento)
-        # df_features = features_giros_total.drop(columns = ["start_idx", "end_idx"], errors = "ignore")
-
         ## Me aseguro que el campo "id" del dataframe de features esté en formato string
         features_giros_total["id"] = features_giros_total["id"].astype(str)
 
@@ -286,6 +282,9 @@ if __name__== '__main__':
         ## una caída por año (discriminación binaria por caídas) de modo que asigno 1 a los giros
         ## de los pacientes con al menos una caída, y 0 a los giros de pacientes sin caídas
         df_dataset["caida_bin"] = (df_dataset["Caida"] >= 1).astype(int)
+
+        ## Normalizo el ángulo de giro para eliminar dependencia de la dirección (CW vs CCW)
+        df_dataset["angle_deg"] = np.abs(df_dataset["angle_deg"])
 
         ## Elimino las columnas del dataframe que no corresponden a features numéricas de los giros
         feature_cols = df_dataset.columns.drop(["id", "Edad", "Caida", "age_group", "caida_bin"])
@@ -610,10 +609,15 @@ if __name__== '__main__':
         ## Hago la graficación del diagrama de dispersión para los no caedores
         plot_error_space(df_no_fall, features_no_fall[0], features_no_fall[1],
                         title = "Giros de personas sin ninguna caída (SVM LOO)")
-        
+
         ## Hago la graficación del diagrama de dispersión para los caedores
         plot_error_space(df_fall, features_fall[0], features_fall[1],
                         title = "Giros de personas con al menos una caída (SVM LOO)")
+
+        ## Hago la graficación del diagrama de dispersión de aceleración vertical (az) y ángulo de giro
+        plot_feature_space_2d(df = df_fall, feature_x = "az_peak_mean_ratio", feature_y = "angle_deg",
+            target_col = "age_group_binary", class_labels = {0: "≤75", 1: ">75"},
+            title = "Espacio de features: pico de aceleración vertical vs ángulo de giro", alpha = 0.5)
 
         ## ======================================================
         ## ANÁLISIS DE CLASIFICACIONES ERRÓNEAS EN BASE A LA ID DE LA PERSONA
@@ -675,7 +679,7 @@ if __name__== '__main__':
 
         ## Hago el gráfico de dispersión en el espacio de features diferenciando outliers/no outliers (fallers)
         plot_feature_space_2d(df = outliers_fall, feature_x = features_fall[0],
-            feature_y = features_fall[1], target_col = "outlier_label", title = "Outliers Fallers",)
+            feature_y = features_fall[1], target_col = "outlier_label", title = "Outliers Fallers")
 
         ## Hago la detección de outliers para el conjunto de los no caedores
         outliers_no_fall, outliers_no_fall_by_feat = univariate_outliers(df_no_fall, 
@@ -692,6 +696,40 @@ if __name__== '__main__':
         ## Hago el gráfico de dispersión en el espacio de features diferenciando outliers/no outliers (no fallers)
         plot_feature_space_2d(df = outliers_no_fall, feature_x = features_no_fall[0],
             feature_y = features_no_fall[1], target_col = "outlier_label", title = "Outliers No Fallers")
+
+        ## ======================================================
+        ## ANÁLISIS LUEGO DE REMOVER OUTLIERS
+        ## ======================================================
+
+        ## Elimino los outliers del conjunto de giros correspondientes a personas que tienen al menos una caída
+        df_fall_soutliers = df_fall[df_fall["id"] != "255"].copy()
+
+        ## SVM Univariado con división etaria binaria (>75, <75) para aquellos giros asociados
+        ## a las personas para las que se registra al menos una caída por año
+        results_svm_fall, svm_predictions_fall = rbf_svm_univariate_feature_error(
+            df = df_fall_soutliers, feature_cols = feature_cols, target_col = "age_group_binary",
+            C = C, gamma = gamma, n_splits = n_splits)
+
+        ## Hago la graficación de las features según el error de predicción medio en las K-Folds
+        ## para el ranking univariado con división etaria binaria para personas con al menos una caida
+        plot_svm_feature_error_ranking(results_svm_fall, top_k = 10, annotate = True,
+            title = "Ranking univariado de features con SVM (división etaria binaria) – personas con " \
+            "al menos una caída", C = C, gamma = gamma)
+
+        ## Hago el SFFS Multivariado para los resultados de los giros asociados a personas con caidas
+        sfs_results_fall = sfs_svm_fixed(df = df_fall_soutliers, feature_cols = feature_cols,
+            target_col = "age_group_binary", k = k_top_features, C = C, gamma = gamma,
+            cv = n_splits)
+
+        ## Selecciono las 2 features óptimas según el proceso SFS con SVM 
+        ## correspondientes al dataset de giros asociados a personas que tienen al menos una caida
+        features_fall = sfs_results_fall.iloc[-1]["features"][:2]
+
+        ## Hago el grafico de dispersión del feature space proyectado en el plano de las 2 mejores features
+        plot_feature_space_2d(df = df_fall_soutliers, feature_x = "gyro_horz_jerk_energy_L2", 
+            feature_y = "acc_horz_jerk_energy", target_col = "age_group_binary", 
+            class_labels = {0: "≤75", 1: ">75"}, title = "Espacio de features de giros de caedores " \
+            "luego de remover outliers", alpha = 0.5)
 
         ## ======================================================
         ## GRAFICACIÓN DE GIROS EN EL TIEMPO
@@ -728,11 +766,11 @@ if __name__== '__main__':
         load_nofall = pc_loading_distributions(W = pca_nofall.components_, feature_cols = feature_cols, K = 10)
 
         ## Hago la gráfica de las distribuciones de las componentes de PCA en el feature set original 
-        ## para caedores
+        ## para aquellos giros asociados a personas que tienen al menos una caída
         plot_pca_feature_contributions(load_fall, K = 10, N = 10, title = "Fallers - PCA loadings")
 
         ## Hago la gráfica de las distribuciones de las componentes de PCA en el feature set original 
-        ## para no caedores
+        ## para aquellos giros asociados a personas que no tienen ninguna caída
         plot_pca_feature_contributions(load_nofall, K = 10, N = 10, title = "Non-fallers - PCA loadings")
 
         ## ======================================================
