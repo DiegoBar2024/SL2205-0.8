@@ -644,6 +644,129 @@ def regression_analysis(df, feature_cols, x_col = "age", poly_degree = 2, alpha 
     return (pd.DataFrame(results).sort_values(by = ["significant", "p_value"],
             ascending = [False, True]).reset_index(drop = True))
 
+def analyze_age_feature_dependencies(df, svm_best_features, feature_cols, age_threshold = 75,
+        poly_degree = 1, alpha = 0.05, group_name = ""):
+    """
+    Analiza relaciones de dependencia lineal entre features de giros dentro
+    de un grupo de condición de caída, separando además los datos según rango
+    etario.
+
+    Las features seleccionadas previamente mediante SVM se utilizan como
+    variables independientes y se evalúa su capacidad de explicar linealmente
+    el resto de las features mediante regresiones individuales.
+
+    Para cada relación feature-feature se calculan:
+        - Pendiente e intercepto del modelo lineal.
+        - R² de regresión lineal y polinómica.
+        - Significancia estadística del coeficiente lineal mediante OLS.
+
+    El análisis permite identificar pares de features con dependencias lineales
+    potencialmente asociadas al envejecimiento o a la condición de caída.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataset filtrado por condición de caída (fallers o no fallers).
+        Debe contener la columna "Edad" y todas las features analizadas.
+
+    svm_best_features : list of str
+        Features seleccionadas mediante SVM utilizadas como variables
+        predictoras en los modelos de regresión.
+
+    feature_cols : list of str
+        Lista completa de features disponibles. Para cada feature predictora,
+        las restantes se utilizan como variables dependientes.
+
+    age_threshold : int, default=75
+        Umbral utilizado para separar los grupos etarios:
+            - mayores: edad > age_threshold
+            - menores: edad <= age_threshold
+
+    poly_degree : int, default=2
+        Grado del modelo de regresión polinómica complementario.
+
+    alpha : float, default=0.05
+        Nivel de significancia utilizado para evaluar la pendiente del modelo
+        lineal.
+
+    group_name : str, default=""
+        Identificador del grupo analizado (por ejemplo, "fall" o "no_fall").
+
+    Returns
+    -------
+    dict
+        Diccionario con los resultados separados por grupo etario.
+
+        Cada elemento contiene un DataFrame con las regresiones realizadas,
+        incluyendo:
+            - feature: variable dependiente.
+            - x_feature: variable predictora seleccionada por SVM.
+            - slope e intercept: parámetros del modelo lineal.
+            - linear_r2 y poly_r2: coeficientes de ajuste.
+            - p_value y significant: significancia estadística.
+            - group: identificación del grupo analizado.
+    """
+
+    ## Inicializo un diccionario vacío donde voy a almacenar los resultados correspondientes
+    ## a cada uno de los grupos etarios analizados
+    results = {}
+
+    ## Construyo dos subconjuntos independientes del dataset original: uno correspondiente
+    ## a individuos mayores al umbral de edad y otro correspondiente a individuos menores o 
+    ## iguales al umbral definido
+    groups = {f"{group_name}_older_{age_threshold}": df[df["Edad"] > age_threshold],
+            f"{group_name}_younger_{age_threshold}": df[df["Edad"] <= age_threshold]}
+
+    ## Itero sobre cada uno de los grupos etarios definidos para realizar el análisis de dependencia
+    ## de features de manera independiente
+    for name, data in groups.items():
+
+        ## Inicializo una lista vacía donde voy a almacenar los resultados de todas las
+        ## regresiones correspondientes al grupo actual
+        group_results = []
+
+        ## Itero sobre cada una de las features seleccionadas mediante SVM, considerando cada 
+        ## una de ellas como posible variable explicativa
+        for x_feature in svm_best_features:
+
+            ## Construyo la lista de variables dependientes.
+            ## Incluyo todas las features disponibles excepto la utilizada actualmente como variable
+            ## independiente para evitar realizar la regresión de una feature contra sí misma
+            targets = [f for f in feature_cols if f != x_feature]
+
+            ## Ejecuto el análisis de regresión para evaluar la relación entre la feature
+            ## seleccionada por SVM y todas las restantes.
+            reg = regression_analysis(data, feature_cols = targets, x_col = x_feature,
+                poly_degree = poly_degree, alpha = alpha)
+
+            ## Agrego al resultado la información de cuál fue la feature
+            ## utilizada como variable independiente en este conjunto de regresiones
+            reg["x_feature"] = x_feature
+
+            ## Agrego la identificación del grupo etario y condición de caída
+            ## al cual corresponde el análisis realizado
+            reg["group"] = name
+
+            ## Almaceno los resultados de las regresiones asociadas a la feature predictora actual
+            group_results.append(reg)
+
+        ## Combino todos los resultados individuales del grupo etario en
+        ## un único dataframe para facilitar su análisis posterior
+        results[name] = (pd.concat(group_results, ignore_index = True)
+
+            ## Ordeno los resultados priorizando:
+            ## 1) Relaciones estadísticamente significativas
+            ## 2) Mayor capacidad explicativa lineal (R²)
+            ## 3) Menor valor de p asociado al coeficiente lineal
+            .sort_values(["significant", "linear_r2", "p_value"], ascending = [False, False, True])
+
+            ## Reinicio los índices del dataframe luego del ordenamiento
+            .reset_index(drop = True))
+
+    ## Retorno un diccionario con los rankings de dependencia lineal
+    ## obtenidos para cada combinación de condición de caída y grupo etario
+    return results
+
 def univariate_outliers(df, feature_cols, method = "iqr", iqr_factor = 1.5, z_thresh = 3.0):
     """
     Detecta outliers univariados por feature y devuelve tanto la detección individual

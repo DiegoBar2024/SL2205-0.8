@@ -374,7 +374,7 @@ if __name__== '__main__':
         ## features (como variable dependiente) contra la edad (variable indpendiente).
         results_df = regression_analysis(df = df_dataset, feature_cols = feature_cols, x_col = "Edad",
                                         poly_degree = 2, alpha = 0.05)
-        
+
         ## ======================================================
         ## CLUSTERING K-MEANS DEL DATASET CON TODAS LAS FEATURES
         ## ======================================================
@@ -389,9 +389,6 @@ if __name__== '__main__':
         ## Evalúo qué tan bien el clustering separa los grupos etarios
         ## Como regla de decisión, tengo que una precisión > 0.85 representa una buena separación
         cluster_eval = evaluar_clustering_por_edad(cluster_results, group_col = "age_group")
-
-        # ## Hago la graficación de la distribución de rangos etarios por clúster y de clústers por rango etario
-        # cluster_age, age_cluster = plot_cluster_age_distributions(cluster_results["df"])
 
         ## ======================================================
         ## RANKING UNIVARIADO DE FEATURES USANDO INFORMACIÓN MUTUA
@@ -618,6 +615,58 @@ if __name__== '__main__':
         plot_feature_space_2d(df = df_fall, feature_x = "az_peak_mean_ratio", feature_y = "angle_deg",
             target_col = "age_group_binary", class_labels = {0: "≤75", 1: ">75"},
             title = "Espacio de features: pico de aceleración vertical vs ángulo de giro", alpha = 0.5)
+
+        ## ======================================================
+        ## ANÁLISIS DE REGRESIÓN LINEAL ENTRE PARES DE FEATURES DE GIROS
+        ## ======================================================
+
+        ## Hago el análisis de regresión lineal tomando como referencia las features de mejor capacidad
+        ## discriminadora según el análisis de error de SVM para giros de personas sin caidas mayores a 75
+        no_fall_results = analyze_age_feature_dependencies(df_no_fall,
+            svm_best_features = [results_svm_no_fall['feature'][0], results_svm_no_fall['feature'][1]],
+            feature_cols = feature_cols, group_name = "no_fallers")
+
+        ## Obtengo el ranking de mejores pares de features con mayores relaciones de dependencia lineal
+        ## para giros correspondientes a personas mayores a 75 años
+        raking_regr_no_fall = no_fall_results["no_fallers_older_75"].head(10)
+
+        ## Hago la graficación de las mejores relaciones de regresión lineal para los no caedores
+        ## para giros correspondientes a personas mayores a 75 años
+        plot_regression_dependencies(raking_regr_no_fall, top_n = 10, 
+            title = "Ranking de dependencias lineales - Personas mayores a 75 años sin caídas")
+
+        ## Obtengo el ranking de mejores pares de features con mayores relaciones de dependencia lineal
+        ## para giros correspondientes a personas menores a 75 años
+        raking_regr_no_fall = no_fall_results["no_fallers_younger_75"].head(10)
+
+        ## Hago la graficación de las mejores relaciones de regresión lineal para los no caedores
+        ## para giros correspondientes a personas menores a 75 años
+        plot_regression_dependencies(raking_regr_no_fall, top_n = 10, 
+            title = "Ranking de dependencias lineales - Personas menores a 75 años sín caídas")
+
+        ## Hago el análisis de regresión lineal tomando como referencia las features de mejor capacidad
+        ## discriminadora según el análisis de error de SVM para giros de personas fallers mayores a 75
+        fall_results = analyze_age_feature_dependencies(df_fall,
+            svm_best_features = [results_svm_fall['feature'][0], results_svm_fall['feature'][1]],
+            feature_cols = feature_cols, group_name = "fallers")
+
+        ## Obtengo el ranking de mejores pares de features con mayores relaciones de dependencia lineal
+        ## para giros correspondientes a personas mayores a 75 años
+        raking_regr_fall = fall_results["fallers_older_75"].head(10)
+
+        ## Hago la graficación de las mejores relaciones de regresión lineal para los caedores
+        ## para giros correspondientes a personas mayores a 75 años
+        plot_regression_dependencies(raking_regr_fall, top_n = 10, 
+            title = "Ranking de dependencias lineales - Personas mayores a 75 años con al menos una caída")
+
+        ## Obtengo el ranking de mejores pares de features con mayores relaciones de dependencia lineal
+        ## para giros correspondientes a personas menores a 75 años
+        raking_regr_fall = fall_results["fallers_younger_75"].head(10)
+
+        ## Hago la graficación de las mejores relaciones de regresión lineal para los caedores
+        ## para giros correspondientes a personas menores a 75 años
+        plot_regression_dependencies(raking_regr_fall, top_n = 10, 
+            title = "Ranking de dependencias lineales - Personas menores a 75 años con al menos una caída")
 
         ## ======================================================
         ## ANÁLISIS DE CLASIFICACIONES ERRÓNEAS EN BASE A LA ID DE LA PERSONA

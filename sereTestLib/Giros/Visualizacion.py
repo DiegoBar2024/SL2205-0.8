@@ -2009,3 +2009,89 @@ def plot_pca_feature_contributions(load_df, K = 10, N = 10,
 
     ## Despliego el gráfico final
     plt.show()
+
+def plot_regression_dependencies(results_df, top_n = 20, 
+                    title = "Ranking de dependencias lineales entre features"):
+    """
+    Visualiza las relaciones de dependencia lineal más fuertes entre pares
+    de features según el coeficiente de determinación R².
+
+    La función genera un gráfico de barras horizontal con las combinaciones
+    de features que presentan mayor capacidad de explicación lineal.
+
+    Cada barra representa una regresión entre:
+        - x_feature: feature utilizada como variable predictora.
+        - feature: feature explicada por el modelo.
+
+    Además del valor de R² se indica el valor de ajuste de cada regresión,
+    permitiendo identificar las relaciones feature-feature con mayor
+    dependencia lineal.
+
+    Parameters
+    ----------
+    results_df : pandas.DataFrame
+        DataFrame con los resultados del análisis de regresión.
+        Debe contener:
+            - x_feature: feature independiente.
+            - feature: feature dependiente.
+            - linear_r2: coeficiente de determinación del modelo lineal.
+            - slope: pendiente de la regresión.
+
+    top_n : int, default=20
+        Número de relaciones feature-feature a visualizar.
+
+    title : str, default="Ranking de dependencias lineales entre features"
+        Título mostrado en la figura generada.
+
+    Returns
+    -------
+    None
+        La función genera y muestra un gráfico, sin retornar valores.
+
+    Notes
+    -----
+    - Un mayor valor de R² indica una relación lineal más fuerte entre
+    ambas features.
+    - El análisis permite identificar posibles relaciones biomecánicas
+    entre variables cinemáticas dentro del grupo evaluado.
+    """
+
+    ## Ordeno las regresiones según el valor de R² lineal y selecciono únicamente las relaciones
+    ## con mayor dependencia explicativa
+    df = (results_df.sort_values("linear_r2", ascending = False).head(top_n).copy())
+
+    ## Construyo una etiqueta combinando la feature predictora y la feature
+    ## dependiente para identificar cada relación en el eje vertical
+    df["pair"] = df["x_feature"] + " → " + df["feature"]
+
+    ## Configuro el tamaño de la figura y obtengo el eje activo para agregar anotaciones
+    plt.figure(figsize = (10, 6))
+    ax = plt.gca()
+
+    ## Genero el gráfico de barras horizontales donde cada barra representa
+    ## el valor de R² correspondiente a una relación feature-feature
+    sns.barplot(data = df, y = "pair", x = "linear_r2", ax = ax)
+
+    ## Agrego el valor numérico de R² al final de cada barra
+    for bar, r2 in zip(ax.patches, df["linear_r2"]):
+
+        ## Obtengo la posición final de cada barra para ubicar la etiqueta
+        width = bar.get_width()
+
+        ## Escribo el valor de R² con tres cifras decimales
+        ax.text(width + 0.01, bar.get_y() + bar.get_height() / 2, f"{r2:.3f}", va = "center",
+                fontsize = 10)
+
+    ## Agrego información descriptiva del gráfico utilizando el título recibido como parámetro
+    plt.title(title)
+    plt.xlabel("R² regresión lineal")
+    plt.ylabel("Relación entre features")
+
+    ## Agrego una grilla horizontal para facilitar la comparación visual
+    plt.grid(axis = "x", alpha = 0.3)
+
+    ## Ajusto automáticamente los márgenes para evitar solapamiento de etiquetas
+    plt.tight_layout()
+
+    ## Muestro el gráfico generado
+    plt.show()
