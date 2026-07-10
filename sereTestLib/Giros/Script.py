@@ -617,6 +617,43 @@ if __name__== '__main__':
             title = "Espacio de features: pico de aceleración vertical vs ángulo de giro", alpha = 0.5)
 
         ## ======================================================
+        ## ANÁLISIS JOVENES NO CAEDORES VS MAYORES CAEDORES
+        ## ======================================================
+
+        ## Hago una copia del dataset original
+        df_turns = df_dataset_binary.copy()
+
+        ## Clase 0: personas mayores a 75 años con al menos una caída
+        condition_fallers = (df_turns["Edad"] > 75) & (df_turns["Caida"] > 0)
+
+        ## Clase 1: personas menores o iguales a 60 años sin caídas
+        condition_controls = (df_turns["Edad"] <= 60) & (df_turns["Caida"] == 0)
+
+        ## Mantengo únicamente los dos grupos extremos
+        df_turns = df_turns[condition_fallers | condition_controls].copy()
+
+        ## Asigno las dos clases extremas como 0 y 1 con el siguiente criterio
+        ## 0 -> giros de personas de edad mayor a 75 con al menos una caída
+        ## 1 -> giros de personas de edad menor o igual a 60 sin ninguna caída
+        df_turns["group_extreme"] = np.where(condition_fallers.loc[df_turns.index], 0, 1)
+
+        ## Hago un ranking de features univariado usando un algoritmo SVM
+        results_svm_extreme, svm_predictions_extreme = rbf_svm_univariate_feature_error(df = df_turns,
+            feature_cols = feature_cols, target_col = "group_extreme", C = C, gamma = gamma, 
+            n_splits = n_splits)
+
+        ## Hago un ranking the features multivariado usando SVM SFFS (Feature Selection)
+        plot_svm_feature_error_ranking(results_svm_extreme, top_k = 10, annotate = True,
+            title = "Ranking univariado de features con SVM - mayores >75 con caídas vs " \
+            "menores <=60 sin caídas", C = C, gamma = gamma)
+
+        ## Hago el diagrama de dispersión en el plano de las 2 features más discriminadoras
+        plot_feature_space_2d(df = df_turns, feature_x = "acc_horz_jerk_energy_L2", 
+            feature_y = "wz_jerk_energy", target_col = "group_extreme", 
+            class_labels = {0: "Mayor a 75 - Al menos una caída", 
+            1: "Menor a 60 - Sin caídas"}, title = "Scatter Plot - Clases Extremas", alpha = 0.5)
+
+        ## ======================================================
         ## ANÁLISIS DE REGRESIÓN LINEAL ENTRE PARES DE FEATURES DE GIROS
         ## ======================================================
 
