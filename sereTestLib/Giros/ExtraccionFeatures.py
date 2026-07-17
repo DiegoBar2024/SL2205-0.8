@@ -240,10 +240,15 @@ def extract_1d_signal_features(seg, fs):
             "std": std_val, "iqr": iqr_val, "cv": cv_val, "jerk_burstiness": jerk_burstiness,
             "jerk_concentration": jerk_concentration, "jerk_spectral_centroid": jerk_spectral_centroid}
 
-def extraer_features_basicas(imu_quat, segmentos, fs, id, gyro, acc):
+def extraer_features_basicas(imu_quat, segmentos, fs, id, gyro, acc, gravity):
     """
     Extrae características cinemáticas por evento de giro usando
     giroscopio (wx, wy, wz) y acelerómetro (ax, ay, az).
+
+    Antes de la extracción de características, se elimina la componente
+    vertical de la gravedad de la señal del acelerómetro, asumiendo que
+    tanto la aceleración como el vector de gravedad ya se encuentran
+    expresados en el mismo sistema de referencia alineado.
 
     Cada segmento se analiza de forma independiente, extrayendo
     el mismo conjunto de features para cada eje.
@@ -268,7 +273,12 @@ def extraer_features_basicas(imu_quat, segmentos, fs, id, gyro, acc):
         Señal de velocidad angular (en sistema inercial o body consistente).
 
     acc : np.ndarray (N, 3)
-        Señal de aceleración (en mismo sistema que gyro).
+        Señal de aceleración alineada.
+
+    gravity : np.ndarray (N, 3)
+        Vector de gravedad expresado en el mismo sistema de referencia que
+        la aceleración alineada. Únicamente se utiliza su componente vertical
+        para eliminar la contribución gravitatoria del eje z.
 
     Returns
     -------
@@ -285,9 +295,17 @@ def extraer_features_basicas(imu_quat, segmentos, fs, id, gyro, acc):
     ## Inicializo una lista vacía en la cual voy a almacenar todas las features de los giros
     features = []
 
+    ## Hago una copia de la señal de acelerómetro para no modificar la señal original
+    acc_corrected = acc.copy()
+
+    ## Elimino la contribución de la gravedad sobre la componente vertical
+    ## del acelerómetro aprovechando que ambas señales ya están alineadas
+    acc_corrected[:, 2] = acc_corrected[:, 2] - gravity[2]
+
     ## Construyo un diccionario separando las señales de giroscopios y acelerómetros en cada eje
-    signal_map = {"wx": gyro[:, 0], "wy": gyro[:, 1], "wz": gyro[:, 2],
-                "ax": acc[:, 0], "ay": acc[:, 1], "az": acc[:, 2]}
+    ## utilizando la aceleración corregida por gravedad en el eje vertical
+    signal_map = {"wx": gyro[:, 0], "wy": gyro[:, 1], "wz": gyro[:, 2], "ax": acc_corrected[:, 0],
+        "ay": acc_corrected[:, 1], "az": acc_corrected[:, 2]}
 
     ## Itero para cada uno de los segmentos de giros detectados
     for i, seg in enumerate(segmentos):
@@ -329,8 +347,9 @@ def extraer_features_basicas(imu_quat, segmentos, fs, id, gyro, acc):
 
         ## Inicializo un diccionario donde guardo características del giro como el ID de la persona,
         ## duración del giro en segundos y ángulo de rotación del giro en grados
-        base_record = {"id": id, "start_idx": s, "end_idx": e, "duration_s": duration, "angle_deg": angle,
-                "gyro_horz_jerk_energy": gyro_horz_jerk_energy, "acc_horz_jerk_energy": acc_horz_jerk_energy}
+        base_record = {"id": id, "start_idx": s,"end_idx": e, "duration_s": duration,
+            "angle_deg": angle, "gyro_horz_jerk_energy": gyro_horz_jerk_energy, 
+            "acc_horz_jerk_energy": acc_horz_jerk_energy}
 
         ## Itero para cada una de las señales de los giroscopios y acelerómetros
         for name, signal in signal_map.items():

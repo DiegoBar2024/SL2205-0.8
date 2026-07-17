@@ -9,6 +9,7 @@ from LecturaDatosPacientes import *
 from LecturaDatos import *
 import numpy as np
 import pickle
+from scipy.constants import g
 from itertools import combinations
 from Visualizacion import *
 from Preprocesamiento import *
@@ -49,10 +50,13 @@ if __name__== '__main__':
     elif opcion == 2:
 
         ## Configuro una variable que me de a elegir si quiero graficar datos o no
-        graficar = True
+        graficar = False
 
         ## Seteo el sistema inercial que voy a usar de referencia para el cálculo de orientación
         sist_inercial = 'ENU'
+
+        ## Construyo el vector de aceleración gravitatoria asociado al sistema de referencia inercial
+        gravity = np.array([0.0, 0.0, -g if sist_inercial == "ENU" else g])
 
         ## Inicializo una lista en la cual voy a almacenar todas las features de todos los giros de todos los pacientes
         features_giros_total = []
@@ -91,7 +95,7 @@ if __name__== '__main__':
                 gyro_suav = np.column_stack([moving_average(ang_vel_inercial[:, 0], frec_muestreo),
                                         moving_average(ang_vel_inercial[:, 1], frec_muestreo),
                                         moving_average(ang_vel_inercial[:, 2], frec_muestreo)])
-                
+
                 ## Hago el suavizado de las señales del acelerómetro expresadas en el sistema inercial
                 ## con el fin de mitigar las excursiones significativas causadas por el ruido
                 acc_suav = np.column_stack([moving_average(acc_inercial[:, 0], frec_muestreo),
@@ -118,16 +122,16 @@ if __name__== '__main__':
                     plot_signal_with_events(gyro_suav[:,2], giros, fs = frec_muestreo,
                             save_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/GirosTemporales/Suavizadas/{}/wz.png".format(root, id_paciente))
 
-                # ## Extraigo los segmentos de acelerómetros y giroscopios separados por giros
-                # segmentos = extraer_segmentos_giros(acel, gyro, giros)
+                ## Extraigo los segmentos de acelerómetros y giroscopios separados por giros
+                segmentos = extraer_segmentos_giros(acel, gyro, giros)
 
-                # ## Hago la extracción de features correspondientes a los giros, pasando como argumento
-                # ## señales tanto de acelerómetro como giroscopio preprocesadas
-                # features_giros = extraer_features_basicas(imu_quat, segmentos, frec_muestreo, 
-                #                                         id_paciente, gyro_suav, acc_suav)
+                ## Hago la extracción de features correspondientes a los giros, pasando como argumento
+                ## señales tanto de acelerómetro como giroscopio preprocesadas
+                features_giros = extraer_features_basicas(imu_quat, segmentos, frec_muestreo, 
+                                                        id_paciente, gyro_suav, acc_suav, gravity)
 
-                # ## Almaceno las features de los giros de dicho paciente a la lista general de features de giros de pacientes
-                # features_giros_total.extend(features_giros)
+                ## Almaceno las features de los giros de dicho paciente a la lista general de features de giros de pacientes
+                features_giros_total.extend(features_giros)
 
             ## En caso de que ocurra algún error en el procesamiento de los giros de los pacientes
             except:
@@ -142,53 +146,8 @@ if __name__== '__main__':
         df_features = pd.DataFrame(features_giros_total)
 
         ## Hago el guardado del dataframe pandas bajo la extensión de .parquet
-        output_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro+ind.parquet".format(root)
+        output_path = "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro+ind_sgrav.parquet".format(root)
         df_features.to_parquet(output_path, index = False)
-
-    ## En caso de que yo quiera procesar las features de los giros que fueron previamente extraídas
-    ## pero haciendo una sumarización de los valores estadísticos de las features extraídas por persona
-    elif opcion == 3:
-
-        ## Hago la lectura del archivo .parquet donde guardo el dataframe Pandas que contiene
-        ## la lista con los diccionarios con todos los parámetros de los giros detectados
-        features_giros_total = pd.read_parquet(
-            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_total.parquet".format(root))
-
-        ## Especifico el orden de las columnas del dataframe según las features para asegurar consistencia
-        ## y reorganizo todo el dataframe pandas para que sea consistente con el orden que quiero
-        array_features = features_giros_total[["id"] + FEATURE_COLUMNS].copy()
-        
-        ## Hago la sumarización de las features estadísticas de los giros por cada paciente        
-        features_por_paciente = agrupar_por_paciente(array_features)
-
-        ## Hago la conversión de numpy a dataframe para hacer el procesamiento
-        df_features_por_paciente = pd.DataFrame(features_por_paciente)
-
-        ## Me aseguro que los IDs se encuentran todos expresados en formato string
-        df_features_por_paciente["id"] = df_features_por_paciente["id"].astype(str)
-        pacientes["sampleid"] = pacientes["sampleid"].astype(str)
-
-        ## Obtengo únicamente información de la edad y la ID asociada a cada paciente
-        df_patients = pacientes[["sampleid", "Edad"]].copy()
-
-        ## Hago un inner join entre el dataframe con la edad y la ID de cada persona y el dataframe
-        ## con la sumarización estadística de las features de todos los giros detectados para el paciente
-        df_dataset = df_features_por_paciente.merge(df_patients, left_on = "id", right_on = "sampleid", 
-                                                    how = "inner")
-
-        ## Elimino la columna redundante con la ID del paciente para no tener datos duplicados
-        df_dataset = df_dataset.drop(columns = ["id"])
-
-        ## Asigno cada persona al grupo etario correspondiente según su edad (0: edad < 60, 1: 
-        ## 60 < edad < 75, 2: edad > 75) generando una nueva columna denominada "age_group"
-        df_dataset["age_group"] = asignar_grupo_edad(df_dataset["Edad"])
-
-        ## Selecciono únicamente aquellas columnas que correspondan a los features
-        feature_cols = df_dataset.columns.drop(["sampleid", "Edad", "age_group"])
-
-        ## Genero los boxplots correspondientes a la distribución de la pobilación por edad según feature
-        plot_feature_distributions_by_age_group(df_dataset, feature_cols, 'age_group', 
-        "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/".format(root), FEATURE_NAMES)
 
     ## En caso de que yo quiera procesar las features de los giros que fueron previamente extraídas
     ## pero hago el procesamiento por cada giro separadamente sin hacer sumarización por persona
@@ -219,7 +178,7 @@ if __name__== '__main__':
         ## Hago la lectura del archivo .parquet donde guardo el dataframe Pandas que contiene
         ## la lista con los diccionarios con todos los parámetros de los giros detectados
         features_giros_total = pd.read_parquet(
-            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro_v5.parquet".format(root))
+            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Datos/features_giros_acc+gyro+ind_sgrav.parquet".format(root))
 
         ## Hago la lectura del archivo .pickle el cual contiene los segmentos de señales de acelerómetro
         ## y giroscopio correspondientes a los giros, rotados a una base inerc
@@ -616,6 +575,10 @@ if __name__== '__main__':
             target_col = "age_group_binary", class_labels = {0: "≤75", 1: ">75"},
             title = "Espacio de features: pico de aceleración vertical vs ángulo de giro", alpha = 0.5)
 
+        ## Hago el SFFS Multivariado para los resultados de los giros asociados a personas con caidas
+        sfs_results_fall = sfs_svm_fixed(df = df_fall, feature_cols = feature_cols,
+            target_col = "age_group_binary", k = k_top_features, C = C, gamma = gamma, cv = n_splits)
+
         ## ======================================================
         ## ANÁLISIS JOVENES NO CAEDORES VS MAYORES CAEDORES
         ## ======================================================
@@ -652,6 +615,10 @@ if __name__== '__main__':
             feature_y = "wz_jerk_energy", target_col = "group_extreme", 
             class_labels = {0: "Mayor a 75 - Al menos una caída", 
             1: "Menor a 60 - Sin caídas"}, title = "Scatter Plot - Clases Extremas", alpha = 0.5)
+
+        ## Hago el SFFS Multivariado para los resultados de los giros asociados a personas con caidas
+        sfs_results_fall = sfs_svm_fixed(df = df_turns, feature_cols = feature_cols, 
+            target_col = "group_extreme", k = k_top_features, C = C, gamma = gamma, cv = n_splits)
 
         ## ======================================================
         ## ANÁLISIS DE REGRESIÓN LINEAL ENTRE PARES DE FEATURES DE GIROS
