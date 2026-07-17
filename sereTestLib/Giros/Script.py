@@ -448,29 +448,6 @@ if __name__== '__main__':
         top_features_multiv = sfs_results_bin['features'][k_top_features - 1]
 
         ## ======================================================
-        ## VISUALIZACIÓN DEL ESPACIO DE FEATURES EN 2D (BINARIO)
-        ## ======================================================
-
-        ## Selecciono las dos features más discriminativas según SFFS o análisis previo
-        feature_x = "wx_jerk_energy"
-        feature_y = "wy_jerk_energy"
-
-        ## Hago la visualización del espacio de features en 2D
-        plot_feature_space_2d(df = df_dataset_binary, feature_x = feature_x,
-            feature_y = feature_y, target_col = "age_group_binary", class_labels = {0: "≤75", 1: ">75"},
-            title = "Espacio de features: energía de jerk en plano horizontal", alpha = 0.5)
-
-        ## Selecciono las energias de las diferenciaciones de acelerómetro y giroscopio cuyos
-        ## ejes se encuentran en el plano horizontal
-        feature_x = "gyro_horz_jerk_energy"
-        feature_y = "acc_horz_jerk_energy"
-
-        ## Hago la visualización del espacio de features en 2D
-        plot_feature_space_2d(df = df_dataset_binary, feature_x = feature_x,
-            feature_y = feature_y, target_col = "age_group_binary", class_labels = {0: "≤75", 1: ">75"},
-            title = "Espacio de features: energía de jerk en plano horizontal", alpha = 0.5)
-
-        ## ======================================================
         ## RANKING FEATURES SVM UNIVARIADO - DIVISION ETARIA BINARIA 
         ## SEPARADOS SEGÚN CAIDAS/NO CAIDAS
         ## ======================================================
@@ -570,17 +547,12 @@ if __name__== '__main__':
         plot_error_space(df_fall, features_fall[0], features_fall[1],
                         title = "Giros de personas con al menos una caída (SVM LOO)")
 
-        ## Hago la graficación del diagrama de dispersión de aceleración vertical (az) y ángulo de giro
-        plot_feature_space_2d(df = df_fall, feature_x = "az_peak_mean_ratio", feature_y = "angle_deg",
-            target_col = "age_group_binary", class_labels = {0: "≤75", 1: ">75"},
-            title = "Espacio de features: pico de aceleración vertical vs ángulo de giro", alpha = 0.5)
-
         ## Hago el SFFS Multivariado para los resultados de los giros asociados a personas con caidas
         sfs_results_fall = sfs_svm_fixed(df = df_fall, feature_cols = feature_cols,
             target_col = "age_group_binary", k = k_top_features, C = C, gamma = gamma, cv = n_splits)
 
         ## ======================================================
-        ## ANÁLISIS JOVENES NO CAEDORES VS MAYORES CAEDORES
+        ## ANÁLISIS JOVENES NO CAEDORES (<60 AÑOS) VS MAYORES CAEDORES (> 75 AÑOS)
         ## ======================================================
 
         ## Hago una copia del dataset original
@@ -619,6 +591,16 @@ if __name__== '__main__':
         ## Hago el SFFS Multivariado para los resultados de los giros asociados a personas con caidas
         sfs_results_fall = sfs_svm_fixed(df = df_turns, feature_cols = feature_cols, 
             target_col = "group_extreme", k = k_top_features, C = C, gamma = gamma, cv = n_splits)
+
+        ## Hago el test de hipótesis de Wilcoxon uno a uno para ver si las features individuales
+        ## pueden rechazarme el hecho de que las distribuciones de las clases sean iguales
+        wilcoxon_extreme_results = pairwise_wilcoxon_rank_sum(df = df_turns, feature_cols = feature_cols,
+            group_col = "group_extreme")
+
+        ## Hago la graficación y el guardado de las matrices de significación a partir
+        plot_wilcoxon_significance_matrices(wilcoxon_extreme_results, 
+            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Wilcoxon/DosGrupos/Extremos"
+            .format(root), False, FEATURE_NAMES)
 
         ## ======================================================
         ## ANÁLISIS DE REGRESIÓN LINEAL ENTRE PARES DE FEATURES DE GIROS
@@ -751,7 +733,7 @@ if __name__== '__main__':
             feature_y = features_no_fall[1], target_col = "outlier_label", title = "Outliers No Fallers")
 
         ## ======================================================
-        ## ANÁLISIS LUEGO DE REMOVER OUTLIERS
+        ## ANÁLISIS DE FALLERS/NO FALLERS LUEGO DE REMOVER OUTLIERS
         ## ======================================================
 
         ## Elimino los outliers del conjunto de giros correspondientes a personas que tienen al menos una caída
@@ -785,20 +767,6 @@ if __name__== '__main__':
             "luego de remover outliers", alpha = 0.5)
 
         ## ======================================================
-        ## GRAFICACIÓN DE GIROS EN EL TIEMPO
-        ## ======================================================
-
-        ## Establezco las condiciones que deben cumplir ambos grupos de giros que voy a muestrear
-        group_A_cond = lambda df: df["gyro_horz_jerk_energy_L2"] > 1
-        group_B_cond = lambda df: df["az_peak_mean_ratio"] > 1.3
-
-        ## Hago el muestreo aleatorio y graficación de n giros correspondientes a cada grupo
-        sample_and_plot_turns(df_fall, group_A_cond, turns_map, title = "Fallers - gyro_horz_jerk_energy_L2 > 1",
-                            n = 2, seed = 42)
-        sample_and_plot_turns(df_fall, group_B_cond, turns_map, title = "Fallers - az_peak_mean_ratio > 1.3", 
-                            n = 2, seed = 42)
-
-        ## ======================================================
         ## ANÁLISIS DE DIRECCIONES DOMINANTES USANDO PCA PARA FALLERS - NO FALLERS
         ## ======================================================
 
@@ -825,30 +793,6 @@ if __name__== '__main__':
         ## Hago la gráfica de las distribuciones de las componentes de PCA en el feature set original 
         ## para aquellos giros asociados a personas que no tienen ninguna caída
         plot_pca_feature_contributions(load_nofall, K = 10, N = 10, title = "Non-fallers - PCA loadings")
-
-        ## ======================================================
-        ## VISUALIZACIÓN DEL ESPACIO DE FEATURES EN 2D
-        ## SEPARADOS SEGÚN CAIDAS/NO CAIDAS
-        ## ======================================================
-
-        ## Selecciono las energías horizontales de jerk de acelerómetro y giroscopio
-        feature_x = "gyro_horz_jerk_energy"
-        feature_y = "acc_horz_jerk_energy"
-
-        ## Hago la visualización en el espacio 2D de las features para sujetos sin caídas
-        plot_feature_space_2d(df = df_no_fall, feature_x = feature_x, feature_y = feature_y, 
-            target_col = "age_group_binary", class_labels = {0: "≤75", 1: ">75"},
-            title = ("Espacio de features (sin caídas): energía de jerk horizontal"), alpha = 0.5)
-
-        ## Hago la visualización en el espacio 2D de las features para sujetos con caídas
-        plot_feature_space_2d(df = df_fall, feature_x = feature_x, feature_y = feature_y, 
-            target_col = "age_group_binary", class_labels = {0: "≤75", 1: ">75"}, 
-            title = ("Espacio de features (con caídas): energía de jerk horizontal"), alpha = 0.5)
-
-        ## Hago la visualización en el espacio 2D de las features separando por color caidas/no caidas
-        plot_feature_space_2d(df = df_dataset_binary, feature_x = feature_x, feature_y = feature_y,
-            target_col = "caida_bin", class_labels = {0: "No caídas", 1: "Caídas"},
-            title = "Espacio de features: energía de jerk en plano horizontal", alpha = 0.5)
 
         ## ======================================================
         ## TESTS DE HIPÓTESIS DE SUMA DE RANGOS DE WILCOXON - AGRUPACIÓN ETARIA BINARIA
@@ -913,39 +857,6 @@ if __name__== '__main__':
         "de tres clases (edad y riesgo de caídas)", C = C, gamma = gamma)
 
         ## ======================================================
-        ## RANKING SVM UNIVARIADO CON TUNEADO DE HIPERPARÁMETROS Y DIVISIÓN
-        ## ETARIA BINARIA (DATASET COMPLETO Y LUEGO SEGMENTANDO CAIDAS/NO CAIDAS)
-        ## ======================================================
-
-        ## Hago el ranking de features de giros univariado para división etaria binaria con
-        ## tuneado de hiperparámetros de SVM para todo el dataset completo (sin dividir caídas)
-        results_svm_bin_tun = evaluar_features_svm_rbf(df = df_dataset_binary, feature_cols = feature_cols,
-            target_col = "age_group_binary", cv = n_splits)
-
-        ## Despliego el ranking de features correspondiente a la evaluación anterior de SVM + tuning
-        plot_svm_feature_error_ranking(results_svm_bin_tun, top_k = 10, annotate = True,
-        title = "Ranking univariado de features con SVM y ajuste de hiperparámetros (grupos etarios binarios)")
-
-        ## Hago el ranking de features de giros univariado para división etaria binaria con tuneado de 
-        ## hiperparámetros de SVM para los giros correspondientes a personas sin ninguna caída por año
-        results_svm_bin_no_fall_tun = evaluar_features_svm_rbf(df = df_no_fall, feature_cols = feature_cols, 
-            target_col = "age_group_binary", cv = n_splits)
-
-        ## Despliego el ranking de features correspondiente a la evaluación anterior de SVM + tuning
-        plot_svm_feature_error_ranking(results_svm_bin_no_fall_tun, top_k = 10, annotate = True,
-        title = "Ranking univariado de features con SVM optimizado (C, γ) – grupo sin caídas")
-
-        ## Hago el ranking de features de giros univariado para división etaria binaria con tuneado de 
-        ## hiperparámetros de SVM para los giros correspondientes a personas con al menos una caída por año
-        results_svm_bin_fall_tun = evaluar_features_svm_rbf(df = df_fall, feature_cols = feature_cols,
-            target_col = "age_group_binary", cv = n_splits)
-
-        ## Despliego el ranking de features correspondiente a la evaluación anterior de SVM + tuning
-        plot_svm_feature_error_ranking(results_svm_bin_fall_tun, top_k = 10, annotate = True,
-        title = "Ranking de features con SVM optimizado (división etaria binaria) – personas con al" \
-        " menos una caída")
-
-        ## ======================================================
         ## CONSTRUCCIÓN Y GUARDADO DE GRÁFICOS
         ## ======================================================
 
@@ -982,19 +893,19 @@ if __name__== '__main__':
             ## Grafico y guardo los resultados de aplicar el test de Wilcoxon dos a dos para 3 grupos etarios
             plot_wilcoxon_significance_matrices(results_wilcoxon, 
                         "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Wilcoxon/TresGrupos"
-                        .format(root), True, FEATURE_NAMES)
+                        .format(root), False, FEATURE_NAMES)
 
             ## Grafico y guardo los resultados de aplicar el test de Wilcoxon dos a dos para 2 grupos etarios
             ## y únicamente para personas que no hayan tenido ninguna caída por año
             plot_wilcoxon_significance_matrices(results_wilcoxon_no_fall, 
                         "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Wilcoxon/DosGrupos/NoFallers"
-                        .format(root), True, FEATURE_NAMES)
+                        .format(root), False, FEATURE_NAMES)
 
             ## Grafico y guardo los resultados de aplicar el test de Wilcoxon dos a dos para 2 grupos etarios
             ## y únicamente para personas que hayan tenido al menos una caída por año
             plot_wilcoxon_significance_matrices(results_wilcoxon_fall, 
                         "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Wilcoxon/DosGrupos/Fallers"
-                        .format(root), True, FEATURE_NAMES)
+                        .format(root), False, FEATURE_NAMES)
 
         ## En caso de que quiera graficar la variación de la feature en función de la edad junto
         ## con los correspondientes resultados de las regresiones lineal y polinomial
