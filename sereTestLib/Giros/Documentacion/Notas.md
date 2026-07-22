@@ -33,6 +33,25 @@ Se visualizan las distribuciones del número de caídas de los pacientes dentro 
   <strong>Figura:</strong> Gráfico de barras mostrando la distribución del número de caídas de los pacientes mayores a 75 años
 </p>
 
+## CARACTERIZACIÓN DE LA POBLACIÓN SEGÚN SI USAN O NO BASTÓN
+
+Se visualizan las distribuciones de aquellos pacientes que usan o no usan bastón dentro de cada uno de los rangos etarios. Para este análisis se contabilizan únicamente pacientes para los cuales se cuenta con registros en la base de datos.
+
+<p align="center">
+  <img src="BastonMenor60.png" alt="My image" style="max-width: 60%;"><br>
+  <strong>Figura:</strong> Gráfico de barras mostrando la cantidad de pacientes menores a 60 años que usan o no usan bastón. El indicador 0 es que las personas no usan bastón y 1 cuando las personas usan bastón
+</p>
+
+<p align="center">
+  <img src="Baston60y75.png" alt="My image" style="max-width: 60%;"><br>
+  <strong>Figura:</strong> Gráfico de barras mostrando la cantidad de pacientes entre 60 y 75 años que usan o no usan bastón. El indicador 0 es que las personas no usan bastón y 1 cuando las personas usan bastón
+</p>
+
+<p align="center">
+  <img src="BastonMayor75.png" alt="My image" style="max-width: 60%;"><br>
+  <strong>Figura:</strong> Gráfico de barras mostrando la cantidad de pacientes mayor a 75 años que usan o no usan bastón. El indicador 0 es que las personas no usan bastón y 1 cuando las personas usan bastón
+</p>
+
 ## DETECCIÓN DE GIROS
 
 ### DIAGRAMA DE FLUJO DEL ALGORITMO

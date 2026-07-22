@@ -79,8 +79,7 @@ def graficar_histograma_edades(df, columna_edad = 'Edad', mostrar_porcentaje = F
     plt.tight_layout()
     plt.show()
 
-def graficar_caidas_por_rango_etario(df, columna_edad = "Edad",
-                                    columna_caida = "Caida",
+def graficar_caidas_por_rango_etario(df, columna_edad = "Edad", columna_caida = "Caida",
                                     rango_edad = [75, float("inf")]):
     """
     Grafica la distribución absoluta del número de caídas
@@ -161,10 +160,128 @@ def graficar_caidas_por_rango_etario(df, columna_edad = "Edad",
     ## Despliego las etiquetas sobre las barras con los valores numéricos correspondientes
     for i, valor in enumerate(conteos.values):
         plt.text(i, valor, str(int(valor)),
-                ha = "center", va="bottom")
+                ha = "center", va = "bottom")
 
     ## Despliego la gráfica
     plt.tight_layout()
+    plt.show()
+
+def graficar_variable_por_rango_etario(df,
+                                       columna_edad = "Edad",
+                                       columna_variable = "Caida",
+                                       rango_edad = [75, float("inf")],
+                                       categorias = None,
+                                       titulo_variable = "Distribución",
+                                       etiqueta_x = "Valor"):
+    """
+    Grafica la distribución absoluta de una variable para un rango etario
+    específico.
+
+    La función filtra los sujetos pertenecientes al intervalo de edad
+    especificado y construye un gráfico de barras donde:
+
+        - El eje X representa las categorías o valores posibles de la variable.
+        - El eje Y representa la frecuencia absoluta de individuos para cada
+          categoría.
+
+    Esta representación permite caracterizar poblaciones específicas según
+    cualquier variable discreta contenida en el DataFrame (por ejemplo,
+    número de caídas, uso de bastón, uso de andador, etc.), manteniendo una
+    representación gráfica consistente a lo largo del pipeline.
+
+    Parámetros
+    ----------
+    df : pandas.DataFrame
+        DataFrame que contiene la información de los pacientes.
+
+    columna_edad : str, opcional (default = "Edad")
+        Nombre de la columna que contiene la edad de los sujetos.
+
+    columna_variable : str, opcional (default = "Caida")
+        Nombre de la variable cuya distribución se desea representar.
+
+    rango_edad : list, opcional (default = [75, float("inf")])
+        Intervalo etario utilizado para el filtrado.
+        Debe especificarse como:
+
+            [edad_min, edad_max]
+
+        Ejemplos:
+
+            [60, 75]
+            [75, float("inf")]
+
+    categorias : list, opcional (default = None)
+        Lista de categorías que se desean representar en el eje X.
+
+        Si se especifica, todas las categorías indicadas aparecerán en el
+        gráfico, incluso aquellas cuya frecuencia sea cero.
+
+        Si es None, las categorías se obtienen automáticamente a partir de
+        los valores presentes en la variable.
+
+    titulo_variable : str, opcional (default = "Distribución")
+        Texto utilizado para construir el título del gráfico.
+
+    etiqueta_x : str, opcional (default = "Valor")
+        Etiqueta utilizada para nombrar el eje X.
+    """
+
+    ## Obtengo el límite inferior del rango etario
+    edad_min = rango_edad[0]
+
+    ## Obtengo el límite superior del rango etario
+    edad_max = rango_edad[1]
+
+    ## Me quedo solamente con aquellas personas dentro del rango etario especificado
+    df_filtrado = df[(df[columna_edad] >= edad_min) & (df[columna_edad] < edad_max)].copy()
+
+    ## Convierto la variable de interés a formato numérico
+    df_filtrado[columna_variable] = pd.to_numeric(df_filtrado[columna_variable], errors = "coerce")
+
+    ## Elimino aquellas filas cuyo valor para la variable de interés sea inválido
+    df_filtrado = df_filtrado.dropna(subset = [columna_variable])
+
+    ## Si el usuario no especificó las categorías, las obtengo automáticamente
+    ## a partir de los valores presentes en la variable
+    if categorias is None:
+        categorias = sorted(df_filtrado[columna_variable].unique())
+
+    ## Calculo la frecuencia absoluta para cada categoría especificada
+    ## completando con cero aquellas categorías que no aparezcan
+    conteos = (df_filtrado[columna_variable].value_counts().reindex(categorias, fill_value = 0).sort_index())
+
+    ## Inicializo el gráfico y configuro sus dimensiones
+    plt.figure(figsize = (7, 5))
+
+    ## Especifico parámetros del gráfico de barras (colores y contorno)
+    plt.bar(categorias, conteos.values, color = "green", edgecolor = "black")
+
+    ## Construyo el título del gráfico en función del rango etario analizado
+    if edad_max == float("inf"):
+        titulo = f"{titulo_variable} (Edad ≥ {edad_min})"
+    else:
+        titulo = f"{titulo_variable} ({edad_min} ≤ Edad < {edad_max})"
+
+    ## Configuro el título del gráfico y la nomenclatura de los ejes
+    plt.title(titulo, fontsize = 14)
+    plt.xlabel(etiqueta_x)
+    plt.ylabel("Número de personas")
+
+    ## Obligo a que todas las categorías especificadas aparezcan en el eje X
+    plt.xticks(categorias)
+
+    ## Configuro la grilla del histograma
+    plt.grid(axis = "y", linestyle = "--", alpha = 0.7)
+
+    ## Despliego las etiquetas numéricas sobre cada barra
+    for categoria, valor in zip(categorias, conteos.values):
+        plt.text(categoria, valor, str(int(valor)), ha = "center", va = "bottom")
+
+    ## Ajusto automáticamente los márgenes de la figura
+    plt.tight_layout()
+
+    ## Despliego el gráfico
     plt.show()
 
 def plot_signal_with_events(x, events, fs = 200, title = "Señal y los eventos de giro", save_path = None):

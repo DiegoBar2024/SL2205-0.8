@@ -26,7 +26,7 @@ if __name__== '__main__':
     ## Opcion 3: Procesar features de giros previamente extraídas (análisis por persona)
     ## Opcion 4: Procesar features de giros previamente extraídas (análisis por giro)
     ## Opcion 5: Extender features ya existentes en el parquet (feature store update)
-    opcion = 4
+    opcion = 1
 
     ## Obtengo la información correspondiente a todos los pacientes en la base de datos
     pacientes, ids_existentes = LecturaDatosPacientes()
@@ -38,13 +38,34 @@ if __name__== '__main__':
         graficar_histograma_edades(pacientes)
 
         ## Obtengo el histograma de la cantidad de caídas para pacientes mayores a 75 años
-        graficar_caidas_por_rango_etario(pacientes, "Edad", "Caida", [75, float("inf")])
+        graficar_variable_por_rango_etario(pacientes, columna_edad = "Edad", columna_variable = "Caida",
+            rango_edad = [75, float("inf")], categorias = [0, 1, 2], titulo_variable = "Distribución de caídas",
+            etiqueta_x = "Número de caídas")
 
         ## Obtengo el histograma de la cantidad de caídas para pacientes entre 60 y 75 años
-        graficar_caidas_por_rango_etario(pacientes, "Edad", "Caida", [60, 75])
+        graficar_variable_por_rango_etario(pacientes, columna_edad = "Edad", columna_variable = "Caida",
+            rango_edad = [60, 75], categorias = [0, 1, 2], titulo_variable = "Distribución de caídas",
+            etiqueta_x = "Número de caídas")
 
         ## Obtengo el histograma de la cantidad de caídas para pacientes menores a 60 años
-        graficar_caidas_por_rango_etario(pacientes, "Edad", "Caida", [0, 60])
+        graficar_variable_por_rango_etario(pacientes, columna_edad = "Edad", columna_variable = "Caida",
+            rango_edad = [0, 60], categorias = [0, 1, 2], titulo_variable = "Distribución de caídas",
+            etiqueta_x = "Número de caídas")
+
+        ## Obtengo el histograma del uso de bastón para pacientes mayores a 75 años
+        graficar_variable_por_rango_etario(pacientes, columna_edad = "Edad", columna_variable = "Uso Baston",
+            rango_edad = [75, float("inf")], categorias = [0, 1], titulo_variable = "Distribución del uso de bastón",
+            etiqueta_x = "Uso de bastón")
+
+        ## Obtengo el histograma del uso de bastón para pacientes entre 60 y 75 años
+        graficar_variable_por_rango_etario(pacientes, columna_edad = "Edad", columna_variable = "Uso Baston",
+            rango_edad = [60, 75], categorias = [0, 1], titulo_variable = "Distribución del uso de bastón",
+            etiqueta_x = "Uso de bastón")
+
+        ## Obtengo el histograma del uso de bastón para pacientes menores a 60 años
+        graficar_variable_por_rango_etario(pacientes, columna_edad = "Edad", columna_variable = "Uso Baston",
+            rango_edad = [0, 60], categorias = [0, 1], titulo_variable = "Distribución del uso de bastón",
+            etiqueta_x = "Uso de bastón")
 
     ## En caso que quiera hacer la detección y extracción de features de giros
     elif opcion == 2:
