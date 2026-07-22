@@ -462,6 +462,12 @@ if __name__== '__main__':
             annotate = True, title = "Ranking univariado de features con SVM optimizado (división etaria binaria) – dataset completo",
             C = C, gamma = gamma, wilcoxon_results = results_wilcoxon_bin, group_pair = (0, 1))
 
+        ## Hago el diagrama de dispersión de un par de features arbitrario distinguiendo los giros según
+        ## el hecho de que las personas usen o no usen bastón al caminar 
+        plot_feature_space_2d(df = df_dataset_binary, feature_x = "acc_horz_jerk_energy_L2",
+            feature_y = "gyro_horz_jerk_energy_L2", target_col = "Uso Baston", class_labels = {
+            0: "No utiliza bastón", 1: "Utiliza bastón"}, title = "Completo: Scatterplot Baston", alpha = 0.5)
+
         ## ======================================================
         ## RANKING MULTIVARIADO DE FEATURES USANDO SVM (SUPPORT VECTOR MACHINE) -- DOS GRUPOS ETARIOS
         ## ======================================================
@@ -524,6 +530,12 @@ if __name__== '__main__':
         ## Obtengo un conjunto de las mejores features luego de hacer el SVM SFFS multivariado
         top_features_multiv_no_fall = sfs_results_no_fall['features'][k_top_features - 1]
 
+        ## Hago el diagrama de dispersión de un par de features arbitrario distinguiendo los giros según
+        ## el hecho de que las personas usen o no usen bastón al caminar 
+        plot_feature_space_2d(df = df_no_fall, feature_x = "acc_horz_jerk_energy_L2",
+            feature_y = "gyro_horz_jerk_energy_L2", target_col = "Uso Baston", class_labels = {
+            0: "No utiliza bastón", 1: "Utiliza bastón"}, title = "No Fallers: Scatter Plot baston", alpha = 0.5)
+
         ## SVM Univariado con división etaria binaria (>75, <75) para aquellos giros asociados
         ## a las personas para las que se registra al menos una caída por año
         results_svm_fall, svm_predictions_fall = rbf_svm_univariate_feature_error(
@@ -542,6 +554,12 @@ if __name__== '__main__':
 
         ## Obtengo un conjunto de las mejores features luego de hacer el SVM SFFS multivariado
         top_features_multiv_fall = sfs_results_fall['features'][k_top_features - 1]
+
+        ## Hago el diagrama de dispersión de un par de features arbitrario distinguiendo los giros según
+        ## el hecho de que las personas usen o no usen bastón al caminar 
+        plot_feature_space_2d(df = df_fall, feature_x = "acc_horz_jerk_energy_L2",
+            feature_y = "gyro_horz_jerk_energy_L2", target_col = "Uso Baston", class_labels = {
+            0: "No utiliza bastón", 1: "Utiliza bastón"}, title = "Fallers: Scatter Plot baston", alpha = 0.5)
 
         ## ======================================================
         ## VISUALIZACIÓN DEL ESPACIO DE FEATURES EN 2D
@@ -564,10 +582,8 @@ if __name__== '__main__':
         ## contiene las predicciones asociadas a cada uno de los giros mediante el algoritmo SVM LOO
         df_no_fall["y_pred"] = y_pred_no_fall
 
-        ## Hago el cálculo del tipo de error de clasificación para todos los giros con el 
-        ## algoritmo SVM LOO
-        df_no_fall["error_type"] = compute_error_type(df_no_fall["age_group_binary"].values, 
-            y_pred_no_fall)
+        ## Hago el cálculo del tipo de error de clasificación para todos los giros con el algoritmo SVM LOO
+        df_no_fall["error_type"] = compute_error_type(df_no_fall["age_group_binary"].values, y_pred_no_fall)
 
         ## Selecciono las 2 features óptimas según el proceso SFS con SVM 
         ## correspondientes al dataset de giros asociados a personas que tienen al menos una caida
@@ -592,11 +608,11 @@ if __name__== '__main__':
 
         ## Hago la graficación del diagrama de dispersión para los no caedores
         plot_error_space(df_no_fall, features_no_fall[0], features_no_fall[1],
-                        title = "Giros de personas sin ninguna caída (SVM LOO)")
+            title = "Giros de personas sin ninguna caída (SVM LOO)")
 
         ## Hago la graficación del diagrama de dispersión para los caedores
         plot_error_space(df_fall, features_fall[0], features_fall[1],
-                        title = "Giros de personas con al menos una caída (SVM LOO)")
+            title = "Giros de personas con al menos una caída (SVM LOO)")
 
         ## Hago el SFFS Multivariado para los resultados de los giros asociados a personas con caidas
         sfs_results_fall = sfs_svm_fixed(df = df_fall, feature_cols = feature_cols,
@@ -625,14 +641,7 @@ if __name__== '__main__':
 
         ## Hago un ranking de features univariado usando un algoritmo SVM
         results_svm_extreme, svm_predictions_extreme = rbf_svm_univariate_feature_error(df = df_turns,
-            feature_cols = feature_cols, target_col = "group_extreme", C = C, gamma = gamma, 
-            n_splits = n_splits)
-
-        ## Hago el diagrama de dispersión en el plano de las 2 features más discriminadoras
-        plot_feature_space_2d(df = df_turns, feature_x = "acc_horz_jerk_energy_L2", 
-            feature_y = "wz_jerk_energy", target_col = "group_extreme", 
-            class_labels = {0: "Mayor a 75 - Al menos una caída", 1: "Menor a 60 - Sin caídas"}, 
-            title = "Scatter Plot - Clases Extremas", alpha = 0.5)
+            feature_cols = feature_cols, target_col = "group_extreme", C = C, gamma = gamma, n_splits = n_splits)
 
         ## Hago el SFFS Multivariado para los resultados de los giros asociados a personas con caidas
         sfs_results_fall = sfs_svm_fixed(df = df_turns, feature_cols = feature_cols, 
@@ -649,6 +658,12 @@ if __name__== '__main__':
             title = "Ranking univariado de features con SVM - mayores >75 con caídas vs menores <=60 sin caídas",
             C = C, gamma = gamma, wilcoxon_results = wilcoxon_extreme_results, group_pair = (0, 1))
 
+        ## Hago el diagrama de dispersión en el plano de las 2 features más discriminadoras
+        plot_feature_space_2d(df = df_turns, feature_x = "acc_horz_jerk_energy_L2", 
+            feature_y = "wz_jerk_energy", target_col = "group_extreme", 
+            class_labels = {0: "Mayor a 75 - Al menos una caída", 1: "Menor a 60 - Sin caídas"}, 
+            title = "Scatter Plot - Clases Extremas", alpha = 0.5)
+
         ## Hago el diagrama de dispersión en el plano de las features "acc_horz_jerk_energy_L2" y
         ## "gyro_horz_jerk_energy_L2" que representan las energías promedio de las derivadas discretas
         ## de los segmentos de acelerómetro y giroscopio en el giro (clases extremas)
@@ -656,6 +671,12 @@ if __name__== '__main__':
             feature_y = "gyro_horz_jerk_energy_L2", target_col = "group_extreme", 
             class_labels = {0: "Mayor a 75 - Al menos una caída", 1: "Menor a 60 - Sin caídas"}, 
             title = "Scatter Plot - Clases Extremas", alpha = 0.5)
+
+        ## Hago el diagrama de dispersión de un par de features arbitrario distinguiendo los giros según
+        ## el hecho de que las personas usen o no usen bastón al caminar 
+        plot_feature_space_2d(df = df_turns, feature_x = "acc_horz_jerk_energy_L2",
+            feature_y = "wz_jerk_energy", target_col = "Uso Baston", class_labels = {
+            0: "No utiliza bastón", 1: "Utiliza bastón"}, title = "Extremos: Scatterplot Baston", alpha = 0.5)
 
         ## ======================================================
         ## ANÁLISIS DE REGRESIÓN LINEAL ENTRE PARES DE FEATURES DE GIROS
