@@ -26,7 +26,7 @@ if __name__== '__main__':
     ## Opcion 3: Procesar features de giros previamente extraídas (análisis por persona)
     ## Opcion 4: Procesar features de giros previamente extraídas (análisis por giro)
     ## Opcion 5: Extender features ya existentes en el parquet (feature store update)
-    opcion = 1
+    opcion = 4
 
     ## Obtengo la información correspondiente a todos los pacientes en la base de datos
     pacientes, ids_existentes = LecturaDatosPacientes()
@@ -241,13 +241,16 @@ if __name__== '__main__':
         array_features = features_giros_total[["id", "start_idx", "end_idx"] + FEATURE_COLUMNS].copy()
 
         ## Obtengo únicamente información de la edad y la ID asociada a cada paciente
-        df_patients = pacientes[["sampleid", "Edad", "Caida"]].copy()
+        df_patients = pacientes[["sampleid", "Edad", "Caida", "Uso Baston"]].copy()
 
         ## Me aseguro que los IDs se encuentran todos expresados en formato string
         df_patients["sampleid"] = df_patients["sampleid"].astype(str)
 
         ## Me aseguro que el número de caídas por año está expresado como número entero
         df_patients["Caida"] = df_patients["Caida"].astype(int)
+
+        ## Me aseguro que la variable que indica si la persona usa o no bastón está como entero
+        df_patients["Uso Baston"] = df_patients["Uso Baston"].astype(int)
 
         ## Asocio cada giro con la edad del sujeto correspondiente mediante un merge por ID,
         ## eliminando la columna redundante que contiene la ID de la persona a la que corresponde el giro
@@ -267,7 +270,7 @@ if __name__== '__main__':
         df_dataset["angle_deg"] = np.abs(df_dataset["angle_deg"])
 
         ## Elimino las columnas del dataframe que no corresponden a features numéricas de los giros
-        feature_cols = df_dataset.columns.drop(["id", "Edad", "Caida", "age_group", "caida_bin"])
+        feature_cols = df_dataset.columns.drop(["id", "Edad", "Caida", "Uso Baston", "age_group", "caida_bin"])
 
         ## Creo una copia de los datos para visualización (de manera de no tocar los datos originales)
         df_plot = df_dataset.copy()
