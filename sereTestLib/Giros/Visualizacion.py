@@ -1150,103 +1150,219 @@ def plot_cluster_age_distributions(df, cluster_col = "cluster", age_col = "age_g
     return cluster_age, age_cluster
 
 def plot_svm_feature_error_ranking(results_svm, top_k = None, annotate = True, title = None,
-                        C = None, gamma = None):
+    C = None, gamma = None, wilcoxon_results = None, group_pair = None, use_fdr = False):
     """
     Visualiza el ranking de features basado en el error de clasificación
-    obtenido mediante SVM univariado.
+    obtenido mediante SVM univariado, incorporando opcionalmente el
+    p-valor asociado al test estadístico de Wilcoxon para cada feature.
+
+    La idea del gráfico es combinar dos criterios complementarios de
+    discriminación:
+
+        - Capacidad predictiva:
+            medida mediante el error de clasificación del SVM univariado.
+            Menor error indica una mayor capacidad de separación entre grupos.
+
+        - Evidencia estadística:
+            medida mediante el test de Wilcoxon rank-sum, evaluando si las
+            distribuciones de una feature son significativamente diferentes
+            entre dos grupos determinados.
 
     Parameters
     ----------
     results_svm : pandas.DataFrame
-        DataFrame con resultados del análisis univariado.
+        DataFrame con resultados del análisis univariado mediante SVM.
+
         Debe contener al menos:
             - 'feature'
-            - 'error' (o métrica equivalente de error)
+            - 'error' (o 'mean_error')
 
     top_k : int or None
-        Si se especifica, muestra solo las top-k features con menor error.
+        Si se especifica, muestra únicamente las top-k features con menor
+        error de clasificación SVM.
 
     annotate : bool
-        Si True, muestra el valor numérico del error sobre cada barra.
+        Si True, muestra sobre cada barra:
+            - error de clasificación SVM
+            - p-valor de Wilcoxon (si fue proporcionado)
 
     title : str or None
-        Título del gráfico. Si es None, se genera automáticamente un título
-        por defecto. En este caso, si se proporcionan los hiperparámetros
-        C y gamma, estos se añaden al título.
+        Título del gráfico. Si es None, se genera un título automático.
+        En caso de proporcionarse los hiperparámetros C y gamma, estos
+        son agregados al título.
 
     C : float or None
-        Parámetro de regularización del SVM. Si se proporciona junto con
-        gamma, se incluye en el título del gráfico.
+        Parámetro de regularización del modelo SVM utilizado.
 
     gamma : float or str or None
-        Parámetro del kernel RBF del SVM. Si se proporciona junto con
-        C, se incluye en el título del gráfico.
+        Parámetro gamma del kernel utilizado en el SVM.
+
+    wilcoxon_results : pandas.DataFrame or None
+        Resultados del análisis Wilcoxon rank-sum generado mediante
+        `pairwise_wilcoxon_rank_sum()`.
+
+        Debe contener:
+            - 'feature'
+            - 'group_1'
+            - 'group_2'
+            - 'p_value'
+
+        Opcionalmente:
+            - 'p_fdr'
+
+        Si se proporciona, se agrega el p-valor correspondiente a cada
+        feature del ranking SVM.
+
+    group_pair : tuple or None
+        Par de grupos utilizados para seleccionar el resultado de Wilcoxon.
+
+        Ejemplo:
+            group_pair = (0,2)
+
+        Esto debe coincidir con la separación de grupos utilizada en
+        el análisis SVM.
+
+    use_fdr : bool
+        Si True y existe la columna 'p_fdr', utiliza el p-valor corregido
+        mediante FDR en lugar del p-valor original.
 
     Returns
     -------
     None
         Genera un gráfico de barras ordenado por error ascendente.
+
+        Cada barra representa una feature y opcionalmente contiene
+        información estadística adicional del test Wilcoxon.
     """
 
-    ## Hago una copia del dataframe de entrada el cual contiene los resultados del análisis de SVM
+    ## Hago una copia del dataframe de entrada que contiene los resultados del SVM
     df = results_svm.copy()
 
-    ## Hago la detección de la columna de error de forma flexible
+    ## Detecto automáticamente la columna correspondiente al error de clasificación
+    ## dependiendo del formato del dataframe de resultados recibido
     error_col = "error" if "error" in df.columns else "mean_error"
 
-    ## Ordeno los resultados según el desempeño (error de predicción medio obtenido)
+    ## Ordeno las features de acuerdo al desempeño del clasificador SVM
+    ## dejando primero aquellas features con menor error de predicción
     df = df.sort_values(error_col, ascending = True)
 
-    ## En caso de que me quiera quedar con los mejores k features
+    ## En caso de que se solicite visualizar únicamente las mejores k features,
+    ## selecciono aquellas con menor error de clasificación
     if top_k is not None:
 
-        ## Hago la selección de aquellos k features que tienen el menor error
+        ## Mantengo únicamente las top-k features más discriminativas
         df = df.head(top_k)
 
-    ## Selecciono la lista de todas las features que tengo
+    # ==========================================================
+    # Incorporación de resultados del test de Wilcoxon
+    # ==========================================================
+
+    ## En caso de que se proporcionen resultados estadísticos de Wilcoxon,
+    ## agrego los p-valores correspondientes a cada feature
+    if wilcoxon_results is not None:
+
+        ## Hago una copia de los resultados de Wilcoxon para evitar modificar
+        ## el dataframe original recibido como entrada
+        wilcox_df = wilcoxon_results.copy()
+
+        ## Selecciono si utilizar el p-valor original o el corregido mediante FDR
+        ## dependiendo del parámetro indicado por el usuario
+        p_col = "p_fdr" if use_fdr and "p_fdr" in wilcox_df.columns else "p_value"
+
+        ## En caso de que se indique una separación específica de grupos,
+        ## filtro únicamente la comparación de interés
+        if group_pair is not None:
+
+            ## Obtengo los dos grupos que quiero comparar mediante Wilcoxon
+            g1, g2 = group_pair
+
+            ## Selecciono únicamente la fila correspondiente a dicha comparación,
+            ## independientemente del orden en el que aparezcan los grupos
+            wilcox_df = wilcox_df[((wilcox_df["group_1"] == g1) & (wilcox_df["group_2"] == g2))|
+                ((wilcox_df["group_1"] == g2) & (wilcox_df["group_2"] == g1))]
+
+        ## Mantengo únicamente la información necesaria para hacer el merge
+        ## con los resultados del SVM
+        wilcox_df = wilcox_df[["feature", p_col]]
+
+        ## Renombro la columna del p-valor para identificar claramente
+        ## que corresponde al test de Wilcoxon
+        wilcox_df = wilcox_df.rename(columns = {p_col: "wilcoxon_p"})
+
+        ## Uno los resultados del SVM con los resultados estadísticos utilizando
+        ## el nombre de la feature como clave común
+        df = df.merge(wilcox_df, on = "feature", how = "left")
+
+    ## Extraigo la lista de nombres de features que serán graficadas
     features = df["feature"].values
 
-    ## Selecciono la lista de los errores de predicción correspondientes a las features
+    ## Extraigo los errores asociados a cada feature
     errors = df[error_col].values
 
-    ## Inicializo y configuro las dimensiones del gráfico
-    plt.figure(figsize = (10, 5))
+    ## Inicializo el tamaño del gráfico
+    plt.figure(figsize = (12, 5))
+
+    ## Construyo el gráfico de barras con el error SVM como métrica principal
     bars = plt.bar(features, errors)
 
-    ## Configuro el título y las leyendas del gráfico
+    ## Configuro las etiquetas del eje x rotando los nombres para mejorar
+    ## la visualización cuando existen muchas features
     plt.xticks(rotation = 45, ha = "right")
+
+    ## Configuro la etiqueta del eje y indicando la métrica representada
     plt.ylabel("Error de clasificación (SVM univariado)")
 
-    ## En caso de que no pase ningún título de entrada
+    ## En caso de no recibir un título definido por el usuario,
+    ## genero uno automáticamente
     if title is None:
 
-        ## Construyo un título por defecto para mostrar en el gráfico
-        title = "Ranking de features por capacidad discriminativa (menor error = mejor)"
+        ## Construyo el título estándar del gráfico
+        title = ("Ranking de features por capacidad discriminativa (menor error SVM = mejor)")
 
-    ## En caso de que yo de valores de hiperparámetros de C y gamma de entrada
+    ## En caso de que se proporcionen hiperparámetros del SVM,
+    ## los agrego al título para dejar registrado el modelo utilizado
     if C is not None or gamma is not None:
 
-        ## Construyo el texto conteniendo los valores de los hiperparámetros C y gamma
+        ## Construyo el texto auxiliar con los parámetros del modelo
         hp_text = [f"C = {C}", f"gamma = {gamma}"]
 
-        ## Agrego el texto auxiliar al título del gráfico correspondiente
+        ## Agrego los hiperparámetros al título principal
         title += " | " + ", ".join(hp_text)
 
-    ## Despliego el título correspondiente en el gráfico
+    ## Muestro el título final del gráfico
     plt.title(title)
 
-    ## En caso de que quiera hacer anotaciones numéricas en el gráfico con el valor del error
+    ## En caso de querer mostrar anotaciones numéricas sobre las barras
     if annotate:
 
-        ## Itero para cada uno de los pares (feature, error) que tengo
-        for bar, err in zip(bars, errors):
+        ## Itero sobre cada barra y su correspondiente error de clasificación
+        for i, (bar, err) in enumerate(zip(bars, errors)):
 
-            ## Genero y despliego la etiqueta con el valor del error de predicción medio de la feature
-            plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
-                f"{err:.3f}", ha = "center", va = "bottom", fontsize = 9)
+            ## Inicializo el texto de la anotación indicando explícitamente
+            ## que el valor corresponde al error de clasificación SVM
+            annotation = f"err={err:.3f}"
 
-    ## Despliego el gráfico correspondiente
+            ## En caso de haber resultados Wilcoxon disponibles,
+            ## agrego el p-valor correspondiente a la feature actual
+            if wilcoxon_results is not None:
+
+                ## Obtengo el p-valor asociado a la feature actual
+                p = df.iloc[i]["wilcoxon_p"]
+
+                ## En caso de existir un valor válido de Wilcoxon
+                if pd.notna(p):
+
+                    ## Agrego la anotación correspondiente a la barra de la feature
+                    annotation += f"\np={p:.2e}"
+
+            ## Despliego la etiqueta encima de cada barra
+            plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), annotation, ha = "center",
+                va = "bottom", fontsize = 10)
+
+    ## Ajusto automáticamente los márgenes del gráfico para evitar cortes
     plt.tight_layout()
+
+    ## Despliego el gráfico final
     plt.show()
 
 def plot_svm_univariate_confusion_matrices(predictions, feature_cols,

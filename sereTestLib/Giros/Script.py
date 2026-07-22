@@ -381,8 +381,8 @@ if __name__== '__main__':
 
         ## Hago la graficación de las features según el error de predicción medio en las K-Folds
         plot_svm_feature_error_ranking(results_svm, top_k = 10, annotate = True,
-        title = "Ranking univariado de features con SVM – clasificación por grupo etario",
-        C = C, gamma = gamma)
+            title = "Tres Clases - Ranking univariado de features con SVM – clasificación por grupo etario",
+            C = C, gamma = gamma)
 
         ## Obtengo un conjunto de las mejores features luego de hacer el SVM univariado
         top_features_univ = results_svm.nsmallest(5, "error")
@@ -422,6 +422,11 @@ if __name__== '__main__':
         ## Obtengo el conjunto de giros y sus features para personas que tienen al menos una caida al año
         df_fall = df_dataset_binary[df_dataset_binary["caida_bin"] == 1].copy()
 
+        ## Hago el test de Wilcoxon con agrupación etaria binaria para todos los giros,
+        ## comparando las distribuciones de cada feature entre: grupo 0 -> Edad <= 75, grupo 1 -> Edad > 75
+        results_wilcoxon_bin = pairwise_wilcoxon_rank_sum(df_dataset_binary, valid_features,
+            group_col = "age_group_binary")
+
         ## SVM Univariado: Resultados al hacer los tests de clasificación univariada usando una SVM
         ## pero en este caso aplicado al problema de clasificación binaria con las clases como antes      
         results_svm_bin, svm_predictions_bin = rbf_svm_univariate_feature_error(df = df_dataset_binary, 
@@ -429,9 +434,9 @@ if __name__== '__main__':
             n_splits = n_splits)
 
         ## Hago la graficación de las features según el error de predicción medio en las K-Folds
-        plot_svm_feature_error_ranking(results_svm_bin, top_k = 10, annotate = True,
-        title = "Ranking univariado de features con SVM optimizado (división etaria binaria) " \
-        "– dataset completo", C = C, gamma = gamma)
+        plot_svm_feature_error_ranking(results_svm_bin, top_k = 10,
+            annotate = True, title = "Ranking univariado de features con SVM optimizado (división etaria binaria) – dataset completo",
+            C = C, gamma = gamma, wilcoxon_results = results_wilcoxon_bin, group_pair = (0, 1))
 
         ## ======================================================
         ## RANKING MULTIVARIADO DE FEATURES USANDO SVM (SUPPORT VECTOR MACHINE) -- DOS GRUPOS ETARIOS
@@ -448,6 +453,29 @@ if __name__== '__main__':
         top_features_multiv = sfs_results_bin['features'][k_top_features - 1]
 
         ## ======================================================
+        ## TESTS DE HIPÓTESIS DE SUMA DE RANGOS DE WILCOXON - AGRUPACIÓN ETARIA BINARIA
+        ## Y SEPARADOS SEGÚN CAIDAS/NO CAIDAS
+        ## ======================================================
+
+        ## Hago el test de Wilcoxon con agrupación etaria binaria para giros correspondientes 
+        ## a personas que no tienen ninguna caída por año
+        results_wilcoxon_no_fall = pairwise_wilcoxon_rank_sum(df_no_fall, valid_features, 
+                                group_col = "age_group_binary")
+
+        ## Construyo las matrices con los resultados de tests de Wilcoxon para giros correspondientes
+        ## a personas que no tienen ninguna caída por año (a partir de los resultados de los tests)
+        matrices_wilcoxon_no_fall = wilcoxon_pairwise_matrices(results_wilcoxon_no_fall)
+
+        ## Hago el test de Wilcoxon con agrupación etaria binaria para giros correspondientes
+        ## a personas que tienen al menos una caída por año
+        results_wilcoxon_fall = pairwise_wilcoxon_rank_sum(df_fall, valid_features, 
+                                group_col = "age_group_binary")
+
+        ## Construyo las matrices con los resultados de tests de Wilcoxon para giros correspondientes
+        ## a personas que no tienen al menos una caída al año (a partir de los resultados de los tests)
+        matrices_wilcoxon_fall = wilcoxon_pairwise_matrices(results_wilcoxon_fall)
+
+        ## ======================================================
         ## RANKING FEATURES SVM UNIVARIADO - DIVISION ETARIA BINARIA 
         ## SEPARADOS SEGÚN CAIDAS/NO CAIDAS
         ## ======================================================
@@ -460,9 +488,9 @@ if __name__== '__main__':
 
         ## Hago la graficación de las features según el error de predicción medio en las K-Folds
         ## para el ranking univariado con división etaria binaria para personas sin caídas
-        plot_svm_feature_error_ranking(results_svm_no_fall, top_k = 10, annotate = True,
-            title = "Ranking univariado de features con SVM (división etaria binaria) – personas sin caídas",
-            C = C, gamma = gamma)
+        plot_svm_feature_error_ranking(results_svm_no_fall, top_k = 10,
+            annotate = True, title = "Ranking univariado de features con SVM (división etaria binaria) – personas sin caídas",
+            C = C, gamma = gamma, wilcoxon_results = results_wilcoxon_no_fall, group_pair = (0, 1))
 
         ## Hago el SFFS Multivariado para los resultados de los giros asociados a personas sin caídas
         sfs_results_no_fall = sfs_svm_fixed(df = df_no_fall, feature_cols = feature_cols,
@@ -481,13 +509,12 @@ if __name__== '__main__':
         ## Hago la graficación de las features según el error de predicción medio en las K-Folds
         ## para el ranking univariado con división etaria binaria para personas con al menos una caida
         plot_svm_feature_error_ranking(results_svm_fall, top_k = 10, annotate = True,
-            title = "Ranking univariado de features con SVM (división etaria binaria) – personas con " \
-            "al menos una caída", C = C, gamma = gamma)
+            title = "Ranking univariado de features con SVM (división etaria binaria) – personas con al menos una caída",
+            C = C, gamma = gamma, wilcoxon_results = results_wilcoxon_fall, group_pair = (0, 1))
 
         ## Hago el SFFS Multivariado para los resultados de los giros asociados a personas con caidas
         sfs_results_fall = sfs_svm_fixed(df = df_fall, feature_cols = feature_cols,
-            target_col = "age_group_binary", k = k_top_features, C = C, gamma = gamma,
-            cv = n_splits)
+            target_col = "age_group_binary", k = k_top_features, C = C, gamma = gamma, cv = n_splits)
 
         ## Obtengo un conjunto de las mejores features luego de hacer el SVM SFFS multivariado
         top_features_multiv_fall = sfs_results_fall['features'][k_top_features - 1]
@@ -577,16 +604,11 @@ if __name__== '__main__':
             feature_cols = feature_cols, target_col = "group_extreme", C = C, gamma = gamma, 
             n_splits = n_splits)
 
-        ## Hago un ranking the features multivariado usando SVM SFFS (Feature Selection)
-        plot_svm_feature_error_ranking(results_svm_extreme, top_k = 10, annotate = True,
-            title = "Ranking univariado de features con SVM - mayores >75 con caídas vs " \
-            "menores <=60 sin caídas", C = C, gamma = gamma)
-
         ## Hago el diagrama de dispersión en el plano de las 2 features más discriminadoras
         plot_feature_space_2d(df = df_turns, feature_x = "acc_horz_jerk_energy_L2", 
             feature_y = "wz_jerk_energy", target_col = "group_extreme", 
-            class_labels = {0: "Mayor a 75 - Al menos una caída", 
-            1: "Menor a 60 - Sin caídas"}, title = "Scatter Plot - Clases Extremas", alpha = 0.5)
+            class_labels = {0: "Mayor a 75 - Al menos una caída", 1: "Menor a 60 - Sin caídas"}, 
+            title = "Scatter Plot - Clases Extremas", alpha = 0.5)
 
         ## Hago el SFFS Multivariado para los resultados de los giros asociados a personas con caidas
         sfs_results_fall = sfs_svm_fixed(df = df_turns, feature_cols = feature_cols, 
@@ -597,10 +619,19 @@ if __name__== '__main__':
         wilcoxon_extreme_results = pairwise_wilcoxon_rank_sum(df = df_turns, feature_cols = feature_cols,
             group_col = "group_extreme")
 
-        ## Hago la graficación y el guardado de las matrices de significación a partir
-        plot_wilcoxon_significance_matrices(wilcoxon_extreme_results, 
-            "{}/SL2205-0.8/SL2205-0.8/sereTestLib/Giros/Graficos/Wilcoxon/DosGrupos/Extremos"
-            .format(root), False, FEATURE_NAMES)
+        ## Grafico el ranking univariado de features para dicho conjunto de giros con las agrupaciones
+        ## correspondientes escribiendo para cada feature el error estimado por SVM y el p-valor de Wilcoxon
+        plot_svm_feature_error_ranking(results_svm_extreme, top_k = 10, annotate = True,
+            title = "Ranking univariado de features con SVM - mayores >75 con caídas vs menores <=60 sin caídas",
+            C = C, gamma = gamma, wilcoxon_results = wilcoxon_extreme_results, group_pair = (0, 1))
+
+        ## Hago el diagrama de dispersión en el plano de las features "acc_horz_jerk_energy_L2" y
+        ## "gyro_horz_jerk_energy_L2" que representan las energías promedio de las derivadas discretas
+        ## de los segmentos de acelerómetro y giroscopio en el giro (clases extremas)
+        plot_feature_space_2d(df = df_turns, feature_x = "acc_horz_jerk_energy_L2", 
+            feature_y = "gyro_horz_jerk_energy_L2", target_col = "group_extreme", 
+            class_labels = {0: "Mayor a 75 - Al menos una caída", 1: "Menor a 60 - Sin caídas"}, 
+            title = "Scatter Plot - Clases Extremas", alpha = 0.5)
 
         ## ======================================================
         ## ANÁLISIS DE REGRESIÓN LINEAL ENTRE PARES DE FEATURES DE GIROS
@@ -745,12 +776,6 @@ if __name__== '__main__':
             df = df_fall_soutliers, feature_cols = feature_cols, target_col = "age_group_binary",
             C = C, gamma = gamma, n_splits = n_splits)
 
-        ## Hago la graficación de las features según el error de predicción medio en las K-Folds
-        ## para el ranking univariado con división etaria binaria para personas con al menos una caida
-        plot_svm_feature_error_ranking(results_svm_fall, top_k = 10, annotate = True,
-            title = "Ranking univariado de features con SVM (división etaria binaria) – personas con " \
-            "al menos una caída", C = C, gamma = gamma)
-
         ## Hago el SFFS Multivariado para los resultados de los giros asociados a personas con caidas
         sfs_results_fall = sfs_svm_fixed(df = df_fall_soutliers, feature_cols = feature_cols,
             target_col = "age_group_binary", k = k_top_features, C = C, gamma = gamma,
@@ -795,29 +820,6 @@ if __name__== '__main__':
         plot_pca_feature_contributions(load_nofall, K = 10, N = 10, title = "Non-fallers - PCA loadings")
 
         ## ======================================================
-        ## TESTS DE HIPÓTESIS DE SUMA DE RANGOS DE WILCOXON - AGRUPACIÓN ETARIA BINARIA
-        ## Y SEPARADOS SEGÚN CAIDAS/NO CAIDAS
-        ## ======================================================
-
-        ## Hago el test de Wilcoxon con agrupación etaria binaria para giros correspondientes 
-        ## a personas que no tienen ninguna caída por año
-        results_wilcoxon_no_fall = pairwise_wilcoxon_rank_sum(df_no_fall, valid_features, 
-                                group_col = "age_group_binary")
-
-        ## Construyo las matrices con los resultados de tests de Wilcoxon para giros correspondientes
-        ## a personas que no tienen ninguna caída por año (a partir de los resultados de los tests)
-        matrices_wilcoxon_no_fall = wilcoxon_pairwise_matrices(results_wilcoxon_no_fall)
-
-        ## Hago el test de Wilcoxon con agrupación etaria binaria para giros correspondientes
-        ## a personas que tienen al menos una caída por año
-        results_wilcoxon_fall = pairwise_wilcoxon_rank_sum(df_fall, valid_features, 
-                                group_col = "age_group_binary")
-
-        ## Construyo las matrices con los resultados de tests de Wilcoxon para giros correspondientes
-        ## a personas que no tienen al menos una caída al año (a partir de los resultados de los tests)
-        matrices_wilcoxon_fall = wilcoxon_pairwise_matrices(results_wilcoxon_fall)
-
-        ## ======================================================
         ## ESTIMACIÓN DEL ERROR DE PREDICCIÓN EN 3 CLASES: JOVENES NO CAEDORES,
         ## MAYORES CAEDORES Y MAYORES NO CAEDORES -- AGRUPACIÓN ETARIA BINARIA + CAÍDAS
         ## ======================================================
@@ -848,13 +850,7 @@ if __name__== '__main__':
 
         ## Hago el ranking univariado de features correspondientes a esta segmentación de clases
         results_svm, svm_predictions = rbf_svm_univariate_feature_error(df = df_turns, 
-        feature_cols = feature_cols, target_col = "svm_class", C = C, gamma = gamma, 
-        n_splits = n_splits)
-
-        ## Hago la graficación de las features según el error de predicción medio en las K-Folds
-        plot_svm_feature_error_ranking(results_svm, top_k = 10, annotate = True,
-        title = "Ranking univariado de características mediante SVM con kernel RBF para discriminación " \
-        "de tres clases (edad y riesgo de caídas)", C = C, gamma = gamma)
+            feature_cols = feature_cols, target_col = "svm_class", C = C, gamma = gamma, n_splits = n_splits)
 
         ## ======================================================
         ## CONSTRUCCIÓN Y GUARDADO DE GRÁFICOS
